@@ -29,7 +29,6 @@
 
 #include <err.h>
 #include <errno.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -76,17 +75,14 @@ xev_handle_maprequest(XEvent *ee)
 {
 	XMapRequestEvent	*e = &ee->xmaprequest;
 	struct client_ctx	*cc = NULL, *old_cc;
-	XWindowAttributes	 xattr;
 
 	if ((old_cc = client_current()))
 		client_ptrsave(old_cc);
 
-	if ((cc = client_find(e->window)) == NULL) {
-		XGetWindowAttributes(X_Dpy, e->window, &xattr);
-		cc = client_init(e->window, screen_fromroot(xattr.root), 1);
-	}
+	if ((cc = client_find(e->window)) == NULL)
+		cc = client_init(e->window, NULL);
 
-	if ((cc->flags & CLIENT_IGNORE) == 0)
+	if ((cc != NULL) && ((cc->flags & CLIENT_IGNORE) == 0))
 		client_ptrwarp(cc);
 }
 
@@ -224,12 +220,12 @@ xev_handle_buttonpress(XEvent *ee)
 {
 	XButtonEvent		*e = &ee->xbutton;
 	struct client_ctx	*cc, fakecc;
-	struct mousebinding	*mb;
+	struct binding		*mb;
 
 	e->state &= ~IGNOREMODMASK;
 
 	TAILQ_FOREACH(mb, &Conf.mousebindingq, entry) {
-		if (e->button == mb->button && e->state == mb->modmask)
+		if (e->button == mb->press.button && e->state == mb->modmask)
 			break;
 	}
 
@@ -263,7 +259,7 @@ xev_handle_keypress(XEvent *ee)
 {
 	XKeyEvent		*e = &ee->xkey;
 	struct client_ctx	*cc = NULL, fakecc;
-	struct keybinding	*kb;
+	struct binding		*kb;
 	KeySym			 keysym, skeysym;
 	unsigned int		 modshift;
 
@@ -273,7 +269,7 @@ xev_handle_keypress(XEvent *ee)
 	e->state &= ~IGNOREMODMASK;
 
 	TAILQ_FOREACH(kb, &Conf.keybindingq, entry) {
-		if (keysym != kb->keysym && skeysym == kb->keysym)
+		if (keysym != kb->press.keysym && skeysym == kb->press.keysym)
 			modshift = ShiftMask;
 		else
 			modshift = 0;
@@ -281,7 +277,7 @@ xev_handle_keypress(XEvent *ee)
 		if ((kb->modmask | modshift) != e->state)
 			continue;
 
-		if (kb->keysym == (modshift == 0 ? keysym : skeysym))
+		if (kb->press.keysym == (modshift == 0 ? keysym : skeysym))
 			break;
 	}
 
@@ -346,8 +342,17 @@ xev_handle_clientmessage(XEvent *ee)
 		client_ptrwarp(cc);
 	}
 
-	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32)
-		group_movetogroup(cc, e->data.l[0]);
+	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32) {
+		/*
+		 * The EWMH spec states that if the cardinal returned is
+		 * 0xFFFFFFFF (-1) then the window should appear on all
+		 * desktops, which in our case is assigned to group 0.
+		 */
+		if (e->data.l[0] == (unsigned long)-1)
+			group_movetogroup(cc, 0);
+		else
+			group_movetogroup(cc, e->data.l[0]);
+	}
 
 	if (e->message_type == ewmh[_NET_WM_STATE] && e->format == 32)
 		xu_ewmh_handle_net_wm_state_msg(cc,

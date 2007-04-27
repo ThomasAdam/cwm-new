@@ -32,26 +32,51 @@
 #include "calmwm.h"
 
 static const char	*conf_bind_getmask(const char *, unsigned int *);
-static void	 	 conf_unbind_kbd(struct conf *, struct keybinding *);
-static void	 	 conf_unbind_mouse(struct conf *, struct mousebinding *);
+static void	 	 conf_cmd_remove(struct conf *, const char *);
+static void	 	 conf_unbind_kbd(struct conf *, struct binding *);
+static void	 	 conf_unbind_mouse(struct conf *, struct binding *);
 
-/* Add an command menu entry to the end of the menu */
-void
+int
 conf_cmd_add(struct conf *c, const char *name, const char *path)
 {
+	struct cmd	*cmd;
+
 	/* "term" and "lock" have special meanings. */
-	if (strcmp(name, "term") == 0)
-		(void)strlcpy(c->termpath, path, sizeof(c->termpath));
-	else if (strcmp(name, "lock") == 0)
-		(void)strlcpy(c->lockpath, path, sizeof(c->lockpath));
-	else {
-		struct cmd *cmd = xmalloc(sizeof(*cmd));
-		(void)strlcpy(cmd->name, name, sizeof(cmd->name));
-		(void)strlcpy(cmd->path, path, sizeof(cmd->path));
+	if (strcmp(name, "term") == 0) {
+		if (strlcpy(c->termpath, path, sizeof(c->termpath)) >=
+		    sizeof(c->termpath))
+			return (0);
+	} else if (strcmp(name, "lock") == 0) {
+		if (strlcpy(c->lockpath, path, sizeof(c->lockpath)) >=
+		    sizeof(c->lockpath))
+			return (0);
+	} else {
+		conf_cmd_remove(c, name);
+
+		cmd = xmalloc(sizeof(*cmd));
+
+		cmd->name = xstrdup(name);
+		if (strlcpy(cmd->path, path, sizeof(cmd->path)) >=
+		    sizeof(cmd->path))
+			return (0);
 		TAILQ_INSERT_TAIL(&c->cmdq, cmd, entry);
 	}
+	return (1);
 }
 
+static void
+conf_cmd_remove(struct conf *c, const char *name)
+{
+	struct cmd	*cmd = NULL, *cmdnxt;
+
+	TAILQ_FOREACH_SAFE(cmd, &c->cmdq, entry, cmdnxt) {
+		if (strcmp(cmd->name, name) == 0) {
+			TAILQ_REMOVE(&c->cmdq, cmd, entry);
+			free(cmd->name);
+			free(cmd);
+		}
+	}
+}
 void
 conf_autogroup(struct conf *c, int no, const char *val)
 {
@@ -74,15 +99,13 @@ conf_autogroup(struct conf *c, int no, const char *val)
 }
 
 void
-conf_ignore(struct conf *c, const char *val)
+conf_ignore(struct conf *c, const char *name)
 {
-	struct winmatch	*wm;
+	struct winname	*wn;
 
-	wm = xcalloc(1, sizeof(*wm));
-
-	(void)strlcpy(wm->title, val, sizeof(wm->title));
-
-	TAILQ_INSERT_TAIL(&c->ignoreq, wm, entry);
+	wn = xcalloc(1, sizeof(*wn));
+	wn->name = xstrdup(name);
+	TAILQ_INSERT_TAIL(&c->ignoreq, wn, entry);
 }
 
 static const char *color_binds[] = {
@@ -102,6 +125,8 @@ conf_screen(struct screen_ctx *sc)
 {
 	unsigned int	 i;
 	XftColor	 xc;
+	Colormap	 colormap = DefaultColormap(X_Dpy, sc->which);
+	Visual		*visual = DefaultVisual(X_Dpy, sc->which);
 
 	sc->gap = Conf.gap;
 	sc->snapdist = Conf.snapdist;
@@ -118,18 +143,18 @@ conf_screen(struct screen_ctx *sc)
 			xu_xorcolor(sc->xftcolor[CWM_COLOR_MENU_BG],
 			    sc->xftcolor[CWM_COLOR_MENU_FG], &xc);
 			xu_xorcolor(sc->xftcolor[CWM_COLOR_MENU_FONT], xc, &xc);
-			if (!XftColorAllocValue(X_Dpy, sc->visual, sc->colormap,
+			if (!XftColorAllocValue(X_Dpy, visual, colormap,
 			    &xc.color, &sc->xftcolor[CWM_COLOR_MENU_FONT_SEL]))
 				warnx("XftColorAllocValue: %s", Conf.color[i]);
 			break;
 		}
-		if (XftColorAllocName(X_Dpy, sc->visual, sc->colormap,
+		if (XftColorAllocName(X_Dpy, visual, colormap,
 		    Conf.color[i], &xc)) {
 			sc->xftcolor[i] = xc;
-			XftColorFree(X_Dpy, sc->visual, sc->colormap, &xc);
+			XftColorFree(X_Dpy, visual, colormap, &xc);
 		} else {
 			warnx("XftColorAllocName: %s", Conf.color[i]);
-			XftColorAllocName(X_Dpy, sc->visual, sc->colormap,
+			XftColorAllocName(X_Dpy, visual, colormap,
 			    color_binds[i], &sc->xftcolor[i]);
 		}
 	}
@@ -139,8 +164,7 @@ conf_screen(struct screen_ctx *sc)
 	    sc->xftcolor[CWM_COLOR_MENU_FG].pixel,
 	    sc->xftcolor[CWM_COLOR_MENU_BG].pixel);
 
-	sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin,
-	    sc->visual, sc->colormap);
+	sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
 	if (sc->xftdraw == NULL)
 		errx(1, "XftDrawCreate");
 
@@ -247,9 +271,8 @@ conf_init(struct conf *c)
 	for (i = 0; i < nitems(color_binds); i++)
 		c->color[i] = xstrdup(color_binds[i]);
 
-	/* Default term/lock */
-	(void)strlcpy(c->termpath, "xterm", sizeof(c->termpath));
-	(void)strlcpy(c->lockpath, "xlock", sizeof(c->lockpath));
+	conf_cmd_add(c, "lock", "xlock");
+	conf_cmd_add(c, "term", "xterm");
 
 	(void)snprintf(c->known_hosts, sizeof(c->known_hosts), "%s/%s",
 	    homedir, ".ssh/known_hosts");
@@ -260,15 +283,15 @@ conf_init(struct conf *c)
 void
 conf_clear(struct conf *c)
 {
-	struct autogroupwin	*ag;
-	struct keybinding	*kb;
-	struct winmatch		*wm;
+	struct autogroupwin	*aw;
+	struct binding		*kb, *mb;
+	struct winname		*wn;
 	struct cmd		*cmd;
-	struct mousebinding	*mb;
 	int			 i;
 
 	while ((cmd = TAILQ_FIRST(&c->cmdq)) != NULL) {
 		TAILQ_REMOVE(&c->cmdq, cmd, entry);
+		free(cmd->name);
 		free(cmd);
 	}
 
@@ -277,16 +300,16 @@ conf_clear(struct conf *c)
 		free(kb);
 	}
 
-	while ((ag = TAILQ_FIRST(&c->autogroupq)) != NULL) {
-		TAILQ_REMOVE(&c->autogroupq, ag, entry);
-		free(ag->class);
-		free(ag->name);
-		free(ag);
+	while ((aw = TAILQ_FIRST(&c->autogroupq)) != NULL) {
+		TAILQ_REMOVE(&c->autogroupq, aw, entry);
+		free(aw->class);
+		free(aw->name);
+		free(aw);
 	}
 
-	while ((wm = TAILQ_FIRST(&c->ignoreq)) != NULL) {
-		TAILQ_REMOVE(&c->ignoreq, wm, entry);
-		free(wm);
+	while ((wn = TAILQ_FIRST(&c->ignoreq)) != NULL) {
+		TAILQ_REMOVE(&c->ignoreq, wn, entry);
+		free(wn);
 	}
 
 	while ((mb = TAILQ_FIRST(&c->mousebindingq)) != NULL) {
@@ -303,12 +326,11 @@ conf_clear(struct conf *c)
 void
 conf_client(struct client_ctx *cc)
 {
-	struct winmatch	*wm;
-	char		*wname = cc->name;
+	struct winname	*wn;
 	int		 ignore = 0;
 
-	TAILQ_FOREACH(wm, &Conf.ignoreq, entry) {
-		if (strncasecmp(wm->title, wname, strlen(wm->title)) == 0) {
+	TAILQ_FOREACH(wn, &Conf.ignoreq, entry) {
+		if (strncasecmp(wn->name, cc->name, strlen(wn->name)) == 0) {
 			ignore = 1;
 			break;
 		}
@@ -327,7 +349,7 @@ static const struct {
 	{ "lower", kbfunc_client_lower, CWM_WIN, {0} },
 	{ "raise", kbfunc_client_raise, CWM_WIN, {0} },
 	{ "search", kbfunc_client_search, 0, {0} },
-	{ "menusearch", kbfunc_menu_search, 0, {0} },
+	{ "menusearch", kbfunc_menu_cmd, 0, {0} },
 	{ "hide", kbfunc_client_hide, CWM_WIN, {0} },
 	{ "cycle", kbfunc_client_cycle, 0, {.i = CWM_CYCLE} },
 	{ "rcycle", kbfunc_client_cycle, 0, {.i = CWM_RCYCLE} },
@@ -464,16 +486,16 @@ conf_bind_getmask(const char *name, unsigned int *mask)
 int
 conf_bind_kbd(struct conf *c, const char *bind, const char *cmd)
 {
-	struct keybinding	*kb;
-	const char		*key;
-	unsigned int		 i, mask;
+	struct binding	*kb;
+	const char	*key;
+	unsigned int	 i, mask;
 
 	kb = xcalloc(1, sizeof(*kb));
 	key = conf_bind_getmask(bind, &mask);
 	kb->modmask |= mask;
 
-	kb->keysym = XStringToKeysym(key);
-	if (kb->keysym == NoSymbol) {
+	kb->press.keysym = XStringToKeysym(key);
+	if (kb->press.keysym == NoSymbol) {
 		warnx("unknown symbol: %s", key);
 		free(kb);
 		return (0);
@@ -508,15 +530,15 @@ conf_bind_kbd(struct conf *c, const char *bind, const char *cmd)
 }
 
 static void
-conf_unbind_kbd(struct conf *c, struct keybinding *unbind)
+conf_unbind_kbd(struct conf *c, struct binding *unbind)
 {
-	struct keybinding	*key = NULL, *keynxt;
+	struct binding	*key = NULL, *keynxt;
 
 	TAILQ_FOREACH_SAFE(key, &c->keybindingq, entry, keynxt) {
 		if (key->modmask != unbind->modmask)
 			continue;
 
-		if (key->keysym == unbind->keysym) {
+		if (key->press.keysym == unbind->press.keysym) {
 			TAILQ_REMOVE(&c->keybindingq, key, entry);
 			if (key->argtype & ARG_CHAR)
 				free(key->argument.c);
@@ -531,14 +553,14 @@ static const struct {
 	int		 flags;
 	union arg	 argument;
 } name_to_mousefunc[] = {
+	{ "window_lower", kbfunc_client_lower, CWM_WIN, {0} },
+	{ "window_raise", kbfunc_client_raise, CWM_WIN, {0} },
+	{ "window_hide", kbfunc_client_hide, CWM_WIN, {0} },
+	{ "cyclegroup", kbfunc_client_cyclegroup, 0, {.i = CWM_CYCLE} },
+	{ "rcyclegroup", kbfunc_client_cyclegroup, 0, {.i = CWM_RCYCLE} },
 	{ "window_move", mousefunc_client_move, CWM_WIN, {0} },
 	{ "window_resize", mousefunc_client_resize, CWM_WIN, {0} },
 	{ "window_grouptoggle", mousefunc_client_grouptoggle, CWM_WIN, {0} },
-	{ "window_lower", mousefunc_client_lower, CWM_WIN, {0} },
-	{ "window_raise", mousefunc_client_raise, CWM_WIN, {0} },
-	{ "window_hide", mousefunc_client_hide, CWM_WIN, {0} },
-	{ "cyclegroup", mousefunc_client_cyclegroup, 0, {.i = CWM_CYCLE} },
-	{ "rcyclegroup", mousefunc_client_cyclegroup, 0, {.i = CWM_RCYCLE} },
 	{ "menu_group", mousefunc_menu_group, 0, {0} },
 	{ "menu_unhide", mousefunc_menu_unhide, 0, {0} },
 	{ "menu_cmd", mousefunc_menu_cmd, 0, {0} },
@@ -547,15 +569,15 @@ static const struct {
 int
 conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
 {
-	struct mousebinding	*mb;
-	const char		*button, *errstr;
-	unsigned int		 i, mask;
+	struct binding	*mb;
+	const char	*button, *errstr;
+	unsigned int	 i, mask;
 
 	mb = xcalloc(1, sizeof(*mb));
 	button = conf_bind_getmask(bind, &mask);
 	mb->modmask |= mask;
 
-	mb->button = strtonum(button, Button1, Button5, &errstr);
+	mb->press.button = strtonum(button, Button1, Button5, &errstr);
 	if (errstr) {
 		warnx("button number is %s: %s", errstr, button);
 		free(mb);
@@ -585,15 +607,15 @@ conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
 }
 
 static void
-conf_unbind_mouse(struct conf *c, struct mousebinding *unbind)
+conf_unbind_mouse(struct conf *c, struct binding *unbind)
 {
-	struct mousebinding	*mb = NULL, *mbnxt;
+	struct binding		*mb = NULL, *mbnxt;
 
 	TAILQ_FOREACH_SAFE(mb, &c->mousebindingq, entry, mbnxt) {
 		if (mb->modmask != unbind->modmask)
 			continue;
 
-		if (mb->button == unbind->button) {
+		if (mb->press.button == unbind->press.button) {
 			TAILQ_REMOVE(&c->mousebindingq, mb, entry);
 			free(mb);
 		}
@@ -620,25 +642,25 @@ conf_cursor(struct conf *c)
 void
 conf_grab_mouse(Window win)
 {
-	struct mousebinding	*mb;
+	struct binding	*mb;
 
 	xu_btn_ungrab(win);
 
 	TAILQ_FOREACH(mb, &Conf.mousebindingq, entry) {
 		if (mb->flags & CWM_WIN)
-			xu_btn_grab(win, mb->modmask, mb->button);
+			xu_btn_grab(win, mb->modmask, mb->press.button);
 	}
 }
 
 void
 conf_grab_kbd(Window win)
 {
-	struct keybinding	*kb;
+	struct binding	*kb;
 
 	xu_key_ungrab(win);
 
 	TAILQ_FOREACH(kb, &Conf.keybindingq, entry)
-		xu_key_grab(win, kb->modmask, kb->keysym);
+		xu_key_grab(win, kb->modmask, kb->press.keysym);
 }
 
 static char *cwmhints[] = {
