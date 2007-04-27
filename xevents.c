@@ -2,20 +2,9 @@
  * calmwm - the calm window manager
  *
  * Copyright (c) 2004 Marius Aamodt Eriksen <marius@monkey.org>
+ * All rights reserved.
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * $OpenBSD$
+ * $Id$
  */
 
 /*
@@ -24,255 +13,364 @@
  *   management of the xevent's.
  */
 
-#include <sys/param.h>
-#include <sys/queue.h>
-
-#include <err.h>
-#include <errno.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
+#include "headers.h"
 #include "calmwm.h"
 
-static void	 xev_handle_maprequest(XEvent *);
-static void	 xev_handle_unmapnotify(XEvent *);
-static void	 xev_handle_destroynotify(XEvent *);
-static void	 xev_handle_configurerequest(XEvent *);
-static void	 xev_handle_propertynotify(XEvent *);
-static void	 xev_handle_enternotify(XEvent *);
-static void	 xev_handle_buttonpress(XEvent *);
-static void	 xev_handle_buttonrelease(XEvent *);
-static void	 xev_handle_keypress(XEvent *);
-static void	 xev_handle_keyrelease(XEvent *);
-static void	 xev_handle_clientmessage(XEvent *);
-static void	 xev_handle_randr(XEvent *);
-static void	 xev_handle_mappingnotify(XEvent *);
-static void	 xev_handle_expose(XEvent *);
+void _sendxmsg(Window, Atom, long);
 
-void		(*xev_handlers[LASTEvent])(XEvent *) = {
-			[MapRequest] = xev_handle_maprequest,
-			[UnmapNotify] = xev_handle_unmapnotify,
-			[DestroyNotify] = xev_handle_destroynotify,
-			[ConfigureRequest] = xev_handle_configurerequest,
-			[PropertyNotify] = xev_handle_propertynotify,
-			[EnterNotify] = xev_handle_enternotify,
-			[ButtonPress] = xev_handle_buttonpress,
-			[ButtonRelease] = xev_handle_buttonrelease,
-			[KeyPress] = xev_handle_keypress,
-			[KeyRelease] = xev_handle_keyrelease,
-			[ClientMessage] = xev_handle_clientmessage,
-			[MappingNotify] = xev_handle_mappingnotify,
-			[Expose] = xev_handle_expose,
-};
+/*
+ * NOTE: in reality, many of these should move to client.c now that
+ * we've got this nice event layer.
+ */
 
-static KeySym modkeys[] = { XK_Alt_L, XK_Alt_R, XK_Super_L, XK_Super_R,
-			    XK_Control_L, XK_Control_R };
-
-static void
-xev_handle_maprequest(XEvent *ee)
+void
+xev_handle_maprequest(struct xevent *xev, XEvent *ee)
 {
-	XMapRequestEvent	*e = &ee->xmaprequest;
-	struct client_ctx	*cc = NULL, *old_cc;
-	XWindowAttributes	 xattr;
+	XMapRequestEvent *e = &ee->xmaprequest;
+	struct client_ctx *cc = NULL, *old_cc = client_current();
+	XWindowAttributes xattr;
+	struct screen_ctx *sc;
+#ifdef notyet
+	int state;
+#endif
 
-	if ((old_cc = client_current()))
+	if (old_cc != NULL)
 		client_ptrsave(old_cc);
 
-	if ((cc = client_find(e->window)) == NULL) {
-		XGetWindowAttributes(X_Dpy, e->window, &xattr);
-		cc = client_init(e->window, screen_fromroot(xattr.root), 1);
+	if ((cc = client_find(e->window)) == NULL) { 
+		XGetWindowAttributes(G_dpy, e->window, &xattr);
+		cc = client_new(e->window, screen_fromroot(xattr.root), 1);
+		sc = CCTOSC(cc);
+	} else {
+		cc->beepbeep = 1;
 	}
 
-	if ((cc->flags & CLIENT_IGNORE) == 0)
-		client_ptrwarp(cc);
+#ifdef notyet			/* XXX - possibly, we shouldn't map if
+				 * the window is withdrawn. */
+	if (xu_getstate(cc, &state) == 0 && state == WithdrawnState)
+		warnx("WITHDRAWNSTATE for %s", cc->name);
+#endif
+
+	client_ptrwarp(cc);
+	xev_register(xev);
 }
 
-static void
-xev_handle_unmapnotify(XEvent *ee)
+void
+xev_handle_unmapnotify(struct xevent *xev, XEvent *ee)
 {
-	XUnmapEvent		*e = &ee->xunmap;
-	struct client_ctx	*cc;
+	XUnmapEvent *e = &ee->xunmap;
+	struct client_ctx *cc;
+	struct screen_ctx *sc;
+	int wascurrent;
 
 	if ((cc = client_find(e->window)) != NULL) {
-		if (e->send_event) {
-			client_set_wm_state(cc, WithdrawnState);
-		} else {
-			if (!(cc->flags & CLIENT_HIDDEN))
-				client_delete(cc);
-		}
+		sc = CCTOSC(cc);
+		wascurrent = cc == client_current();
+		client_delete(cc, e->send_event, 0);
+
+#ifdef notyet
+		/* XXX disable the ptrwarp until we handle it
+		 * better. */
+		if (!client_delete(cc, e->send_event, 0) && wascurrent) 
+			;/* 			client_ptrwarp(new_cc); */
+#endif
 	}
+
+	xev_register(xev);
 }
 
-static void
-xev_handle_destroynotify(XEvent *ee)
+void
+xev_handle_destroynotify(struct xevent *xev, XEvent *ee)
 {
-	XDestroyWindowEvent	*e = &ee->xdestroywindow;
-	struct client_ctx	*cc;
+	XDestroyWindowEvent *e = &ee->xdestroywindow;
+	struct client_ctx *cc;
 
 	if ((cc = client_find(e->window)) != NULL)
-		client_delete(cc);
+		client_delete(cc, 1, 1);
+
+	xev_register(xev);
 }
 
-static void
-xev_handle_configurerequest(XEvent *ee)
+void
+xev_handle_configurerequest(struct xevent *xev, XEvent *ee)
 {
-	XConfigureRequestEvent	*e = &ee->xconfigurerequest;
-	struct client_ctx	*cc;
-	struct screen_ctx	*sc;
-	XWindowChanges		 wc;
+	XConfigureRequestEvent *e = &ee->xconfigurerequest;
+	struct client_ctx *cc;
+	struct screen_ctx *sc;
+	XWindowChanges wc;
 
 	if ((cc = client_find(e->window)) != NULL) {
-		sc = cc->sc;
+		sc = CCTOSC(cc);
 
+		client_gravitate(cc, 0);
 		if (e->value_mask & CWWidth)
-			cc->geom.w = e->width;
+			cc->geom.width = e->width;
 		if (e->value_mask & CWHeight)
-			cc->geom.h = e->height;
+			cc->geom.height = e->height;
 		if (e->value_mask & CWX)
 			cc->geom.x = e->x;
 		if (e->value_mask & CWY)
 			cc->geom.y = e->y;
-		if (e->value_mask & CWBorderWidth)
-			cc->bwidth = e->border_width;
-		if (e->value_mask & CWSibling)
-			wc.sibling = e->above;
-		if (e->value_mask & CWStackMode)
-			wc.stack_mode = e->detail;
 
-		if (cc->geom.x == 0 && cc->geom.w >= sc->view.w)
+                if (cc->geom.x == 0 &&
+		    cc->geom.width >= DisplayWidth(G_dpy, sc->which))
 			cc->geom.x -= cc->bwidth;
 
-		if (cc->geom.y == 0 && cc->geom.h >= sc->view.h)
-			cc->geom.y -= cc->bwidth;
+                if (cc->geom.y == 0 &&
+		    cc->geom.height >= DisplayHeight(G_dpy, sc->which))
+                        cc->geom.y -= cc->bwidth;
 
-		wc.x = cc->geom.x;
-		wc.y = cc->geom.y;
-		wc.width = cc->geom.w;
-		wc.height = cc->geom.h;
-		wc.border_width = cc->bwidth;
+		client_gravitate(cc, 1);
 
-		XConfigureWindow(X_Dpy, cc->win, e->value_mask, &wc);
-		client_config(cc);
-	} else {
-		/* let it do what it wants, it'll be ours when we map it. */
-		wc.x = e->x;
-		wc.y = e->y;
-		wc.width = e->width;
-		wc.height = e->height;
-		wc.border_width = e->border_width;
-		wc.stack_mode = Above;
-		e->value_mask &= ~CWStackMode;
+		wc.x = cc->geom.x - cc->bwidth;
+		wc.y = cc->geom.y - cc->bwidth;
+		wc.width = cc->geom.width + cc->bwidth*2;
+		wc.height = cc->geom.height + cc->bwidth*2;
+		wc.border_width = 0;
 
-		XConfigureWindow(X_Dpy, e->window, e->value_mask, &wc);
+		/* We need to move the parent window, too. */
+		XConfigureWindow(G_dpy, cc->pwin, e->value_mask, &wc);
+		xev_reconfig(cc);
 	}
+
+	wc.x = cc != NULL ? 0 : e->x;
+	wc.y = cc != NULL ? 0 : e->y;
+	wc.width = e->width;
+	wc.height = e->height;
+	wc.stack_mode = Above;
+	wc.border_width = 0;
+	e->value_mask &= ~CWStackMode;
+	e->value_mask |= CWBorderWidth;
+
+	XConfigureWindow(G_dpy, e->window, e->value_mask, &wc);
+
+	xev_register(xev);
 }
 
-static void
-xev_handle_propertynotify(XEvent *ee)
+void
+xev_handle_propertynotify(struct xevent *xev, XEvent *ee)
 {
-	XPropertyEvent		*e = &ee->xproperty;
-	struct screen_ctx	*sc;
-	struct client_ctx	*cc;
+	XPropertyEvent *e = &ee->xproperty;
+	struct client_ctx *cc;
+	long tmp;
 
 	if ((cc = client_find(e->window)) != NULL) {
-		switch (e->atom) {
+		switch(e->atom) { 
 		case XA_WM_NORMAL_HINTS:
-			client_getsizehints(cc);
+			XGetWMNormalHints(G_dpy, cc->win, cc->size, &tmp);
 			break;
 		case XA_WM_NAME:
 			client_setname(cc);
-			break;
-		case XA_WM_HINTS:
-			client_wm_hints(cc);
-			client_draw_border(cc);
-			break;
-		case XA_WM_TRANSIENT_FOR:
-			client_transient(cc);
 			break;
 		default:
 			/* do nothing */
 			break;
 		}
-	} else {
-		TAILQ_FOREACH(sc, &Screenq, entry) {
-			if (sc->rootwin == e->window) {
-				if (e->atom == ewmh[_NET_DESKTOP_NAMES])
-					group_update_names(sc);
-			}
-		}
 	}
+
+	xev_register(xev);
 }
 
-static void
-xev_handle_enternotify(XEvent *ee)
+void
+xev_reconfig(struct client_ctx *cc)
 {
-	XCrossingEvent		*e = &ee->xcrossing;
-	struct client_ctx	*cc;
+	XConfigureEvent ce;
 
-	Last_Event_Time = e->time;
+	ce.type = ConfigureNotify;
+	ce.event = cc->win;
+	ce.window = cc->win;
+	ce.x = cc->geom.x;
+	ce.y = cc->geom.y;
+	ce.width = cc->geom.width;
+	ce.height = cc->geom.height;
+	ce.border_width = 0;
+	ce.above = None;
+	ce.override_redirect = 0;
 
-	if ((cc = client_find(e->window)) != NULL)
-		client_setactive(cc);
+	XSendEvent(G_dpy, cc->win, False, StructureNotifyMask, (XEvent *)&ce);
+}
+
+void
+xev_handle_enternotify(struct xevent *xev, XEvent *ee)
+{
+	XCrossingEvent *e = &ee->xcrossing;
+	struct client_ctx *cc;
+
+	if ((cc = client_find(e->window)) == NULL) {
+		/*
+		 * XXX - later.  messes up unclutter.  but may be
+		 * needed when we introduce menu windows and such into
+		 * the main event loop.
+		 */
+#ifdef notyet
+		if (e->window != e->root)
+			client_nocurrent();
+#endif
+	} else
+		client_setactive(cc, 1);
+
+	xev_register(xev);
+}
+
+void
+xev_handle_leavenotify(struct xevent *xev, XEvent *ee)
+{
+	client_leave(NULL);
+
+	xev_register(xev);
 }
 
 /* We can split this into two event handlers. */
-static void
-xev_handle_buttonpress(XEvent *ee)
+void
+xev_handle_buttonpress(struct xevent *xev, XEvent *ee)
 {
-	XButtonEvent		*e = &ee->xbutton;
-	struct client_ctx	*cc, fakecc;
-	struct mousebinding	*mb;
+	XButtonEvent *e = &ee->xbutton;
+	struct client_ctx *cc, *old_cc = client_current();
+	struct screen_ctx *sc = screen_fromroot(e->root);
+	char *wname;
+	int altcontrol = e->state == (ControlMask|Mod1Mask);
 
-	e->state &= ~IGNOREMODMASK;
+	cc = client_find(e->window);
 
-	TAILQ_FOREACH(mb, &Conf.mousebindingq, entry) {
-		if (e->button == mb->button && e->state == mb->modmask)
+	if (sc->rootwin == e->window && !altcontrol) {
+		struct menu_q menuq;
+		struct menu *mi;
+
+		/* XXXSIGH!!!! */
+		if (e->button == Button2) {
+			group_menu(e);
+			goto out;
+		}
+
+		TAILQ_INIT(&menuq);
+
+		switch (e->button) {
+		case Button1:
+			TAILQ_FOREACH(cc, &G_clientq, entry) {
+				if (cc->flags & CLIENT_HIDDEN) {
+					if (cc->label != NULL)
+						wname = cc->label;
+					else
+				  		wname = cc->name;
+
+					if (wname == NULL)
+						continue;
+
+					XCALLOC(mi, struct menu);
+					strlcpy(mi->text,
+					    wname, sizeof(mi->text));
+					mi->ctx = cc;
+					TAILQ_INSERT_TAIL(&menuq, mi, entry);
+				}
+			}
 			break;
+		case Button3: {
+			struct cmd *cmd;
+			if (conf_cmd_changed(G_conf.menu_path)) {
+				conf_cmd_clear(&G_conf);
+				conf_cmd_populate(&G_conf, G_conf.menu_path);
+			}
+			TAILQ_FOREACH(cmd, &G_conf.cmdq, entry) {
+				XCALLOC(mi, struct menu);
+				strlcpy(mi->text, cmd->label, sizeof(mi->text));
+				mi->ctx = cmd;
+				TAILQ_INSERT_TAIL(&menuq, mi, entry);
+			}
+			break;
+		}
+		default:
+			break;
+		}
+
+		if (TAILQ_EMPTY(&menuq))
+			goto out;
+
+		mi = (struct menu *)grab_menu(e, &menuq);
+		if (mi == NULL)
+			goto cleanup;
+
+		switch (e->button) {
+		case Button1:
+			cc = (struct client_ctx *)mi->ctx;
+			client_unhide(cc);
+
+			if (old_cc != NULL)
+				client_ptrsave(old_cc);
+			client_ptrwarp(cc);
+			break;
+		case Button3:
+			u_spawn(((struct cmd *)mi->ctx)->image);
+			break;
+		default:
+			break;
+		}
+
+	cleanup:
+		while ((mi = TAILQ_FIRST(&menuq)) != NULL) {
+			TAILQ_REMOVE(&menuq, mi, entry);
+			xfree(mi);
+		}
+
+		goto out;
 	}
 
-	if (mb == NULL)
-		return;
-	if (mb->flags & CWM_WIN) {
-		if (((cc = client_find(e->window)) == NULL) &&
-		    (cc = client_current()) == NULL)
-			return;
-	} else {
-		if (e->window != e->root)
-			return;
-		cc = &fakecc;
-		cc->sc = screen_fromroot(e->window);
-	}
+	if (cc == NULL || e->state == 0)
+		goto out;
 
-	(*mb->callback)(cc, &mb->argument);
+	sc = CCTOSC(cc);
+
+	switch (e->button) {
+	case Button1:
+		if (altcontrol && !G_groupmode)
+			group_sticky_toggle_enter(cc);
+		else {
+			grab_drag(cc);
+			client_move(cc);
+		}
+		break;
+	case Button2:
+		/* XXXSIGH!!! */
+		if (G_groupmode)
+			group_click(cc);
+		else {
+			grab_sweep(cc);
+			client_resize(cc);
+		}
+		break;
+	case Button3:
+		client_ptrsave(cc);
+		client_lower(cc);
+		break;
+	}
+ out:
+	xev_register(xev);
 }
 
-static void
-xev_handle_buttonrelease(XEvent *ee)
+void
+xev_handle_buttonrelease(struct xevent *xev, XEvent *ee)
 {
-	struct client_ctx *cc;
+	struct client_ctx *cc = client_current();
 
-	if ((cc = client_current()))
+	if (cc != NULL && !G_groupmode)
 		group_sticky_toggle_exit(cc);
+
+	xev_register(xev);
+
 }
 
-static void
-xev_handle_keypress(XEvent *ee)
+void
+xev_handle_keypress(struct xevent *xev, XEvent *ee)
 {
-	XKeyEvent		*e = &ee->xkey;
-	struct client_ctx	*cc = NULL, fakecc;
-	struct keybinding	*kb;
-	KeySym			 keysym, skeysym;
-	unsigned int		 modshift;
+	XKeyEvent *e = &ee->xkey;
+	struct client_ctx *cc = NULL; /* Make gcc happy. */
+	struct keybinding *kb;
+	KeySym keysym, skeysym;
+	int modshift;
 
-	keysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 0);
-	skeysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 1);
-
-	e->state &= ~IGNOREMODMASK;
-
-	TAILQ_FOREACH(kb, &Conf.keybindingq, entry) {
+	keysym = XKeycodeToKeysym(G_dpy, e->keycode, 0);
+	skeysym = XKeycodeToKeysym(G_dpy, e->keycode, 1);
+	
+        TAILQ_FOREACH(kb, &G_conf.keybindingq, entry) {
 		if (keysym != kb->keysym && skeysym == kb->keysym)
 			modshift = ShiftMask;
 		else
@@ -281,133 +379,225 @@ xev_handle_keypress(XEvent *ee)
 		if ((kb->modmask | modshift) != e->state)
 			continue;
 
-		if (kb->keysym == (modshift == 0 ? keysym : skeysym))
+		if ((kb->keycode != 0 && kb->keysym == NoSymbol &&
+			kb->keycode == e->keycode) || kb->keysym ==
+			(modshift == 0 ? keysym : skeysym))
 			break;
-	}
+        }
+
+	if (kb == NULL && e->window == screen_current()->groupwin)
+		group_display_keypress(e->keycode);
 
 	if (kb == NULL)
-		return;
-	if (kb->flags & CWM_WIN) {
-		if (((cc = client_find(e->window)) == NULL) &&
-		    (cc = client_current()) == NULL)
-			return;
-	} else {
-		cc = &fakecc;
-		cc->sc = screen_fromroot(e->window);
-	}
+		goto out;
 
-	(*kb->callback)(cc, &kb->argument);
+	if ((kb->flags & (KBFLAG_NEEDCLIENT|KBFLAG_FINDCLIENT)) && 
+	    (cc = client_find(e->window)) == NULL &&
+	    (cc = client_current()) == NULL)
+		if (kb->flags & KBFLAG_NEEDCLIENT)
+			goto out;
+
+	(*kb->callback)(cc, kb->argument);
+
+out:
+	xev_register(xev);
 }
 
 /*
- * This is only used for the modifier suppression detection.
+ * This is only used for the alt supression detection.
  */
-static void
-xev_handle_keyrelease(XEvent *ee)
+void
+xev_handle_keyrelease(struct xevent *xev, XEvent *ee)
 {
-	XKeyEvent		*e = &ee->xkey;
-	struct screen_ctx	*sc;
-	KeySym			 keysym;
-	unsigned int		 i;
+	XKeyEvent *e = &ee->xkey;
+	struct screen_ctx *sc = screen_fromroot(e->root);
+	int keysym;
 
-	sc = screen_fromroot(e->root);
+	keysym = XKeycodeToKeysym(G_dpy, e->keycode, 0);
+	if (keysym != XK_Alt_L && keysym != XK_Alt_R)
+		goto out;
 
-	keysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 0);
-	for (i = 0; i < nitems(modkeys); i++) {
-		if (keysym == modkeys[i]) {
-			client_cycle_leave(sc);
-			break;
-		}
-	}
-}
+	sc->altpersist = 0;
+	
+	/*
+	 * XXX - better interface... xevents should not know about
+	 * how/when to mtf.
+	 */
+	client_mtf(NULL);
+	client_altrelease();
 
-static void
-xev_handle_clientmessage(XEvent *ee)
-{
-	XClientMessageEvent	*e = &ee->xclient;
-	struct client_ctx	*cc, *old_cc;
-	struct screen_ctx       *sc;
-
-	sc = screen_fromroot(e->window);
-
-	if ((cc = client_find(e->window)) == NULL && e->window != sc->rootwin)
-		return;
-
-	if (e->message_type == cwmh[WM_CHANGE_STATE] && e->format == 32 &&
-	    e->data.l[0] == IconicState)
-		client_hide(cc);
-
-	if (e->message_type == ewmh[_NET_CLOSE_WINDOW])
-		client_send_delete(cc);
-
-	if (e->message_type == ewmh[_NET_ACTIVE_WINDOW] && e->format == 32) {
-		if ((old_cc = client_current()))
-			client_ptrsave(old_cc);
-		client_ptrwarp(cc);
-	}
-
-	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32)
-		group_movetogroup(cc, e->data.l[0]);
-
-	if (e->message_type == ewmh[_NET_WM_STATE] && e->format == 32)
-		xu_ewmh_handle_net_wm_state_msg(cc,
-		    e->data.l[0], e->data.l[1], e->data.l[2]);
-
-	if (e->message_type == ewmh[_NET_CURRENT_DESKTOP] && e->format == 32)
-		group_only(sc, e->data.l[0]);
-}
-
-static void
-xev_handle_randr(XEvent *ee)
-{
-	XRRScreenChangeNotifyEvent	*rev = (XRRScreenChangeNotifyEvent *)ee;
-	struct screen_ctx		*sc;
-	int				 i;
-
-	i = XRRRootToScreen(X_Dpy, rev->root);
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (sc->which == i) {
-			XRRUpdateConfiguration(ee);
-			screen_update_geometry(sc);
-		}
-	}
-}
-
-/*
- * Called when the keymap has changed.
- * Ungrab all keys, reload keymap and then regrab
- */
-static void
-xev_handle_mappingnotify(XEvent *ee)
-{
-	XMappingEvent		*e = &ee->xmapping;
-	struct screen_ctx	*sc;
-
-	XRefreshKeyboardMapping(e);
-	if (e->request == MappingKeyboard) {
-		TAILQ_FOREACH(sc, &Screenq, entry)
-			conf_grab_kbd(sc->rootwin);
-	}
-}
-
-static void
-xev_handle_expose(XEvent *ee)
-{
-	XExposeEvent		*e = &ee->xexpose;
-	struct client_ctx	*cc;
-
-	if ((cc = client_find(e->window)) != NULL && e->count == 0)
-		client_draw_border(cc);
+ out:
+	xev_register(xev);
 }
 
 void
-xev_process(void)
+xev_handle_clientmessage(struct xevent *xev, XEvent *ee)
 {
-	XEvent		 e;
+	XClientMessageEvent *e = &ee->xclient;
+	struct client_ctx *cc = client_find(e->window);
+	Atom xa_wm_change_state = XInternAtom(G_dpy, "WM_CHANGE_STATE", False);
 
-	XNextEvent(X_Dpy, &e);
-	if (e.type - Randr_ev == RRScreenChangeNotify)
-		xev_handle_randr(&e);
-	else if (e.type < LASTEvent && xev_handlers[e.type] != NULL)
-		(*xev_handlers[e.type])(&e);
+	if (cc == NULL)
+		goto out;
+
+	if (e->message_type == xa_wm_change_state && e->format == 32 &&
+	    e->data.l[0] == IconicState)
+		client_hide(cc);
+out:
+	xev_register(xev);
 }
+
+/*
+ * X Event handling
+ */
+
+static struct xevent_q _xevq, _xevq_putaway;
+static short _xev_q_lock = 0;
+
+void
+xev_init(void)
+{
+	TAILQ_INIT(&_xevq);
+	TAILQ_INIT(&_xevq_putaway);
+}
+
+struct xevent *
+xev_new(Window *win, Window *root,
+    int type, void (*cb)(struct xevent *, XEvent *), void *arg)
+{
+	struct xevent *xev;
+
+	XMALLOC(xev, struct xevent);
+	xev->xev_win = win;
+	xev->xev_root = root;
+	xev->xev_type = type;
+	xev->xev_cb = cb;
+	xev->xev_arg = arg;
+
+	return (xev);
+}
+
+void
+xev_register(struct xevent *xev)
+{
+	struct xevent_q *xq;
+
+	xq = _xev_q_lock ? &_xevq_putaway : &_xevq;
+	TAILQ_INSERT_TAIL(xq, xev, entry);
+}
+
+void
+_xev_reincorporate(void)
+{
+	struct xevent *xev;
+
+	while ((xev = TAILQ_FIRST(&_xevq_putaway)) != NULL) {
+		TAILQ_REMOVE(&_xevq_putaway, xev, entry);
+		TAILQ_INSERT_TAIL(&_xevq, xev, entry);
+	}
+}
+
+void
+xev_handle_expose(struct xevent *xev, XEvent *ee)
+{
+	XExposeEvent *e = &ee->xexpose;
+	struct screen_ctx *sc = screen_current();
+	struct client_ctx *cc;
+
+	if ((cc = client_find(e->window)) != NULL)
+		client_draw_border(cc);
+
+	if (sc->groupwin == e->window)
+		group_display_draw(sc);
+
+	xev_register(xev);
+}
+
+#define ASSIGN(xtype) do {			\
+	root = e. xtype .root;			\
+	win = e. xtype .window;			\
+} while (0)
+
+#define ASSIGN1(xtype) do {			\
+	win = e. xtype .window;			\
+} while (0)
+
+void
+xev_loop(void)
+{
+	Window win, root;
+	int type;
+	XEvent e;
+	struct xevent *xev, *nextxev;
+
+	for (;;) {
+#ifdef DIAGNOSTIC
+		if (TAILQ_EMPTY(&_xevq))
+			errx(1, "X event queue empty");
+#endif		
+
+		XNextEvent(G_dpy, &e);
+		type = e.type;
+
+		win = root = 0;
+
+		switch (type) {
+		case MapRequest:
+			ASSIGN1(xmaprequest);
+			break;
+		case UnmapNotify:
+			ASSIGN1(xunmap);
+			break;
+		case ConfigureRequest:
+			ASSIGN1(xconfigurerequest);
+			break;
+		case PropertyNotify:
+			ASSIGN1(xproperty);
+			break;
+		case EnterNotify:
+		case LeaveNotify:
+			ASSIGN(xcrossing);
+			break;
+		case ButtonPress:
+			ASSIGN(xbutton);
+			break;
+		case ButtonRelease:
+			ASSIGN(xbutton);
+			break;
+		case KeyPress:
+		case KeyRelease:
+			ASSIGN(xkey);
+			break;
+		case DestroyNotify:
+			ASSIGN1(xdestroywindow);
+			break;
+		case ClientMessage:
+			ASSIGN1(xclient);
+			break;
+		default:	/* XXX - still need shape event support. */
+			break;
+		}
+
+		/*
+		 * Now, search for matches, and call each of them.
+		 */
+		_xev_q_lock = 1;
+		for (xev = TAILQ_FIRST(&_xevq); xev != NULL; xev = nextxev) {
+			nextxev = TAILQ_NEXT(xev, entry);
+
+			if ((type != xev->xev_type && xev->xev_type != 0) ||
+			    (xev->xev_win != NULL && win != *xev->xev_win) ||
+			    (xev->xev_root != NULL && root != *xev->xev_root))
+				continue;
+
+			TAILQ_REMOVE(&_xevq, xev, entry);
+
+			(*xev->xev_cb)(xev, &e);
+		}
+		_xev_q_lock = 0;
+		_xev_reincorporate();
+	}
+}
+
+#undef ASSIGN
+#undef ASSIGN1
