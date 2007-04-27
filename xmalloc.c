@@ -2,43 +2,19 @@
  * calmwm - the calm window manager
  *
  * Copyright (c) 2004 Marius Aamodt Eriksen <marius@monkey.org>
+ * All rights reserved.
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * $OpenBSD$
+ * $Id$
  */
 
-#include <sys/param.h>
-#include <sys/queue.h>
-
-#include <err.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
+#include "headers.h"
 #include "calmwm.h"
 
 void *
 xmalloc(size_t siz)
 {
-	void	*p;
+	void *p;
 
-	if (siz == 0)
-		errx(1, "xmalloc: zero size");
 	if ((p = malloc(siz)) == NULL)
 		err(1, "malloc");
 
@@ -46,43 +22,29 @@ xmalloc(size_t siz)
 }
 
 void *
-xcalloc(size_t no, size_t siz)
+xcalloc(size_t siz)
 {
-	void	*p;
+	void *p;
 
-	if (siz == 0 || no == 0)
-		errx(1, "xcalloc: zero size");
-	if (SIZE_MAX / no < siz)
-		errx(1, "xcalloc: no * siz > SIZE_MAX");
-	if ((p = calloc(no, siz)) == NULL)
+	if ((p = calloc(1, siz)) == NULL)
 		err(1, "calloc");
 
 	return (p);
 }
 
+void
+xfree(void *p)
+{
+	free(p);
+}
+
 char *
 xstrdup(const char *str)
 {
-	char	*p;
+	char *p;
 
 	if ((p = strdup(str)) == NULL)
 		err(1, "strdup");
 
 	return (p);
-}
-
-int
-xasprintf(char **ret, const char *fmt, ...)
-{
-	va_list	 ap;
-	int	 i;
-
-	va_start(ap, fmt);
-	i = vasprintf(ret, fmt, ap);
-	va_end(ap);
-
-	if (i < 0 || *ret == NULL)
-		err(1, "asprintf");
-
-	return (i);
 }
