@@ -149,6 +149,18 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 }
 
 void
+client_update_xinerama(struct client_ctx *cc)
+{
+	if (cc->sc->xinerama == NULL)
+		return;
+
+	cc->xinerama = screen_get_xsi(cc->sc,
+	    cc->geom.x + cc->geom.w / 2,
+	    cc->geom.y + cc->geom.h / 2);
+}
+
+
+void
 client_delete(struct client_ctx *cc, int destroy)
 {
 	struct screen_ctx	*sc = cc->sc;
@@ -442,6 +454,7 @@ client_config(struct client_ctx *cc)
 	cn.override_redirect = 0;
 
 	XSendEvent(X_Dpy, cc->win, False, StructureNotifyMask, (XEvent *)&cn);
+	client_update_xinerama(cc);
 }
 
 void

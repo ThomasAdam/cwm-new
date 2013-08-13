@@ -35,6 +35,7 @@ screen_init(int which)
 {
 	struct screen_ctx	*sc;
 	Window			*wins, w0, w1;
+	struct client_ctx	**clients;
 	XWindowAttributes	 winattr;
 	XSetWindowAttributes	 rootattr;
 	u_int			 nwins, i;
@@ -67,13 +68,16 @@ screen_init(int which)
 
 	/* Deal with existing clients. */
 	XQueryTree(X_Dpy, sc->rootwin, &w0, &w1, &wins, &nwins);
+	clients = xcalloc(nwins, sizeof(*clients));
 
 	for (i = 0; i < nwins; i++) {
 		XGetWindowAttributes(X_Dpy, wins[i], &winattr);
 		if (winattr.override_redirect ||
-		    winattr.map_state != IsViewable)
+		    winattr.map_state != IsViewable) {
+			clients[i] = NULL;
 			continue;
-		(void)client_init(wins[i], sc, winattr.map_state != IsUnmapped);
+		}
+		clients[i] = client_init(wins[i], sc, winattr.map_state != IsUnmapped);
 	}
 	XFree(wins);
 
@@ -85,6 +89,13 @@ screen_init(int which)
 	TAILQ_INSERT_TAIL(&Screenq, sc, entry);
 
 	XSync(X_Dpy, False);
+
+	for (i = 0; i < nwins; i++) {
+		if (clients[i] == NULL)
+			continue;
+		client_update_xinerama(clients[i]);
+	}
+	free(clients);
 }
 
 struct screen_ctx *
@@ -149,6 +160,52 @@ screen_find_xinerama(struct screen_ctx *sc, int x, int y)
 		}
 	}
 	return (geom);
+}
+
+XineramaScreenInfo *
+screen_get_xsi(struct screen_ctx *sc, int x, int y)
+{
+	XineramaScreenInfo	*info;
+	int			 i;
+
+	if (sc->xinerama == NULL)
+		return (NULL);
+
+	for (i = 0; i < sc->xinerama_no; i++) {
+		info = &sc->xinerama[i];
+		if (x >= info->x_org && x < info->x_org + info->width &&
+		    y >= info->y_org && y < info->y_org + info->height)
+			return (info);
+	}
+
+	return (NULL);
+}
+
+XineramaScreenInfo *
+screen_find_ptr_xinerama(void)
+{
+	struct screen_ctx	*sc, *sc2;
+	struct client_ctx	*cc;
+	XineramaScreenInfo	*info;
+	int			 mousex, mousey;
+
+	cc = client_current();
+
+	if (cc == NULL) {
+		TAILQ_FOREACH(sc2, &Screenq, entry) {
+			xu_ptr_getpos(sc2->rootwin, &mousex, &mousey);
+			info = screen_get_xsi(sc2, mousex, mousey);
+			if (info != NULL)
+				return (info);
+		}
+		return (NULL);
+	}
+
+	sc = cc->sc;
+
+	xu_ptr_getpos(sc->rootwin, &mousex, &mousey);
+
+	return (screen_get_xsi(sc, mousex, mousey));
 }
 
 void
