@@ -147,6 +147,7 @@ struct client_ctx {
 	TAILQ_ENTRY(client_ctx) group_entry;
 	TAILQ_ENTRY(client_ctx) mru_entry;
 	struct screen_ctx	*sc;
+    XineramaScreenInfo  *xinerama;
 	Window			 win;
 	Colormap		 colormap;
 	u_int			 bwidth; /* border width */
@@ -422,6 +423,7 @@ void			 client_vmaximize(struct client_ctx *);
 void 			 client_vtile(struct client_ctx *);
 void			 client_warp(struct client_ctx *);
 void			 client_wm_hints(struct client_ctx *);
+void			 client_update_xinerama(struct client_ctx *);
 
 void			 group_alltoggle(struct screen_ctx *);
 void			 group_autogroup(struct client_ctx *);
@@ -450,6 +452,8 @@ void			 search_print_client(struct menu *, int);
 
 struct geom		 screen_find_xinerama(struct screen_ctx *,
     			     int, int, int);
+XineramaScreenInfo	*screen_find_ptr_xinerama(void);
+XineramaScreenInfo	*screen_get_xsi(struct screen_ctx *, int, int);
 struct screen_ctx	*screen_fromroot(Window);
 void			 screen_init(int);
 void			 screen_update_geometry(struct screen_ctx *);

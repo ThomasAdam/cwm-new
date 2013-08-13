@@ -79,12 +79,18 @@ static void
 group_hide(struct screen_ctx *sc, struct group_ctx *gc)
 {
 	struct client_ctx	*cc;
+	XineramaScreenInfo	*info = NULL;
 
 	screen_updatestackingorder(sc);
+
+	if (sc->xinerama != NULL)
+		info = screen_find_ptr_xinerama();
 
 	gc->nhidden = 0;
 	gc->highstack = 0;
 	TAILQ_FOREACH(cc, &gc->clients, group_entry) {
+		if (sc->xinerama != NULL && cc->xinerama != info)
+			continue;
 		client_hide(cc);
 		gc->nhidden++;
 		if (cc->stackingorder > gc->highstack)
@@ -98,10 +104,23 @@ group_show(struct screen_ctx *sc, struct group_ctx *gc)
 {
 	struct client_ctx	*cc;
 	Window			*winlist;
-	int			 i, lastempty = -1;
+	XineramaScreenInfo	*info = NULL;
+	int			 i, lastempty = -1, reassign;
 
 	gc->highstack = 0;
+	reassign = 0;
+
+	if (sc->xinerama != NULL)
+		info = screen_find_ptr_xinerama();
+
+	if (info == NULL)
+		reassign = 1;
+
 	TAILQ_FOREACH(cc, &gc->clients, group_entry) {
+		if (reassign)
+			info = cc->xinerama;
+		if (sc->xinerama != NULL && cc->xinerama != info)
+			continue;
 		if (cc->stackingorder > gc->highstack)
 			gc->highstack = cc->stackingorder;
 	}
@@ -112,6 +131,12 @@ group_show(struct screen_ctx *sc, struct group_ctx *gc)
 	 * top-to-bottom.
 	 */
 	TAILQ_FOREACH(cc, &gc->clients, group_entry) {
+		if (sc->xinerama != NULL && cc->xinerama != info)
+			continue;
+
+		if (cc->stackingorder > gc->highstack)
+			cc->stackingorder = 0;
+
 		winlist[gc->highstack - cc->stackingorder] = cc->win;
 		client_unhide(cc);
 	}
