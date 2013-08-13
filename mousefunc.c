@@ -50,7 +50,7 @@ static void
 mousefunc_sweep_draw(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
-	char			 s[14]; /* fits " nnnn x nnnn \0" */
+	char			 s[15]; /* fits " nnnn x nnnn \0" */
 
 	(void)snprintf(s, sizeof(s), " %4d x %-4d ",
 	    (cc->geom.w - cc->hint.basew) / cc->hint.incw,

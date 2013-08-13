@@ -46,8 +46,11 @@ size_t strlcat(char *, const char *, size_t);
 
 #undef MIN
 #undef MAX
+#undef OVERLAPS
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define OVERLAPS(w,x,y,z) (((w)==(y) && (x) == (z)) || \
+		MIN((w)+(x), (y)+(z)) - MAX((w), (y)) > 0)
 
 #ifndef nitems
 #define nitems(_a) (sizeof((_a)) / sizeof((_a)[0]))
@@ -143,6 +146,7 @@ struct client_ctx {
 	TAILQ_ENTRY(client_ctx) group_entry;
 	TAILQ_ENTRY(client_ctx) mru_entry;
 	struct screen_ctx	*sc;
+    XineramaScreenInfo  *xinerama;
 	Window			 win;
 	Colormap		 colormap;
 	u_int			 bwidth; /* border width */
@@ -174,6 +178,7 @@ struct client_ctx {
 #define CLIENT_INPUT			0x0080
 #define CLIENT_WM_DELETE_WINDOW		0x0100
 #define CLIENT_WM_TAKE_FOCUS		0x0200
+#define CLIENT_EXPANDED			0x0400
 
 #define CLIENT_HIGHLIGHT		(CLIENT_GROUP | CLIENT_UNGROUP)
 #define CLIENT_MAXFLAGS			(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
@@ -384,6 +389,7 @@ void			 client_cycle(struct screen_ctx *, int);
 void			 client_cycle_leave(struct screen_ctx *);
 void			 client_delete(struct client_ctx *);
 void			 client_draw_border(struct client_ctx *);
+void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
 void			 client_freeze(struct client_ctx *);
 void			 client_getsizehints(struct client_ctx *);
@@ -409,6 +415,7 @@ void			 client_unhide(struct client_ctx *);
 void			 client_vmaximize(struct client_ctx *);
 void 			 client_vtile(struct client_ctx *);
 void			 client_warp(struct client_ctx *);
+void			 client_update_xinerama(struct client_ctx *);
 
 void			 group_alltoggle(struct screen_ctx *);
 void			 group_autogroup(struct client_ctx *);
@@ -436,6 +443,8 @@ void			 search_match_text(struct menu_q *, struct menu_q *,
 void			 search_print_client(struct menu *, int);
 
 struct geom		 screen_find_xinerama(struct screen_ctx *, int, int);
+XineramaScreenInfo  *screen_find_ptr_xinerama(void);
+XineramaScreenInfo  *screen_get_xsi(struct screen_ctx *, int, int);
 struct screen_ctx	*screen_fromroot(Window);
 void			 screen_init(int);
 void			 screen_update_geometry(struct screen_ctx *);
@@ -445,6 +454,7 @@ void			 kbfunc_client_cycle(struct client_ctx *, union arg *);
 void			 kbfunc_client_cyclegroup(struct client_ctx *,
 			     union arg *);
 void			 kbfunc_client_delete(struct client_ctx *, union arg *);
+void			 kbfunc_client_expand(struct client_ctx *, union arg *);
 void			 kbfunc_client_freeze(struct client_ctx *, union arg *);
 void			 kbfunc_client_group(struct client_ctx *, union arg *);
 void			 kbfunc_client_grouponly(struct client_ctx *,

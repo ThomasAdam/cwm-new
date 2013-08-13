@@ -39,6 +39,10 @@ static void			 client_placecalc(struct client_ctx *);
 static void			 client_wm_protocols(struct client_ctx *);
 static void			 client_getmwmhints(struct client_ctx *);
 static int			 client_inbound(struct client_ctx *, int, int);
+static void			 client_expand_horiz(struct client_ctx *,
+					struct geom *);
+static void			 client_expand_vert(struct client_ctx *,
+					struct geom *);
 
 struct client_ctx	*_curcc = NULL;
 
@@ -147,6 +151,18 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 
 	return (cc);
 }
+
+void
+client_update_xinerama(struct client_ctx *cc)
+{
+	if (cc->sc->xinerama == NULL)
+		return;
+
+	cc->xinerama = screen_get_xsi(cc->sc,
+	    cc->geom.x + cc->geom.w / 2,
+	    cc->geom.y + cc->geom.h / 2);
+}
+
 
 void
 client_delete(struct client_ctx *cc)
@@ -281,6 +297,170 @@ client_maximize(struct client_ctx *cc)
 resize:
 	client_resize(cc, 0);
 	xu_ewmh_set_net_wm_state(cc);
+}
+
+static void
+client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
+{
+	struct geom		 xine_geom, win_geom;
+	struct screen_ctx	*sc;
+	struct client_ctx	*ci;
+	struct group_ctx	*gc = cc->group;
+	XineramaScreenInfo	*info = NULL;
+	u_int			 has_xinerama;
+	int			 cc_x, cc_y, cc_end_x, cc_end_y;
+	int			 ci_x, ci_y, ci_end_x, ci_end_y;
+	int			 new_x1, new_x2;
+
+	sc = cc->sc;
+	has_xinerama = (sc->xinerama != NULL);
+
+	if (has_xinerama) {
+		/* XXX: This should be the screen the client is on. */
+		info = screen_find_ptr_xinerama();
+		xine_geom = screen_find_xinerama(sc,
+				cc->geom.x + cc->geom.w / 2,
+				cc->geom.y + cc->geom.h / 2);
+
+		new_x1 = info->x_org;
+		new_x2 = new_x1 + xine_geom.w - (cc->bwidth * 2);
+	} else {
+		new_x1 = 0;
+		new_x2 = sc->work.w - (cc->bwidth * 2);
+	}
+
+	cc_x = new_geom->x;
+	cc_y = new_geom->y;
+	cc_end_x = cc_x + new_geom->w;
+	cc_end_y = cc_y + new_geom->h;
+
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (ci == cc)
+			continue;
+		if (has_xinerama && cc->xinerama != ci->xinerama)
+			continue;
+
+		win_geom = ci->geom;
+
+		ci_x = win_geom.x;
+		ci_y = win_geom.y;
+		ci_end_x = ci_x + win_geom.w;
+		ci_end_y = ci_y + win_geom.h;
+
+		/* Check to see if the client is the same Y axis. */
+		if (!((ci_end_y <= cc_y) || (ci_y >= cc_end_y)))
+		{
+			if ((ci_end_x <= cc_x) && (ci_end_x >= new_x1))
+			{
+				/* Expand up to the window, including the
+				 * border's edge.
+				 */
+				new_x1 = ci_end_x + (cc->bwidth * 2);
+			}
+			else if ((cc_end_x <= ci_x) && (new_x2 >= ci_x))
+			{
+				/* Shrink back to the top of the border,
+				 * outside of its width so we don't overlap.
+				 */
+				new_x2 = ci_x - (cc->bwidth * 2);
+			}
+		}
+	}
+	new_geom->w = new_x2 - new_x1;
+	new_geom->x = new_x1;
+}
+
+static void
+client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
+{
+	struct geom		 xine_geom, win_geom;
+	struct screen_ctx	*sc;
+	struct client_ctx	*ci;
+	struct group_ctx	*gc = cc->group;
+	XineramaScreenInfo	*info = NULL;
+	u_int			 has_xinerama;
+	int			 cc_x, cc_y, cc_end_x, cc_end_y;
+	int			 ci_x, ci_y, ci_end_x, ci_end_y;
+	int			 new_y1, new_y2;
+
+	sc = cc->sc;
+	has_xinerama = (sc->xinerama != NULL);
+
+	cc_x = new_geom->x;
+	cc_y = new_geom->y;
+	cc_end_x = cc_x + new_geom->w;
+	cc_end_y = cc_y + new_geom->h;
+
+	if (has_xinerama) {
+		info = screen_find_ptr_xinerama();
+		xine_geom = screen_find_xinerama(sc,
+				cc->geom.x + cc->geom.w / 2,
+				cc->geom.y + cc->geom.h / 2);
+		new_y1 = info->y_org;
+		new_y2 = xine_geom.h - (cc->bwidth * 2);
+
+	} else {
+		new_y1 = 0;
+		new_y2 = sc->work.h - (cc->bwidth * 2);
+	}
+
+	/* Go through all clients and move up and down. */
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (ci == cc)
+			continue;
+		if (has_xinerama && cc->xinerama != ci->xinerama)
+			continue;
+
+		win_geom = ci->geom;
+
+		ci_x = win_geom.x;
+		ci_y = win_geom.y;
+		ci_end_x = ci_x + win_geom.w;
+		ci_end_y = ci_y + win_geom.h;
+
+		if (!((ci_end_x <= cc_x) || (ci_x >= cc_end_x)))
+		{
+			if ((ci_end_y <= cc_y) && (ci_end_y >= new_y1))
+			{
+				new_y1 = ci_end_y + (cc->bwidth * 2);
+			}
+			else if ((cc_end_y <= ci_y) && (new_y2 >= ci_y))
+			{
+				new_y2 = ci_y - (cc->bwidth * 2);
+			}
+		}
+	}
+	new_geom->h = (new_y2 - new_y1);
+	new_geom->y = new_y1;
+}
+
+void
+client_expand(struct client_ctx *cc)
+{
+	struct geom	 new_geom;
+
+	if (cc->flags & CLIENT_FREEZE)
+		return;
+
+	if (cc->flags & CLIENT_EXPANDED) {
+		cc->flags &= ~CLIENT_EXPANDED;
+		cc->geom = cc->savegeom;
+		cc->bwidth = Conf.bwidth;
+
+		client_resize(cc, 0);
+
+		return;
+	} else {
+		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
+		memcpy(&new_geom, &cc->geom, sizeof(cc->geom));
+	}
+
+	client_expand_vert(cc, &new_geom);
+	client_expand_horiz(cc, &new_geom);
+
+	cc->flags |= CLIENT_EXPANDED;
+	memcpy(&cc->geom, &new_geom, sizeof(new_geom));
+	client_resize(cc, 0);
 }
 
 void
@@ -418,6 +598,7 @@ client_config(struct client_ctx *cc)
 	cn.override_redirect = 0;
 
 	XSendEvent(X_Dpy, cc->win, False, StructureNotifyMask, (XEvent *)&cn);
+	client_update_xinerama(cc);
 }
 
 void
