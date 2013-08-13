@@ -452,6 +452,7 @@ static const struct {
 	    {.i = (CWM_RIGHT|CWM_PTRMOVE|CWM_BIGMOVE)} },
 	{ "htile", kbfunc_tile, CWM_WIN, {.i = CWM_TILE_HORIZ} },
 	{ "vtile", kbfunc_tile, CWM_WIN, {.i = CWM_TILE_VERT} },
+	{ "expand", kbfunc_client_expand, CWM_WIN, {0} },
 };
 
 static const struct {

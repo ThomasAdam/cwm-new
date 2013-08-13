@@ -483,3 +483,9 @@ kbfunc_tile(struct client_ctx *cc, union arg *arg)
 		break;
 	}
 }
+
+void
+kbfunc_client_expand(struct client_ctx *cc, union arg *Arg)
+{
+	client_expand(cc);
+}

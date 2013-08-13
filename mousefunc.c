@@ -50,7 +50,7 @@ static void
 mousefunc_sweep_draw(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
-	char			 s[14]; /* fits " nnnn x nnnn \0" */
+	char			 s[15]; /* fits " nnnn x nnnn \0" */
 
 	(void)snprintf(s, sizeof(s), " %4d x %-4d ",
 	    (cc->geom.w - cc->hint.basew) / cc->hint.incw,
@@ -147,8 +147,8 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 			cc->geom.y = ev.xmotion.y_root - py - cc->bwidth;
 
 			xine = screen_find_xinerama(sc,
-			    cc->geom.x + cc->geom.w / 2,
-			    cc->geom.y + cc->geom.h / 2, CWM_GAP, NULL);
+			    cc->geom.x + cc->geom.w,
+			    cc->geom.y + cc->geom.h, CWM_GAP);
 			cc->geom.x += client_snapcalc(cc->geom.x,
 			    cc->geom.x + cc->geom.w + (cc->bwidth * 2),
 			    xine.x, xine.x + xine.w, sc->snapdist);

@@ -128,8 +128,8 @@ u_put_status(struct screen_ctx *sc)
 	 */
 	if (cc != NULL && cc->xinerama != NULL) {
 		(void)screen_find_xinerama(sc,
-			cc->geom.x + cc->geom.w / 2,
-			cc->geom.y + cc->geom.h / 2, CWM_NOGAP, &screen);
+			cc->geom.x + cc->geom.w,
+			cc->geom.y + cc->geom.h, CWM_NOGAP);
 	}
 	if ((status = sc->status_fp[screen]) == NULL)
 		return;
