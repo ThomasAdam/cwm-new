@@ -437,6 +437,8 @@ static struct {
 	    {.i = CWM_TILE_HORIZ } },
 	{ "vtile", kbfunc_tile, KBFLAG_NEEDCLIENT,
 	    {.i = CWM_TILE_VERT } },
+	{ "expand", kbfunc_client_expand, KBFLAG_NEEDCLIENT,
+	    {0} },
 };
 
 static struct {

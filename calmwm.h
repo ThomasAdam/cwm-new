@@ -46,8 +46,11 @@ size_t strlcat(char *, const char *, size_t);
 
 #undef MIN
 #undef MAX
+#undef OVERLAPS
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define OVERLAPS(w,x,y,z) (((w)==(y) && (x) == (z)) || \
+		MIN((w)+(x), (y)+(z)) - MAX((w), (y)) > 0)
 
 #ifndef nitems
 #define nitems(_a) (sizeof((_a)) / sizeof((_a)[0]))
@@ -179,6 +182,7 @@ struct client_ctx {
 #define CLIENT_GROUP			0x0020
 #define CLIENT_UNGROUP			0x0040
 #define CLIENT_INPUT			0x0080
+#define CLIENT_EXPANDED			0x0100
 
 #define CLIENT_HIGHLIGHT		(CLIENT_GROUP | CLIENT_UNGROUP)
 #define CLIENT_MAXFLAGS			(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
@@ -389,6 +393,7 @@ void			 client_cycle_leave(struct screen_ctx *,
 			     struct client_ctx *);
 void			 client_delete(struct client_ctx *, int);
 void			 client_draw_border(struct client_ctx *);
+void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
 void			 client_freeze(struct client_ctx *);
 void			 client_getsizehints(struct client_ctx *);
@@ -454,6 +459,7 @@ void			 kbfunc_client_cycle(struct client_ctx *, union arg *);
 void			 kbfunc_client_cyclegroup(struct client_ctx *,
 			     union arg *);
 void			 kbfunc_client_delete(struct client_ctx *, union arg *);
+void			 kbfunc_client_expand(struct client_ctx *, union arg *);
 void			 kbfunc_client_freeze(struct client_ctx *, union arg *);
 void			 kbfunc_client_group(struct client_ctx *, union arg *);
 void			 kbfunc_client_grouponly(struct client_ctx *,

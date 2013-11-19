@@ -322,6 +322,94 @@ resize:
 }
 
 void
+client_expand(struct client_ctx *cc)
+{
+	struct geom		 new_geom;
+	struct screen_ctx	*sc;
+	struct client_ctx	*ci;
+	struct group_ctx	*gc = cc->group;
+	XineramaScreenInfo	*info = NULL;
+	int			 x_offset, y_offset;
+	u_int			 has_xinerama;
+
+	sc = cc->sc;
+	x_offset = y_offset = 0;
+	has_xinerama = (sc->xinerama != NULL);
+
+	memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
+
+	if (cc->flags & CLIENT_FREEZE)
+		return;
+
+	if (cc->flags & CLIENT_EXPANDED) {
+		cc->flags &= ~CLIENT_EXPANDED;
+		cc->geom = cc->savegeom;
+		cc->bwidth = Conf.bwidth;
+
+		client_resize(cc, 0);
+
+		return;
+	}
+
+	if (has_xinerama) {
+		info = screen_find_ptr_xinerama();
+		x_offset = info->x_org;
+		y_offset = info->y_org;
+	}
+
+	memcpy(&new_geom, &cc->geom, sizeof(new_geom));
+
+	/* Go through all clients and move up. */
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (has_xinerama && cc->xinerama != info)
+			continue;
+		if (ci->geom.y + ci->geom.h <= cc->geom.y &&
+		    OVERLAPS(cc->geom.x, cc->geom.w, ci->geom.x, ci->geom.w))
+			y_offset = MAX(y_offset, ci->geom.y + ci->geom.h);
+	}
+	new_geom.h += (cc->geom.y - y_offset) - (cc->bwidth * 2);
+	new_geom.y = y_offset + (cc->bwidth * 2);
+
+
+	/* Go through all clients and move down. */
+	y_offset = has_xinerama ? sc->xinerama->y_org : 0 + sc->work.h;
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (has_xinerama && cc->xinerama != info)
+			continue;
+		if (ci->geom.y >= cc->geom.y + cc->geom.h &&
+		    OVERLAPS(cc->geom.x, cc->geom.w, ci->geom.x, ci->geom.w))
+			y_offset = MIN(y_offset, ci->geom.y);
+	}
+	new_geom.h = (y_offset - cc->geom.y) - (cc->bwidth * 2);
+
+	/* Go through all clients and move left. */
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (has_xinerama && cc->xinerama != info)
+			continue;
+		if (ci->geom.x + ci->geom.w <= cc->geom.x &&
+		    OVERLAPS(cc->geom.y, cc->geom.h, ci->geom.y, ci->geom.h))
+			x_offset = MAX(x_offset, ci->geom.x + ci->geom.w);
+	}
+	new_geom.w += (cc->geom.x - x_offset) - (cc->bwidth * 2);
+	new_geom.x = x_offset + (cc->bwidth * 2);
+
+	/* Go through all clients and move right, */
+	x_offset = has_xinerama ? sc->xinerama->x_org : 0 + sc->work.w;
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (has_xinerama && cc->xinerama != info)
+			continue;
+		if (ci->geom.x >= cc->geom.x + cc->geom.w &&
+		    OVERLAPS(cc->geom.y, cc->geom.h, ci->geom.y, ci->geom.h))
+			x_offset = MIN(x_offset, ci->geom.x);
+	}
+	new_geom.w = (x_offset - cc->geom.x) - (cc->bwidth * 2);
+
+	cc->flags |= CLIENT_EXPANDED;
+	cc->geom = new_geom;
+	client_resize(cc, 0);
+}
+
+void
 client_vmaximize(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
