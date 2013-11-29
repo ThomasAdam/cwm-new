@@ -1,0 +1,12 @@
+* Client urgency_hint
+* Add group info to window matches in search menu
+* Status updates as printed to stdout or pipe?
+* Window cycling per-group limited to Xienrama
+	- And in doing so, implicitly make Xinerama a FCC.
+* Menu border colours to inherit from window ones?
+* Maximize to keep borders
+* Fullscreen to hide borders and hence _NET_WM_STATE_FULLSCREEN
+* Clients to snap to each other
+* Unify commands to be consistent across key/mouse bindings
+	- Don't special-case mouse handling!
+* On restart, if the pointer has a window under it, focus it!
