@@ -403,6 +403,7 @@ void			 client_move(struct client_ctx *);
 struct client_ctx	*client_init(Window, struct screen_ctx *, int);
 void			 client_ptrsave(struct client_ctx *);
 void			 client_ptrwarp(struct client_ctx *);
+void			 client_ptrfocus(void);
 void			 client_raise(struct client_ctx *);
 void			 client_resize(struct client_ctx *, int);
 void			 client_send_delete(struct client_ctx *);

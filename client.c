@@ -459,6 +459,22 @@ client_ptrwarp(struct client_ctx *cc)
 }
 
 void
+client_ptrfocus(void)
+{
+	struct client_ctx	*cc;
+	int			 x, y;
+
+	TAILQ_FOREACH(cc, &Clientq, entry) {
+		xu_ptr_getpos(cc->win, &x, &y);
+		if (client_inbound(cc, x, y)) {
+			/* The pointer is over a window; focus it. */
+			client_setactive(cc, 1);
+			break;
+		}
+	}
+}
+
+void
 client_ptrsave(struct client_ctx *cc)
 {
 	int	 x, y;
