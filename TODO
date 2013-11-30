@@ -9,4 +9,3 @@
 * Clients to snap to each other
 * Unify commands to be consistent across key/mouse bindings
 	- Don't special-case mouse handling!
-* On restart, if the pointer has a window under it, focus it!
