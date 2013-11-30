@@ -77,6 +77,7 @@ typedef struct {
 %token	MENUBG MENUFG
 %token	FONTCOLOR FONTSELCOLOR
 %token	ERROR
+%token	URGENTBORDER
 %token	<v.string>		STRING
 %token	<v.number>		NUMBER
 %type	<v.number>		yesno
@@ -195,6 +196,10 @@ colors		: ACTIVEBORDER STRING {
 			free(conf->color[CWM_COLOR_BORDER_INACTIVE]);
 			conf->color[CWM_COLOR_BORDER_INACTIVE] = $2;
 		}
+		| URGENTBORDER STRING {
+			free(conf->color[CWM_COLOR_BORDER_URGENCY]);
+			conf->color[CWM_COLOR_BORDER_URGENCY] = $2;
+		}
 		| GROUPBORDER STRING {
 			free(conf->color[CWM_COLOR_BORDER_GROUP]);
 			conf->color[CWM_COLOR_BORDER_GROUP] = $2;
@@ -273,6 +278,7 @@ lookup(char *s)
 		{ "snapdist",		SNAPDIST},
 		{ "sticky",		STICKY},
 		{ "ungroupborder",	UNGROUPBORDER},
+		{ "urgentborder",	URGENTBORDER},
 		{ "yes",		YES}
 	};
 	const struct keywords	*p;

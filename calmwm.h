@@ -109,6 +109,7 @@ enum cursor_font {
 enum color {
 	CWM_COLOR_BORDER_ACTIVE,
 	CWM_COLOR_BORDER_INACTIVE,
+	CWM_COLOR_BORDER_URGENCY,
 	CWM_COLOR_BORDER_GROUP,
 	CWM_COLOR_BORDER_UNGROUP,
 	CWM_COLOR_MENU_FG,
@@ -178,6 +179,7 @@ struct client_ctx {
 #define CLIENT_GROUP			0x0020
 #define CLIENT_UNGROUP			0x0040
 #define CLIENT_INPUT			0x0080
+#define CLIENT_URGENT			0x0100
 
 #define CLIENT_HIGHLIGHT		(CLIENT_GROUP | CLIENT_UNGROUP)
 #define CLIENT_MAXFLAGS			(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
@@ -365,9 +367,10 @@ enum {
 	_NET_WM_DESKTOP,
 	_NET_CLOSE_WINDOW,
 	_NET_WM_STATE,
-#define	_NET_WM_STATES_NITEMS	2
+#define	_NET_WM_STATES_NITEMS	3
 	_NET_WM_STATE_MAXIMIZED_VERT,
 	_NET_WM_STATE_MAXIMIZED_HORZ,
+	_NET_WM_STATE_DEMANDS_ATTENTION,
 	EWMH_NITEMS
 };
 enum {
@@ -411,9 +414,11 @@ void			 client_setname(struct client_ctx *);
 int			 client_snapcalc(int, int, int, int, int);
 void			 client_transient(struct client_ctx *);
 void			 client_unhide(struct client_ctx *);
+void			 client_urgency(struct client_ctx *);
 void			 client_vmaximize(struct client_ctx *);
 void 			 client_vtile(struct client_ctx *);
 void			 client_warp(struct client_ctx *);
+void			 client_wmhints(struct client_ctx *);
 
 void			 group_alltoggle(struct screen_ctx *);
 void			 group_autogroup(struct client_ctx *);

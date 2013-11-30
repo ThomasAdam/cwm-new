@@ -103,6 +103,12 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 			if (wmhints->input == 1)
 				cc->flags |= CLIENT_INPUT;
 		}
+
+		if (wmhints->flags & XUrgencyHint) {
+			cc->flags |= CLIENT_URGENT;
+			client_urgency(cc);
+		}
+
 	}
 	if (wattr.map_state != IsViewable) {
 		client_placecalc(cc);
@@ -503,7 +509,7 @@ client_draw_border(struct client_ctx *cc)
 	struct screen_ctx	*sc = cc->sc;
 	unsigned long		 pixel;
 
-	if (cc->active)
+	if (cc->active) {
 		switch (cc->flags & CLIENT_HIGHLIGHT) {
 		case CLIENT_GROUP:
 			pixel = sc->xftcolor[CWM_COLOR_BORDER_GROUP].pixel;
@@ -515,8 +521,17 @@ client_draw_border(struct client_ctx *cc)
 			pixel = sc->xftcolor[CWM_COLOR_BORDER_ACTIVE].pixel;
 			break;
 		}
-	else
-		pixel = sc->xftcolor[CWM_COLOR_BORDER_INACTIVE].pixel;
+
+		if (cc->flags & CLIENT_URGENT) {
+			cc->flags &= ~CLIENT_URGENT;
+			pixel = sc->xftcolor[CWM_COLOR_BORDER_ACTIVE].pixel;
+		}
+	} else {
+		if (cc->flags & CLIENT_URGENT)
+			pixel = sc->xftcolor[CWM_COLOR_BORDER_URGENCY].pixel;
+		else
+			pixel = sc->xftcolor[CWM_COLOR_BORDER_INACTIVE].pixel;
+	}
 
 	XSetWindowBorderWidth(X_Dpy, cc->win, cc->bwidth);
 	XSetWindowBorder(X_Dpy, cc->win, pixel);
@@ -857,6 +872,18 @@ client_getmwmhints(struct client_ctx *cc)
 }
 
 void
+client_wmhints(struct client_ctx *cc)
+{
+	XWMHints	*hints;
+
+	if ((hints = XGetWMHints(X_Dpy, cc->win)) == NULL)
+		return;
+
+	if (hints->flags & XUrgencyHint)
+		client_urgency(cc);
+}
+
+void
 client_transient(struct client_ctx *cc)
 {
 	struct client_ctx	*tc;
@@ -1021,4 +1048,11 @@ client_vtile(struct client_ctx *cc)
 		client_resize(ci, 1);
 		i++;
 	}
+}
+
+void
+client_urgency(struct client_ctx *cc)
+{
+	cc->flags |= CLIENT_URGENT;
+	client_draw_border(cc);
 }
