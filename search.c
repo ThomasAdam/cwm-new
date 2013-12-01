@@ -142,8 +142,8 @@ search_print_client(struct menu *mi, int list)
 	if (list)
 		cc->matchname = cc->name;
 
-	(void)snprintf(mi->print, sizeof(mi->print), "%c%s", flag,
-	    cc->matchname);
+	(void)snprintf(mi->print, sizeof(mi->print), "(%d) %c%s",
+			cc->group->shortcut, flag, cc->matchname);
 
 	if (!list && cc->matchname != cc->name &&
 	    strlen(mi->print) < sizeof(mi->print) - 1) {
@@ -165,7 +165,8 @@ search_print_client(struct menu *mi, int list)
 
 		(void)strlcpy(buf, mi->print, sizeof(buf));
 		(void)snprintf(mi->print, sizeof(mi->print),
-		    "%s:%.*s%s", buf, diff, cc->name, marker);
+		    "(%d) %s:%.*s%s",
+		    cc->group->shortcut, buf, diff, cc->name, marker);
 	}
 }
 
