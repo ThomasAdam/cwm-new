@@ -324,7 +324,7 @@ resize:
 void
 client_expand(struct client_ctx *cc)
 {
-	struct geom		 new_geom;
+	struct geom		 new_geom, xine_geom;
 	struct screen_ctx	*sc;
 	struct client_ctx	*ci;
 	struct group_ctx	*gc = cc->group;
@@ -339,9 +339,6 @@ client_expand(struct client_ctx *cc)
 	if (cc->flags & CLIENT_FREEZE)
 		return;
 
-	if (!(cc->flags & CLIENT_EXPANDED))
-		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
-
 	if (cc->flags & CLIENT_EXPANDED) {
 		cc->flags &= ~CLIENT_EXPANDED;
 		cc->geom = cc->savegeom;
@@ -350,21 +347,27 @@ client_expand(struct client_ctx *cc)
 		client_resize(cc, 0);
 
 		return;
+	} else {
+		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
+		memcpy(&new_geom, &cc->geom, sizeof(cc->geom));
 	}
 
 	if (has_xinerama) {
 		info = screen_find_ptr_xinerama();
+		xine_geom = screen_find_xinerama(sc,
+				cc->geom.x + cc->geom.w / 2,
+				cc->geom.y + cc->geom.h / 2);
 		x_offset = info->x_org;
 		y_offset = info->y_org;
 		fprintf(stderr, "has_xinerama: x_offset: %d, y_offset: %d\n",
 			x_offset, y_offset);
 	}
 
-	memcpy(&new_geom, &cc->geom, sizeof(new_geom));
-
 	/* Go through all clients and move up. */
 	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
-		if (has_xinerama && cc->xinerama != info)
+		if (ci == cc)
+			continue;
+		if (has_xinerama && cc->xinerama != ci->xinerama)
 			continue;
 		if (ci->geom.y + ci->geom.h <= cc->geom.y &&
 		    OVERLAPS(cc->geom.x, cc->geom.w, ci->geom.x, ci->geom.w))
@@ -377,10 +380,12 @@ client_expand(struct client_ctx *cc)
 		y_offset, new_geom.x, new_geom.y, new_geom.w, new_geom.h);
 
 	/* Go through all clients and move down. */
-	y_offset = has_xinerama ? (sc->xinerama->y_org + sc->work.h) : 0;
+	y_offset = has_xinerama ? (info->y_org + xine_geom.h) : 0;
 	fprintf(stderr, "down: y_offset: %d\n", y_offset);
 	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
-		if (has_xinerama && cc->xinerama != info)
+		if (ci == cc)
+			continue;
+		if (has_xinerama && cc->xinerama != ci->xinerama)
 			continue;
 		if (ci->geom.y >= cc->geom.y + cc->geom.h &&
 		    OVERLAPS(cc->geom.x, cc->geom.w, ci->geom.x, ci->geom.w)) {
@@ -396,22 +401,26 @@ client_expand(struct client_ctx *cc)
 	/* Go through all clients and move left. */
 	fprintf(stderr, "left: x_offset: %d\n", x_offset);
 	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
-		if (has_xinerama && cc->xinerama != info)
+		if (ci == cc)
+			continue;
+		if (has_xinerama && cc->xinerama != ci->xinerama)
 			continue;
 		if (ci->geom.x + ci->geom.w <= cc->geom.x &&
 		    OVERLAPS(cc->geom.y, cc->geom.h, ci->geom.y, ci->geom.h))
 			x_offset = MAX(x_offset, ci->geom.x + ci->geom.w);
 	}
 	new_geom.w += (cc->geom.x - x_offset) - (cc->bwidth * 2);
-	new_geom.x = x_offset + (cc->bwidth);
+	new_geom.x = x_offset + (cc->bwidth * 2);
 	fprintf(stderr, "left: x_offset: %d, geom: %dx%d, %dx%d\n",
 		x_offset, new_geom.x, new_geom.y, new_geom.w, new_geom.h);
 
 	/* Go through all clients and move right, */
-	x_offset = has_xinerama ? (sc->xinerama->x_org + sc->work.w) : 0;
+	x_offset = has_xinerama ? (info->x_org + xine_geom.w) : 0;
 	fprintf(stderr, "right: x_offset: %d\n", x_offset);
 	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
-		if (has_xinerama && cc->xinerama != info)
+		if (ci == cc)
+			continue;
+		if (has_xinerama && cc->xinerama != ci->xinerama)
 			continue;
 		if (ci->geom.x >= cc->geom.x + cc->geom.w &&
 		    OVERLAPS(cc->geom.y, cc->geom.h, ci->geom.y, ci->geom.h))
@@ -422,7 +431,7 @@ client_expand(struct client_ctx *cc)
 		x_offset, new_geom.x, new_geom.y, new_geom.w, new_geom.h);
 
 	cc->flags |= CLIENT_EXPANDED;
-	cc->geom = new_geom;
+	memcpy(&cc->geom, &new_geom, sizeof(new_geom));
 	client_resize(cc, 0);
 }
 
