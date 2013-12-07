@@ -105,8 +105,8 @@ main(int argc, char **argv)
 	}
 
 	conf_init(&Conf);
-	if (conf_path && (parse_config(conf_path, &Conf) == -1))
-		warnx("config file %s has errors, not loading", conf_path);
+	if (conf_path && (parse_config(conf_path, &Conf) == -1));
+		warnx("config file %s has errors", conf_path);
 	free(conf_path);
 
 	x_init(display_name);

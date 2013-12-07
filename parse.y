@@ -535,6 +535,12 @@ int
 parse_config(const char *filename, struct conf *xconf)
 {
 	int			 errors = 0;
+	struct autogroupwin	*ag;
+	struct keybinding	*kb;
+	struct winmatch		*wm;
+	struct cmd		*cmd;
+	struct mousebinding	*mb;
+	int			 i;
 
 	conf = xcalloc(1, sizeof(*conf));
 
@@ -550,60 +556,48 @@ parse_config(const char *filename, struct conf *xconf)
 	errors = file->errors;
 	popfile();
 
-	if (errors) {
-		conf_clear(conf);
+	conf_clear(xconf);
+
+	xconf->flags = conf->flags;
+	xconf->bwidth = conf->bwidth;
+	xconf->mamount = conf->mamount;
+	xconf->snapdist = conf->snapdist;
+	xconf->gap = conf->gap;
+
+	while ((cmd = TAILQ_FIRST(&conf->cmdq)) != NULL) {
+		TAILQ_REMOVE(&conf->cmdq, cmd, entry);
+		TAILQ_INSERT_TAIL(&xconf->cmdq, cmd, entry);
 	}
-	else {
-		struct autogroupwin	*ag;
-		struct keybinding	*kb;
-		struct winmatch		*wm;
-		struct cmd		*cmd;
-		struct mousebinding	*mb;
-		int			 i;
 
-		conf_clear(xconf);
-
-		xconf->flags = conf->flags;
-		xconf->bwidth = conf->bwidth;
-		xconf->mamount = conf->mamount;
-		xconf->snapdist = conf->snapdist;
-		xconf->gap = conf->gap;
-
-		while ((cmd = TAILQ_FIRST(&conf->cmdq)) != NULL) {
-			TAILQ_REMOVE(&conf->cmdq, cmd, entry);
-			TAILQ_INSERT_TAIL(&xconf->cmdq, cmd, entry);
-		}
-
-		while ((kb = TAILQ_FIRST(&conf->keybindingq)) != NULL) {
-			TAILQ_REMOVE(&conf->keybindingq, kb, entry);
-			TAILQ_INSERT_TAIL(&xconf->keybindingq, kb, entry);
-		}
-
-		while ((ag = TAILQ_FIRST(&conf->autogroupq)) != NULL) {
-			TAILQ_REMOVE(&conf->autogroupq, ag, entry);
-			TAILQ_INSERT_TAIL(&xconf->autogroupq, ag, entry);
-		}
-
-		while ((wm = TAILQ_FIRST(&conf->ignoreq)) != NULL) {
-			TAILQ_REMOVE(&conf->ignoreq, wm, entry);
-			TAILQ_INSERT_TAIL(&xconf->ignoreq, wm, entry);
-		}
-
-		while ((mb = TAILQ_FIRST(&conf->mousebindingq)) != NULL) {
-			TAILQ_REMOVE(&conf->mousebindingq, mb, entry);
-			TAILQ_INSERT_TAIL(&xconf->mousebindingq, mb, entry);
-		}
-
-		(void)strlcpy(xconf->termpath, conf->termpath,
-		    sizeof(xconf->termpath));
-		(void)strlcpy(xconf->lockpath, conf->lockpath,
-		    sizeof(xconf->lockpath));
-
-		for (i = 0; i < CWM_COLOR_NITEMS; i++)
-			xconf->color[i] = conf->color[i];
-
-		xconf->font = conf->font;
+	while ((kb = TAILQ_FIRST(&conf->keybindingq)) != NULL) {
+		TAILQ_REMOVE(&conf->keybindingq, kb, entry);
+		TAILQ_INSERT_TAIL(&xconf->keybindingq, kb, entry);
 	}
+
+	while ((ag = TAILQ_FIRST(&conf->autogroupq)) != NULL) {
+		TAILQ_REMOVE(&conf->autogroupq, ag, entry);
+		TAILQ_INSERT_TAIL(&xconf->autogroupq, ag, entry);
+	}
+
+	while ((wm = TAILQ_FIRST(&conf->ignoreq)) != NULL) {
+		TAILQ_REMOVE(&conf->ignoreq, wm, entry);
+		TAILQ_INSERT_TAIL(&xconf->ignoreq, wm, entry);
+	}
+
+	while ((mb = TAILQ_FIRST(&conf->mousebindingq)) != NULL) {
+		TAILQ_REMOVE(&conf->mousebindingq, mb, entry);
+		TAILQ_INSERT_TAIL(&xconf->mousebindingq, mb, entry);
+	}
+
+	(void)strlcpy(xconf->termpath, conf->termpath,
+	    sizeof(xconf->termpath));
+	(void)strlcpy(xconf->lockpath, conf->lockpath,
+	    sizeof(xconf->lockpath));
+
+	for (i = 0; i < CWM_COLOR_NITEMS; i++)
+		xconf->color[i] = conf->color[i];
+
+	xconf->font = conf->font;
 
 	free(conf);
 
