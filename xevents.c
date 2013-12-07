@@ -190,6 +190,9 @@ xev_handle_propertynotify(XEvent *ee)
 		case XA_WM_TRANSIENT_FOR:
 			client_transient(cc);
 			break;
+		case XA_WM_HINTS:
+			client_wm_hints(cc);
+			break;
 		default:
 			/* do nothing */
 			break;

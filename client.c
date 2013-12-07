@@ -60,7 +60,6 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 	struct client_ctx	*cc;
 	XClassHint		 xch;
 	XWindowAttributes	 wattr;
-	XWMHints		*wmhints;
 	int			 state;
 
 	if (win == None)
@@ -98,22 +97,12 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 	cc->geom.h = wattr.height;
 	cc->colormap = wattr.colormap;
 
-	if ((wmhints = XGetWMHints(X_Dpy, cc->win)) != NULL) {
-		if (wmhints->flags & InputHint) {
-			if (wmhints->input == 1)
-				cc->flags |= CLIENT_INPUT;
-		}
-	}
+	client_wm_hints(cc);
+
 	if (wattr.map_state != IsViewable) {
 		client_placecalc(cc);
 		client_move(cc);
-		if ((wmhints) && (wmhints->flags & StateHint)) {
-			cc->state = wmhints->initial_state;
-			xu_set_wm_state(cc->win, cc->state);
-		}
 	}
-	if (wmhints)
-		XFree(wmhints);
 	client_draw_border(cc);
 
 	if (xu_get_wm_state(cc->win, &state) < 0)
@@ -513,6 +502,28 @@ client_wm_protocols(struct client_ctx *cc)
 		}
 		XFree(p);
 	}
+}
+
+void
+client_wm_hints(struct client_ctx *cc)
+{
+	XWMHints	*wmhints;
+
+	if ((wmhints = XGetWMHints(X_Dpy, cc->win)) == NULL)
+		return;
+
+	if (wmhints->flags & InputHint) {
+		if (wmhints->input == 1)
+			cc->flags |= CLIENT_INPUT;
+	}
+
+	if (wmhints->flags & StateHint) {
+		cc->state = wmhints->initial_state;
+		xu_set_wm_state(cc->win, cc->state);
+	}
+
+	if (wmhints->flags & XUrgencyHint)
+		client_urgency(cc);
 }
 
 void
