@@ -273,6 +273,13 @@ resize:
 }
 
 void
+client_urgency(struct client_ctx *cc)
+{
+	cc->flags |= CLIENT_URGENCY;
+	client_draw_border(cc);
+}
+
+void
 client_vmaximize(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
@@ -468,7 +475,7 @@ client_draw_border(struct client_ctx *cc)
 	struct screen_ctx	*sc = cc->sc;
 	unsigned long		 pixel;
 
-	if (cc->active)
+	if (cc->active) {
 		switch (cc->flags & CLIENT_HIGHLIGHT) {
 		case CLIENT_GROUP:
 			pixel = sc->xftcolor[CWM_COLOR_BORDER_GROUP].pixel;
@@ -480,8 +487,17 @@ client_draw_border(struct client_ctx *cc)
 			pixel = sc->xftcolor[CWM_COLOR_BORDER_ACTIVE].pixel;
 			break;
 		}
-	else
-		pixel = sc->xftcolor[CWM_COLOR_BORDER_INACTIVE].pixel;
+
+		if (cc->flags & CLIENT_URGENCY) {
+			cc->flags &= ~CLIENT_URGENCY;
+			pixel = sc->xftcolor[CWM_COLOR_BORDER_ACTIVE].pixel;
+		}
+	} else {
+		if (cc->flags & CLIENT_URGENCY)
+			pixel = sc->xftcolor[CWM_COLOR_BORDER_URGENT].pixel;
+		else
+			pixel = sc->xftcolor[CWM_COLOR_BORDER_INACTIVE].pixel;
+	}
 
 	XSetWindowBorderWidth(X_Dpy, cc->win, cc->bwidth);
 	XSetWindowBorder(X_Dpy, cc->win, pixel);
