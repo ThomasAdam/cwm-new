@@ -218,6 +218,7 @@ struct client_ctx {
 #define CLIENT_FULLSCREEN		0x0800
 #define CLIENT_STICKY			0x1000
 #define CLIENT_ACTIVE			0x2000
+#define CLIENT_EXPANDED			0x4000
 
 #define CLIENT_HIGHLIGHT		(CLIENT_GROUP | CLIENT_UNGROUP)
 #define CLIENT_MAXFLAGS			(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
@@ -415,6 +416,7 @@ void			 client_cycle(struct screen_ctx *, int);
 void			 client_cycle_leave(struct screen_ctx *);
 void			 client_delete(struct client_ctx *);
 void			 client_draw_border(struct client_ctx *);
+void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
 long			 client_get_wm_state(struct client_ctx *);
 void			 client_getsizehints(struct client_ctx *);
@@ -519,6 +521,7 @@ void			 kbfunc_client_toggle_sticky(struct client_ctx *,
     			     union arg *);
 void			 kbfunc_client_toggle_vmaximize(struct client_ctx *,
 			     union arg *);
+void			 kbfunc_client_expand(struct client_ctx *, union arg *);
 void			 kbfunc_cmdexec(struct client_ctx *, union arg *);
 void			 kbfunc_cwm_status(struct client_ctx *, union arg *);
 void			 kbfunc_exec(struct client_ctx *, union arg *);

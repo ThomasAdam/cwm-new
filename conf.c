@@ -352,6 +352,7 @@ static const struct {
 	{ "search", kbfunc_client_search, 0, {0} },
 	{ "menusearch", kbfunc_menu_cmd, 0, {0} },
 	{ "hide", kbfunc_client_hide, CWM_WIN, {0} },
+	{ "expand", kbfunc_client_expand, CWM_WIN, {0} },
 	{ "cycle", kbfunc_client_cycle, 0, {.i = CWM_CYCLE} },
 	{ "rcycle", kbfunc_client_cycle, 0, {.i = CWM_RCYCLE} },
 	{ "label", kbfunc_client_label, CWM_WIN, {0} },

@@ -467,6 +467,13 @@ kbfunc_client_toggle_fullscreen(struct client_ctx *cc, union arg *arg)
 }
 
 void
+kbfunc_client_expand(struct client_ctx *cc, union arg *arg)
+{
+	log_debug("Expanding client...");
+	client_expand(cc);
+}
+
+void
 kbfunc_client_toggle_maximize(struct client_ctx *cc, union arg *arg)
 {
 	client_toggle_maximize(cc);
