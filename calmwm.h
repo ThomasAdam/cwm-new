@@ -153,6 +153,7 @@ struct client_ctx {
 	TAILQ_ENTRY(client_ctx) group_entry;
 	TAILQ_ENTRY(client_ctx) mru_entry;
 	struct screen_ctx	*sc;
+	XineramaScreenInfo  *xinerama;
 	Window			 win;
 	Colormap		 colormap;
 	unsigned int		 bwidth; /* border width */
@@ -226,6 +227,7 @@ TAILQ_HEAD(autogroupwin_q, autogroupwin);
 
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
+	FILE			*status_fp;
 	int			 which;
 	int			 has_xinerama;
 	int			 xinerama_no;
@@ -561,7 +563,9 @@ void 			 xu_ewmh_set_net_wm_state(struct client_ctx *);
 void 			 xu_ewmh_restore_net_wm_state(struct client_ctx *);
 
 void			 u_exec(char *);
+void			 u_init_pipes(void);
 void			 u_spawn(char *);
+void			 u_put_status(struct screen_ctx *);
 
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);
