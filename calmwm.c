@@ -116,6 +116,7 @@ main(int argc, char **argv)
 	cwm_status = CWM_RUNNING;
 	while (cwm_status == CWM_RUNNING)
 		xev_process();
+	u_init_pipes();
 	x_teardown();
 	if (cwm_status == CWM_RESTART)
 		x_restart(cwm_argv);

@@ -192,6 +192,7 @@ client_delete(struct client_ctx *cc)
 		XFree(cc->wmh);
 
 	free(cc);
+	u_put_status(sc);
 }
 
 void
@@ -228,6 +229,8 @@ client_setactive(struct client_ctx *cc)
 	client_draw_border(cc);
 	conf_grab_mouse(cc->win);
 	xu_ewmh_net_active_window(sc, cc->win);
+
+	u_put_status(sc);
 }
 
 /*
@@ -498,6 +501,8 @@ client_hide(struct client_ctx *cc)
 
 	if (cc == client_current())
 		client_none(cc->sc);
+
+	u_put_status(cc->sc);
 }
 
 void
@@ -508,13 +513,15 @@ client_unhide(struct client_ctx *cc)
 	cc->flags &= ~CLIENT_HIDDEN;
 	client_set_wm_state(cc, NormalState);
 	client_draw_border(cc);
+	u_put_status(cc->sc);
 }
 
 void
 client_urgency(struct client_ctx *cc)
-{
-	if (!cc->active)
+	if (!cc->active) {
 		cc->flags |= CLIENT_URGENCY;
+		u_put_status(cc->sc);
+	}
 }
 
 void
@@ -738,7 +745,7 @@ client_placecalc(struct client_ctx *cc)
 		int			 xmouse, ymouse;
 
 		xu_ptr_getpos(sc->rootwin, &xmouse, &ymouse);
-		xine = screen_find_xinerama(sc, xmouse, ymouse, CWM_GAP);
+		xine = screen_find_xinerama(sc, xmouse, ymouse, CWM_GAP, NULL);
 		xine.w += xine.x;
 		xine.h += xine.y;
 		xmouse = MAX(xmouse, xine.x) - cc->geom.w / 2;
