@@ -147,7 +147,7 @@ struct client_ctx {
 	TAILQ_ENTRY(client_ctx) group_entry;
 	TAILQ_ENTRY(client_ctx) mru_entry;
 	struct screen_ctx	*sc;
-    XineramaScreenInfo  *xinerama;
+	XineramaScreenInfo  *xinerama;
 	Window			 win;
 	Colormap		 colormap;
 	u_int			 bwidth; /* border width */
@@ -228,6 +228,7 @@ TAILQ_HEAD(autogroupwin_q, autogroupwin);
 
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
+	FILE			*status_fp[100];
 	int			 which;
 	Visual			*visual;
 	Colormap		 colormap;
@@ -451,7 +452,7 @@ void			 search_match_text(struct menu_q *, struct menu_q *,
 void			 search_print_client(struct menu *, int);
 
 struct geom		 screen_find_xinerama(struct screen_ctx *,
-    			     int, int, int);
+    			     int, int, int, int *);
 XineramaScreenInfo	*screen_find_ptr_xinerama(void);
 XineramaScreenInfo	*screen_get_xsi(struct screen_ctx *, int, int);
 struct screen_ctx	*screen_fromroot(Window);
@@ -576,7 +577,9 @@ void 			 xu_ewmh_set_net_wm_state(struct client_ctx *);
 void 			 xu_ewmh_restore_net_wm_state(struct client_ctx *);
 
 void			 u_exec(char *);
+void			 u_init_pipes(void);
 void			 u_spawn(char *);
+void			 u_put_status(struct screen_ctx *);
 
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);
