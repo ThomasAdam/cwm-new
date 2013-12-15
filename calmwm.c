@@ -111,6 +111,7 @@ main(int argc, char **argv)
 	free(conf_path);
 
 	x_init(display_name);
+	u_init_pipes();
 	xev_loop();
 	x_teardown();
 
