@@ -88,6 +88,7 @@ xev_handle_maprequest(XEvent *ee)
 
 	if ((cc->flags & CLIENT_IGNORE) == 0)
 		client_ptrwarp(cc);
+	u_put_status(cc->sc);
 }
 
 static void

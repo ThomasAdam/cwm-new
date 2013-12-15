@@ -162,6 +162,7 @@ client_delete(struct client_ctx *cc)
 		XFree(cc->wmh);
 
 	free(cc);
+	u_put_status(sc);
 }
 
 void
@@ -198,6 +199,8 @@ client_setactive(struct client_ctx *cc)
 	client_draw_border(cc);
 	conf_grab_mouse(cc->win);
 	xu_ewmh_net_active_window(sc, cc->win);
+
+	u_put_status(sc);
 }
 
 /*
@@ -249,7 +252,8 @@ client_fullscreen(struct client_ctx *cc)
 
 	xine = screen_find_xinerama(sc,
 	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_NOGAP);
+	    cc->geom.y + cc->geom.h / 2, CWM_NOGAP,
+	    NULL);
 
 	cc->bwidth = 0;
 	cc->geom = xine;
@@ -292,7 +296,7 @@ client_maximize(struct client_ctx *cc)
 	 */
 	xine = screen_find_xinerama(sc,
 	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.y + cc->geom.h / 2, CWM_GAP, NULL);
 
 	cc->geom.x = xine.x;
 	cc->geom.y = xine.y;
@@ -326,7 +330,7 @@ client_vmaximize(struct client_ctx *cc)
 
 	xine = screen_find_xinerama(sc,
 	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.y + cc->geom.h / 2, CWM_GAP, NULL);
 
 	cc->geom.y = xine.y;
 	cc->geom.h = xine.h - (cc->bwidth * 2);
@@ -358,7 +362,7 @@ client_hmaximize(struct client_ctx *cc)
 
 	xine = screen_find_xinerama(sc,
 	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.y + cc->geom.h / 2, CWM_GAP, NULL);
 
 	cc->geom.x = xine.x;
 	cc->geom.w = xine.w - (cc->bwidth * 2);
@@ -466,6 +470,8 @@ client_hide(struct client_ctx *cc)
 
 	if (cc == client_current())
 		client_none(cc->sc);
+
+	u_put_status(cc->sc);
 }
 
 void
@@ -476,12 +482,14 @@ client_unhide(struct client_ctx *cc)
 	cc->flags &= ~CLIENT_HIDDEN;
 	client_set_wm_state(cc, NormalState);
 	client_draw_border(cc);
+	u_put_status(cc->sc);
 }
 
 void
 client_urgency(struct client_ctx *cc)
 {
 	cc->flags |= CLIENT_URGENCY;
+	u_put_status(cc->sc);
 }
 
 void
@@ -705,7 +713,7 @@ client_placecalc(struct client_ctx *cc)
 		int			 xmouse, ymouse;
 
 		xu_ptr_getpos(sc->rootwin, &xmouse, &ymouse);
-		xine = screen_find_xinerama(sc, xmouse, ymouse, CWM_GAP);
+		xine = screen_find_xinerama(sc, xmouse, ymouse, CWM_GAP, NULL);
 		xine.w += xine.x;
 		xine.h += xine.y;
 		xmouse = MAX(xmouse, xine.x) - cc->geom.w / 2;
@@ -920,7 +928,7 @@ client_htile(struct client_ctx *cc)
 
 	xine = screen_find_xinerama(sc,
 	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.y + cc->geom.h / 2, CWM_GAP, NULL);
 
 	if (cc->flags & CLIENT_VMAXIMIZED ||
 	    cc->geom.h + (cc->bwidth * 2) >= xine.h)
@@ -979,7 +987,7 @@ client_vtile(struct client_ctx *cc)
 
 	xine = screen_find_xinerama(sc,
 	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.y + cc->geom.h / 2, CWM_GAP, NULL);
 
 	if (cc->flags & CLIENT_HMAXIMIZED ||
 	    cc->geom.w + (cc->bwidth * 2) >= xine.w)
