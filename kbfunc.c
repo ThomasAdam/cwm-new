@@ -157,8 +157,11 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 	if ((mi = menu_filter(sc, &menuq, "window", NULL, 0,
 	    search_match_client, search_print_client)) != NULL) {
 		cc = (struct client_ctx *)mi->ctx;
-		if (cc->flags & CLIENT_HIDDEN)
+		if (cc->flags & CLIENT_HIDDEN) {
 			client_unhide(cc);
+			group_hidetoggle(cc->sc, cc->group != NULL ?
+					 cc->group->shortcut : 0);
+		}
 
 		if (old_cc)
 			client_ptrsave(old_cc);

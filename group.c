@@ -135,7 +135,7 @@ group_init(struct screen_ctx *sc)
 
 	for (i = 0; i < CALMWM_NGROUPS; i++) {
 		TAILQ_INIT(&sc->groups[i].clients);
-		sc->groups[i].hidden = 0;
+		sc->groups[i].hidden = 1;
 		sc->groups[i].shortcut = i;
 		TAILQ_INSERT_TAIL(&sc->groupq, &sc->groups[i], entry);
 	}
@@ -162,9 +162,8 @@ static void
 group_setactive(struct screen_ctx *sc, long idx)
 {
 	sc->group_active = &sc->groups[idx];
-	u_put_status(sc);
-
 	xu_ewmh_net_current_desktop(sc, idx);
+	u_put_status(sc);
 }
 
 void
@@ -219,7 +218,7 @@ group_sticky_toggle_exit(struct client_ctx *cc)
 static void
 group_fix_hidden_state(struct group_ctx *gc)
 {
-	struct client_ctx	*cc;
+	struct client_ctx       *cc;
 	int			 same = 0;
 
 	TAILQ_FOREACH(cc, &gc->clients, group_entry) {
@@ -298,6 +297,11 @@ group_cycle(struct screen_ctx *sc, int flags)
 	if (showgroup == NULL)
 		return;
 
+	if (showgroup->shortcut == 0) {
+		group_alltoggle(sc);
+		return;
+	}
+
 	group_hide(sc, sc->group_active);
 
 	if (showgroup->hidden)
@@ -341,7 +345,7 @@ group_alltoggle(struct screen_ctx *sc)
 	struct group_ctx	*gc;
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
-		if (sc->group_hideall)
+		if (sc->group_hideall && !TAILQ_EMPTY(&sc->groups[i].clients)a)
 			group_show(sc, gc);
 		else
 			group_hide(sc, gc);
