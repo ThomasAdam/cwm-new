@@ -610,6 +610,7 @@ match:
 		free(wn);
 		cc->nameqlen--;
 	}
+	u_put_status(cc->sc);
 }
 
 void
