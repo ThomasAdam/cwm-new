@@ -36,7 +36,6 @@ static void		 group_add(struct group_ctx *, struct client_ctx *);
 static void		 group_remove(struct client_ctx *);
 static void		 group_hide(struct screen_ctx *, struct group_ctx *);
 static void		 group_show(struct screen_ctx *, struct group_ctx *);
-static void		 group_fix_hidden_state(struct group_ctx *);
 static void		 group_setactive(struct screen_ctx *, long);
 static void		 group_set_names(struct screen_ctx *);
 
@@ -174,7 +173,7 @@ group_init(struct screen_ctx *sc)
 
 	for (i = 0; i < CALMWM_NGROUPS; i++) {
 		TAILQ_INIT(&sc->groups[i].clients);
-		sc->groups[i].hidden = 0;
+		sc->groups[i].hidden = 1;
 		sc->groups[i].shortcut = i;
 		TAILQ_INSERT_TAIL(&sc->groupq, &sc->groups[i], entry);
 	}
@@ -192,9 +191,8 @@ static void
 group_setactive(struct screen_ctx *sc, long idx)
 {
 	sc->group_active = &sc->groups[idx];
-	u_put_status(sc);
-
 	xu_ewmh_net_current_desktop(sc, idx);
+	u_put_status(sc);
 }
 
 void
@@ -243,24 +241,6 @@ group_sticky_toggle_exit(struct client_ctx *cc)
 	client_draw_border(cc);
 }
 
-/*
- * if group_hidetoggle would produce no effect, toggle the group's hidden state
- */
-static void
-group_fix_hidden_state(struct group_ctx *gc)
-{
-	struct client_ctx	*cc;
-	int			 same = 0;
-
-	TAILQ_FOREACH(cc, &gc->clients, group_entry) {
-		if (gc->hidden == ((cc->flags & CLIENT_HIDDEN) ? 1 : 0))
-			same++;
-	}
-
-	if (same == 0)
-		gc->hidden = !gc->hidden;
-}
-
 void
 group_hidetoggle(struct screen_ctx *sc, int idx)
 {
@@ -270,7 +250,6 @@ group_hidetoggle(struct screen_ctx *sc, int idx)
 		errx(1, "group_hidetoggle: index out of range (%d)", idx);
 
 	gc = &sc->groups[idx];
-	group_fix_hidden_state(gc);
 
 	if (gc->hidden)
 		group_show(sc, gc);
@@ -328,6 +307,11 @@ group_cycle(struct screen_ctx *sc, int flags)
 	if (showgroup == NULL)
 		return;
 
+	if (showgroup->shortcut == 0) {
+		group_alltoggle(sc);
+		return;
+	}
+
 	group_hide(sc, sc->group_active);
 
 	if (showgroup->hidden)
@@ -381,7 +365,7 @@ group_alltoggle(struct screen_ctx *sc)
 	int	 i;
 
 	for (i = 0; i < CALMWM_NGROUPS; i++) {
-		if (sc->group_hideall)
+		if (sc->group_hideall && !TAILQ_EMPTY(&sc->groups[i].clients))
 			group_show(sc, &sc->groups[i]);
 		else
 			group_hide(sc, &sc->groups[i]);
