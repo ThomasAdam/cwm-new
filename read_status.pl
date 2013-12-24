@@ -39,26 +39,26 @@ sub send_to_dzen
 {
     my ($data, $fh) = @_;
     my $msg;
-    my %desks = (
-        'nogroup'   => 0,
-        'one'       => 1,
-        'two'       => 2,
-        'three'     => 3,
-        'four'      => 4,
-        'five'      => 5,
-        'six'       => 6,
-        'seven'     => 7,
-        'eight'     => 8,
-        'nine'      => 9,
-    );
 
-    foreach my $deskname (@{$data->{'desktops'}}) {
+    # For the list of desktops, we maintain the sort order based on the
+    # group names being 0 -> 9.
+    foreach my $deskname (sort { $data->{'desktops'}->{$a}->{'sym_name'} <=>
+                                 $data->{'desktops'}->{$b}->{'sym_name'} }
+                                keys %{$data->{'desktops'}})
+    {
+        my $sym_name = $data->{'desktops'}->{$deskname}->{'sym_name'};
         if (grep /^$deskname$/, @{$data->{'active_desktops'}}) {
-            $msg .= "|^bg(#007fff) $desks{$deskname} ^bg()";
+            $msg .= "|^bg(#007fff) $sym_name ^bg()";
         } elsif (grep /^$deskname$/, @{$data->{'urgency'}}) {
-            $msg .= "|^bg(#7c8814) $desks{$deskname} ^bg()";
+            $msg .= "|^bg(#7c8814) $sym_name ^bg()";
+        } elsif ($data->{'desktops'}->{$deskname}->{'count'} > 0) {
+            # Here's a way of highlighting groups with clients on them.
+            $msg .= "|^bg(#004c98) $sym_name ^bg()";
+        } elsif ($data->{'desktops'}->{$deskname}->{'count'} == 0) {
+            # Don't show groups which have no clients.
+            next;
         } else {
-            $msg .= "|^fg() $desks{$deskname} ";
+            $msg .= "|^fg() $sym_name ";
         } 
     }
 
@@ -83,13 +83,22 @@ sub process_line
             # comma-separated.
             %data = map {
                 my ($k, $v) = split /:/, $_, 2;
-		defined $v ? ($k => $v) : ($k => '');
+                defined $v ? ($k => $v) : ($k => '');
             } split(/\|/, $line);
 
             # For those entries we know might contain more than one element,
             # convert the comma-separated list in to an array.
             exists $data{$_} and $data{$_} = [split /,/, $data{$_}]
                 for (qw/urgency desktops active_desktops/);
+
+            # For the list of desktops, there's both the name and the number
+            # of clients on that desk.  This can be used to flag inactive
+            # groups with clients on them.
+            $data{'desktops'} = { map {
+                ($1 => {sym_name => $2, count => $3})
+                    if /(.*?)\s+\((.*?)\)\s+\((.*?)\)/;
+            } @{$data{'desktops'}} };
+
             send_to_dzen(\%data, $fh);
         }
     }
