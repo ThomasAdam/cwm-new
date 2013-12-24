@@ -121,6 +121,9 @@ u_put_status(struct screen_ctx *sc)
 	char			 group_name[1024], urgency_desk[1024];
 	char			 groups[8192], urgencies[8192];
 
+	/* XXX: This will break Xinerama detection of cc == NULL.
+	 *	We need much better Xinerama support!
+	 */
 	if (cc != NULL && cc->xinerama != NULL) {
 		(void)screen_find_xinerama(sc,
 			cc->geom.x + cc->geom.w / 2,
