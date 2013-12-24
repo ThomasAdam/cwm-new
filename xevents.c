@@ -90,7 +90,7 @@ xev_handle_maprequest(XEvent *ee)
 		client_ptrwarp(cc);
 
 	client_update_xinerama(cc);
-	u_put_status(cc);
+	u_put_status(cc->sc);
 }
 
 static void
