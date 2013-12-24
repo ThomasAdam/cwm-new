@@ -31,7 +31,7 @@ my %dzen_options = (
     '-fg' => 'white',
     '-bg' => 'blue',
     '-ta' => 'l',
-    '-w'  => '600',
+    '-w'  => '580',
     '-p'  => '',
 );
 
@@ -63,7 +63,7 @@ sub send_to_dzen
     }
 
     if (defined $data->{'client'}) {
-            $msg .= "|^bg(#7f00ff)^fg()".$data->{'client'}."^bg()";
+            $msg .= "|^bg(#7f00ff)^fg()".$data->{'client'};
     }
 
     print $fh $msg, "\n";
