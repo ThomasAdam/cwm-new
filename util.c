@@ -114,11 +114,11 @@ void
 u_put_status(struct screen_ctx *sc)
 {
 	FILE			*status;
-	struct client_ctx	*cc = client_current();
-	struct client_ctx	*ci;
+	struct client_ctx	*cc = client_current(), *ci;
+	struct group_ctx	*gc;
 	int			 screen = 0;
-	char			**g_name;
 	char			 group_name[1024], urgency_desk[1024];
+	char			 desktops[8192], desktop_name[1024];
 	char			 groups[8192], urgencies[8192];
 
 	/* XXX: This will break Xinerama detection of cc == NULL.
@@ -133,22 +133,11 @@ u_put_status(struct screen_ctx *sc)
 		return;
 
 	memset(groups, '\0', sizeof(groups));
-
-	fprintf(status, "screen:%d|", screen);
-
-	for (g_name = sc->group_names; *g_name != NULL; g_name++) {
-		(void)snprintf(group_name, sizeof(group_name),
-				"%s,", *g_name);
-		strlcat(groups, group_name, sizeof(group_name));
-	}
-	/* Truncate the final comma. */
-	groups[strlen(groups) - 1] = '\0';
-	fprintf(status, "desktops:%s|", groups);
-
-	memset(groups, '\0', sizeof(groups));
 	memset(group_name, '\0', sizeof(groups));
 	memset(urgency_desk, '\0', sizeof(urgency_desk));
 	memset(urgencies, '\0', sizeof(urgencies));
+
+	fprintf(status, "screen:%d|", screen);
 
 	/* If there's no currently active client, we might be looking at an
 	 * empty group---but we still need to know which group that is.
@@ -191,10 +180,29 @@ u_put_status(struct screen_ctx *sc)
 			strlcat(groups, group_name, sizeof(group_name));
 	}
 out:
+	/* Now go through all groups and find how many clients are on each.
+	 * This is useful so that status indicators can make groups as having
+	 * clients on them, if they're not the active group(s); making a
+	 * distinction between empty and occupied groups, for example.
+	 */
+	TAILQ_FOREACH(gc, &sc->groupq, entry) {
+		int client_count = 0;
+		if (gc == NULL)
+			continue;
+		TAILQ_FOREACH(ci, &gc->clients, group_entry)
+			client_count++;
+		(void)snprintf(desktop_name, sizeof(desktop_name),
+				"%s (%d) (%d),", sc->group_names[gc->shortcut],
+				gc->shortcut, client_count);
+		strlcat(desktops, desktop_name, sizeof(desktop_name));
+	}
 	/* Truncate the final comma. */
+	desktops[strlen(desktops) - 1] = '\0';
 	groups[strlen(groups) - 1] = '\0';
 	urgencies[strlen(urgencies) - 1] = '\0';
+
 	fprintf(status, "urgency:%s|", urgencies);
+	fprintf(status, "desktops:%s|", desktops);
 	fprintf(status, "active_desktops:%s", groups);
 	fprintf(status, "\n");
 	fflush(status);
