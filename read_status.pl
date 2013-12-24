@@ -82,7 +82,8 @@ sub process_line
             # comma-separated, and multiple values for those are
             # comma-separated.
             %data = map {
-                split /:/, $_, 2 // ('', '');
+                my ($k, $v) = split /:/, $_, 2;
+		defined $v ? ($k => $v) : ($k => '');
             } split(/\|/, $line);
 
             # For those entries we know might contain more than one element,
