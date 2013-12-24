@@ -327,9 +327,18 @@ xev_handle_clientmessage(XEvent *ee)
 {
 	XClientMessageEvent	*e = &ee->xclient;
 	struct client_ctx	*cc, *old_cc;
+	struct screen_ctx	*sc;
 
-	if ((cc = client_find(e->window)) == NULL)
+	sc = screen_fromroot(e->window);
+
+	/* If the client is NULL and the event window isn't the root window,
+	 * then we do nothing.
+	 */
+	if ((cc = client_find(e->window)) == NULL && e->window != sc->rootwin)
 		return;
+
+	if (e->message_type == ewmh[_NET_CURRENT_DESKTOP] && e->format == 32)
+		group_hidetoggle(sc, e->data.l[0]);
 
 	if (e->message_type == cwmh[WM_CHANGE_STATE] && e->format == 32 &&
 	    e->data.l[0] == IconicState)
