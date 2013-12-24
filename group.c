@@ -191,6 +191,7 @@ static void
 group_setactive(struct screen_ctx *sc, long idx)
 {
 	sc->group_active = &sc->groups[idx];
+	u_put_status(sc);
 
 	xu_ewmh_net_current_desktop(sc, idx);
 }
@@ -310,13 +311,14 @@ group_cycle(struct screen_ctx *sc, int flags)
 	for (;;) {
 		gc = (flags & CWM_RCYCLE) ? TAILQ_PREV(gc, group_ctx_q,
 		    entry) : TAILQ_NEXT(gc, entry);
+
 		if (gc == NULL)
 			gc = (flags & CWM_RCYCLE) ? TAILQ_LAST(&sc->groupq,
 			    group_ctx_q) : TAILQ_FIRST(&sc->groupq);
 		if (gc == sc->group_active)
 			break;
 
-		if (!TAILQ_EMPTY(&gc->clients) && showgroup == NULL)
+		if (showgroup == NULL)
 			showgroup = gc;
 		else if (!gc->hidden)
 			group_hide(sc, gc);

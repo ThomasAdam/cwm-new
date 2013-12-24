@@ -111,17 +111,17 @@ u_init_pipes(void)
 }
 
 void
-u_put_status(struct client_ctx *cc)
+u_put_status(struct screen_ctx *sc)
 {
-	struct screen_ctx	*sc = cc->sc;
 	FILE			*status;
+	struct client_ctx	*cc = client_current();
 	struct client_ctx	*ci;
 	int			 screen = 0;
 	char			**g_name;
 	char			 group_name[1024], urgency_desk[1024];
 	char			 groups[8192], urgencies[8192];
 
-	if (cc->xinerama != NULL) {
+	if (cc != NULL && cc->xinerama != NULL) {
 		(void)screen_find_xinerama(sc,
 			cc->geom.x + cc->geom.w / 2,
 			cc->geom.y + cc->geom.h / 2, CWM_NOGAP, &screen);
@@ -146,6 +146,15 @@ u_put_status(struct client_ctx *cc)
 	memset(group_name, '\0', sizeof(groups));
 	memset(urgency_desk, '\0', sizeof(urgency_desk));
 	memset(urgencies, '\0', sizeof(urgencies));
+
+	/* If there's no currently active client, we might be looking at an
+	 * empty group---but we still need to know which group that is.
+	 */
+	if (cc == NULL) {
+		(void)snprintf(groups, sizeof(groups), "%s,",
+				sc->group_names[sc->group_active->shortcut]);
+		goto out;
+	}
 
 	/*
 	 * Go through all clients regardless of the group, because we want to
@@ -178,6 +187,7 @@ u_put_status(struct client_ctx *cc)
 		if (strstr(groups, group_name) == NULL)
 			strlcat(groups, group_name, sizeof(group_name));
 	}
+out:
 	/* Truncate the final comma. */
 	groups[strlen(groups) - 1] = '\0';
 	urgencies[strlen(urgencies) - 1] = '\0';
