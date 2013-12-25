@@ -90,20 +90,20 @@ u_init_pipes(void)
 
 	TAILQ_FOREACH(sc, &Screenq, entry)
 	{
-		for (screens = 0; sc->xinerama != NULL ? screens < sc->xinerama_no : screens < 1; screens++) {
-			(void)sprintf(pipe_name, "/tmp/cwm-%d.sock",
-					screens);
+		for (screens = 0; screens < sc->xinerama_no; screens++) {
+			(void)snprintf(pipe_name, sizeof(pipe_name),
+					"/tmp/cwm-%d.sock", screens);
 			unlink(pipe_name);
-			fprintf(stderr, "Creating pipe: %s\n", pipe_name);
 			if ((mkfifo(pipe_name, 0666) == -1)) {
-				fprintf(stderr, "mkfifo(): %s\n",
+				fprintf(stderr, "mkfifo() error: %s\n",
 					strerror(errno));
 				continue;
 			}
 
 			status_fd = open(pipe_name, O_RDWR|O_NONBLOCK);
 			if (status_fd == -1)
-				fprintf(stderr, "Eh?  %s\n", strerror(errno));
+				fprintf(stderr, "Couldn't open pipe: %s: %s\n",
+					pipe_name, strerror(errno));
 
 			sc->status_fp[screens] = fdopen(status_fd, "w");
 		}
@@ -145,6 +145,9 @@ u_put_status(struct screen_ctx *sc)
 	if (cc == NULL) {
 		(void)snprintf(groups, sizeof(groups), "%s,",
 				sc->group_names[sc->group_active->shortcut]);
+		/* Skip any client-processing, we already know there aren't any
+		 * clients on this group.
+		 */
 		goto out;
 	}
 
