@@ -340,6 +340,9 @@ xev_handle_clientmessage(XEvent *ee)
 	if (e->message_type == ewmh[_NET_CURRENT_DESKTOP] && e->format == 32)
 		group_hidetoggle(sc, e->data.l[0]);
 
+	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32)
+		group_movetogroup(cc, e->data.l[0]);
+
 	if (e->message_type == cwmh[WM_CHANGE_STATE] && e->format == 32 &&
 	    e->data.l[0] == IconicState)
 		client_hide(cc);
