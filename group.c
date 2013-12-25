@@ -327,6 +327,11 @@ group_cycle(struct screen_ctx *sc, int flags)
 	if (showgroup == NULL)
 		return;
 
+	if (showgroup->shortcut == 0) {
+		group_alltoggle(sc);
+		return;
+	}
+
 	group_hide(sc, sc->group_active);
 
 	if (showgroup->hidden)
