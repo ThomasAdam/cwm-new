@@ -337,8 +337,14 @@ xev_handle_clientmessage(XEvent *ee)
 	if ((cc = client_find(e->window)) == NULL && e->window != sc->rootwin)
 		return;
 
-	if (e->message_type == ewmh[_NET_CURRENT_DESKTOP] && e->format == 32)
-		group_hidetoggle(sc, e->data.l[0]);
+	if (e->message_type == ewmh[_NET_CURRENT_DESKTOP] && e->format == 32) {
+		/* Requesting group "0" is special. Toggle showing all windows
+		 * or not.*/
+		if ((int)e->data.l[0] == 0)
+			group_alltoggle(sc);
+		else
+			group_hidetoggle(sc, e->data.l[0]);
+	}
 
 	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32)
 		group_movetogroup(cc, e->data.l[0]);
