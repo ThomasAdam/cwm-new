@@ -92,7 +92,7 @@ u_init_pipes(void)
 	{
 		for (screens = 0; screens < sc->xinerama_no; screens++) {
 			(void)snprintf(pipe_name, sizeof(pipe_name),
-					"/tmp/cwm-%d.sock", screens);
+					"/tmp/cwm-%d.fifo", screens);
 			unlink(pipe_name);
 			if ((mkfifo(pipe_name, 0666) == -1)) {
 				fprintf(stderr, "mkfifo() error: %s\n",

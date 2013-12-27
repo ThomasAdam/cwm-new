@@ -22,7 +22,7 @@ use IO::Pipe;
 
 $| = 1;
 
-my @pipes = glob("/tmp/cwm-*.sock");
+my @pipes = glob("/tmp/cwm-*.fifo");
 
 # If there are no pipes, that's OK.
 exit unless @pipes;
