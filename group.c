@@ -36,7 +36,6 @@ static void		 group_add(struct group_ctx *, struct client_ctx *);
 static void		 group_remove(struct client_ctx *);
 static void		 group_hide(struct screen_ctx *, struct group_ctx *);
 static void		 group_show(struct screen_ctx *, struct group_ctx *);
-static void		 group_fix_hidden_state(struct group_ctx *);
 static void		 group_setactive(struct screen_ctx *, long);
 static void		 group_set_names(struct screen_ctx *);
 
@@ -242,24 +241,6 @@ group_sticky_toggle_exit(struct client_ctx *cc)
 	client_draw_border(cc);
 }
 
-/*
- * if group_hidetoggle would produce no effect, toggle the group's hidden state
- */
-static void
-group_fix_hidden_state(struct group_ctx *gc)
-{
-	struct client_ctx	*cc;
-	int			 same = 0;
-
-	TAILQ_FOREACH(cc, &gc->clients, group_entry) {
-		if (gc->hidden == ((cc->flags & CLIENT_HIDDEN) ? 1 : 0))
-			same++;
-	}
-
-	if (same == 0)
-		gc->hidden = !gc->hidden;
-}
-
 void
 group_hidetoggle(struct screen_ctx *sc, int idx)
 {
@@ -269,7 +250,6 @@ group_hidetoggle(struct screen_ctx *sc, int idx)
 		errx(1, "group_hidetoggle: index out of range (%d)", idx);
 
 	gc = &sc->groups[idx];
-	group_fix_hidden_state(gc);
 
 	if (gc->hidden)
 		group_show(sc, gc);
