@@ -152,11 +152,9 @@ u_put_status(struct screen_ctx *sc)
 	}
 
 	/*
-	 * Go through all clients regardless of the group, because we want to
-	 * look at all clients due to the fact that it's possible for more than
-	 * one group to be present on the screen at once.  Looking at all
-	 * clients therefore will determine the group it is in, and hence which
-	 * ones are currently being displayed.
+	 * Go through all clients regardless of the group.  Looking at all
+	 * clients will allow for catching urgent clients on other groups which
+	 * might not be active.
 	 */
 	TAILQ_FOREACH(ci, &Clientq, entry) {
 		if (ci->xinerama != cc->xinerama)
@@ -175,12 +173,6 @@ u_put_status(struct screen_ctx *sc)
 		}
 		if (ci->flags & CLIENT_HIDDEN)
 			continue;
-		(void)snprintf(group_name, sizeof(group_name), "%s,",
-			sc->group_names[ci->group != NULL ?
-			ci->group->shortcut : 0]);
-		/* XXX: Got to be a better way than this! */
-		if (strstr(groups, group_name) == NULL)
-			strlcat(groups, group_name, sizeof(group_name));
 	}
 out:
 	/* Now go through all groups and find how many clients are on each.
@@ -190,10 +182,15 @@ out:
 	 */
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		int client_count = 0;
-		if (gc == NULL)
-			continue;
 		TAILQ_FOREACH(ci, &gc->clients, group_entry)
 			client_count++;
+		if (!gc->hidden) {
+			(void)snprintf(group_name, sizeof(group_name), "%s,",
+				sc->group_names[gc != NULL ?
+				gc->shortcut : 0]);
+			if (strstr(groups, group_name) == NULL)
+				strlcat(groups, group_name, sizeof(group_name));
+		}
 		(void)snprintf(desktop_name, sizeof(desktop_name),
 				"%s (%d) (%d),", sc->group_names[gc->shortcut],
 				gc->shortcut, client_count);
