@@ -173,7 +173,7 @@ group_init(struct screen_ctx *sc)
 
 	for (i = 0; i < CALMWM_NGROUPS; i++) {
 		TAILQ_INIT(&sc->groups[i].clients);
-		sc->groups[i].hidden = 0;
+		sc->groups[i].hidden = 1;
 		sc->groups[i].shortcut = i;
 		TAILQ_INSERT_TAIL(&sc->groupq, &sc->groups[i], entry);
 	}
