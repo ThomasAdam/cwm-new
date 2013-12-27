@@ -365,7 +365,7 @@ group_alltoggle(struct screen_ctx *sc)
 	int	 i;
 
 	for (i = 0; i < CALMWM_NGROUPS; i++) {
-		if (sc->group_hideall)
+		if (sc->group_hideall && !TAILQ_EMPTY(&sc->groups[i].clients))
 			group_show(sc, &sc->groups[i]);
 		else
 			group_hide(sc, &sc->groups[i]);
