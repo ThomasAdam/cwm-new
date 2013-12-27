@@ -190,9 +190,8 @@ static void
 group_setactive(struct screen_ctx *sc, long idx)
 {
 	sc->group_active = &sc->groups[idx];
-	u_put_status(sc);
-
 	xu_ewmh_net_current_desktop(sc, idx);
+	u_put_status(sc);
 }
 
 void
