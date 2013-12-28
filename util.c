@@ -33,6 +33,8 @@
 
 #define MAXARGLEN 20
 
+static void	 u_append_str(char **, const char *, ...);
+
 void
 u_spawn(char *argstr)
 {
@@ -116,10 +118,10 @@ u_put_status(struct screen_ctx *sc)
 	FILE			*status;
 	struct client_ctx	*cc = client_current(), *ci;
 	struct group_ctx	*gc;
-	int			 screen = 0;
-	char			 group_name[1024], urgency_desk[1024];
-	char			 desktops[8192], desktop_name[1024];
-	char			 groups[8192], urgencies[8192];
+	int			 screen = 0, client_count = 0;
+	char			*active_groups, *all_groups, *urgencies;
+
+	urgencies = all_groups = active_groups = NULL;
 
 	/* XXX: This will break Xinerama detection of cc == NULL.
 	 *	We need much better Xinerama support!
@@ -132,24 +134,14 @@ u_put_status(struct screen_ctx *sc)
 	if ((status = sc->status_fp[screen]) == NULL)
 		return;
 
-	memset(groups, '\0', sizeof(groups));
-	memset(group_name, '\0', sizeof(groups));
-	memset(urgency_desk, '\0', sizeof(urgency_desk));
-	memset(urgencies, '\0', sizeof(urgencies));
-
 	fprintf(status, "screen:%d|", screen);
 
 	/* If there's no currently active client, we might be looking at an
-	 * empty group---but we still need to know which group that is.
+	 * empty group---skip any client processing and instead just mark this
+	 * group as active.
 	 */
-	if (cc == NULL) {
-		(void)snprintf(groups, sizeof(groups), "%s,",
-				sc->group_names[sc->group_active->shortcut]);
-		/* Skip any client-processing, we already know there aren't any
-		 * clients on this group.
-		 */
+	if (cc == NULL)
 		goto out;
-	}
 
 	/*
 	 * Go through all clients regardless of the group.  Looking at all
@@ -162,14 +154,9 @@ u_put_status(struct screen_ctx *sc)
 		if (ci == cc)
 			fprintf(status, "client:%s|", cc->name);
 		if (ci->flags & CLIENT_URGENCY) {
-			(void)snprintf(urgency_desk, sizeof(urgency_desk),
-				"%s,",
+			u_append_str(&urgencies, "%s,",
 				sc->group_names[ci->group != NULL ?
 				ci->group->shortcut : 0]);
-			/* XXX: Got to be a better way than this! */
-			if (strstr(urgencies, urgency_desk) == NULL)
-				strlcat(urgencies, urgency_desk,
-					sizeof(urgency_desk));
 		}
 		if (ci->flags & CLIENT_HIDDEN)
 			continue;
@@ -181,29 +168,55 @@ out:
 	 * distinction between empty and occupied groups, for example.
 	 */
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
-		int client_count = 0;
+		client_count = 0;
 		TAILQ_FOREACH(ci, &gc->clients, group_entry)
 			client_count++;
 		if (!gc->hidden) {
-			(void)snprintf(group_name, sizeof(group_name), "%s,",
-				sc->group_names[gc != NULL ?
-				gc->shortcut : 0]);
-			if (strstr(groups, group_name) == NULL)
-				strlcat(groups, group_name, sizeof(group_name));
+			u_append_str(&active_groups, "%s,",
+				sc->group_names[gc->shortcut]);
 		}
-		(void)snprintf(desktop_name, sizeof(desktop_name),
-				"%s (%d) (%d),", sc->group_names[gc->shortcut],
+		u_append_str(&all_groups, "%s (%d) (%d),",
+				sc->group_names[gc->shortcut],
 				gc->shortcut, client_count);
-		strlcat(desktops, desktop_name, sizeof(desktop_name));
 	}
-	/* Truncate the final comma. */
-	desktops[strlen(desktops) - 1] = '\0';
-	groups[strlen(groups) - 1] = '\0';
-	urgencies[strlen(urgencies) - 1] = '\0';
+	/* Remove any trailing commas. */
+	if (urgencies != NULL)
+		urgencies[strlen(urgencies) - 1] = '\0';
+	if (all_groups != NULL)
+		all_groups[strlen(all_groups) - 1] = '\0';
+	if (active_groups != NULL)
+		active_groups[strlen(active_groups) - 1] = '\0';
 
-	fprintf(status, "urgency:%s|", urgencies);
-	fprintf(status, "desktops:%s|", desktops);
-	fprintf(status, "active_desktops:%s", groups);
+	fprintf(status, "urgency:%s|", urgencies != NULL ? urgencies : "");
+	fprintf(status, "desktops:%s|", all_groups != NULL ? all_groups : "");
+	fprintf(status, "active_desktops:%s", active_groups != NULL ?
+			active_groups : "");
 	fprintf(status, "\n");
 	fflush(status);
+
+	free(urgencies);
+	free(all_groups);
+	free(active_groups);
+}
+
+static void
+u_append_str(char **append, const char *fmt, ...)
+{
+	char		*temp, *result;
+	va_list		 ap;
+
+	va_start(ap, fmt);
+	vasprintf(&temp, fmt, ap);
+	va_end(ap);
+
+	/* Big enough on the first iteration to hold the value of temp */
+	if (*append == NULL)
+		*append = xcalloc(1, strlen(temp) + 1);
+
+	/* We only append the string if it's not already there. */
+	if (strstr(*append, temp) == NULL)
+		xasprintf(&result, "%s%s", *append, temp);
+	free(temp);
+	free(*append);
+	*append = xstrdup(result);
 }

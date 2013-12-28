@@ -183,6 +183,7 @@ group_init(struct screen_ctx *sc)
 	xu_ewmh_net_showing_desktop(sc);
 	xu_ewmh_net_virtual_roots(sc);
 
+	group_show(sc, &sc->groups[1]);
 	group_setactive(sc, 1);
 }
 
