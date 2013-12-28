@@ -131,9 +131,10 @@ u_put_status(struct screen_ctx *sc)
 			cc->geom.x + cc->geom.w / 2,
 			cc->geom.y + cc->geom.h / 2, CWM_NOGAP, &screen);
 	}
-	if ((status = sc->status_fp[screen]) == NULL)
+	if ((status = sc->status_fp[screen]) == NULL) {
+		fprintf(stderr, "Couldn't find fifo for screen: %d\n", screen);
 		return;
-
+	}
 	fprintf(status, "screen:%d|", screen);
 
 	/* If there's no currently active client, we might be looking at an
