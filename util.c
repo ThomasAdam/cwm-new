@@ -120,17 +120,13 @@ u_put_status(struct screen_ctx *sc)
 	struct group_ctx	*gc;
 	int			 screen = 0, client_count = 0;
 	char			*active_groups, *all_groups, *urgencies;
+	XineramaScreenInfo	*xsi = NULL;
 
 	urgencies = all_groups = active_groups = NULL;
 
-	/* XXX: This will break Xinerama detection of cc == NULL.
-	 *	We need much better Xinerama support!
-	 */
-	if (cc != NULL && cc->xinerama != NULL) {
-		(void)screen_find_xinerama(sc,
-			cc->geom.x + cc->geom.w / 2,
-			cc->geom.y + cc->geom.h / 2, CWM_NOGAP, &screen);
-	}
+	if ((xsi = screen_find_ptr_xinerama()) != NULL)
+		screen = xsi->screen_number;
+
 	if ((status = sc->status_fp[screen]) == NULL)
 		return;
 
