@@ -242,6 +242,7 @@ client_fullscreen(struct client_ctx *cc)
 		cc->bwidth = Conf.bwidth;
 		cc->geom = cc->fullgeom;
 		cc->flags &= ~(CLIENT_FULLSCREEN | CLIENT_FREEZE);
+		client_lower(cc);
 		goto resize;
 	}
 
@@ -254,6 +255,7 @@ client_fullscreen(struct client_ctx *cc)
 	cc->bwidth = 0;
 	cc->geom = xine;
 	cc->flags |= (CLIENT_FULLSCREEN | CLIENT_FREEZE);
+	client_raise(cc);
 
 resize:
 	client_resize(cc, 0);
