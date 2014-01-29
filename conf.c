@@ -32,26 +32,52 @@
 #include "calmwm.h"
 
 static const char	*conf_bind_getmask(const char *, unsigned int *);
+static void	 	 conf_cmd_remove(struct conf *, const char *);
 static void	 	 conf_unbind_kbd(struct conf *, struct keybinding *);
 static void	 	 conf_unbind_mouse(struct conf *, struct mousebinding *);
 
-/* Add an command menu entry to the end of the menu */
-void
+int
 conf_cmd_add(struct conf *c, const char *name, const char *path)
 {
+	struct cmd	*cmd;
+
 	/* "term" and "lock" have special meanings. */
-	if (strcmp(name, "term") == 0)
-		(void)strlcpy(c->termpath, path, sizeof(c->termpath));
-	else if (strcmp(name, "lock") == 0)
-		(void)strlcpy(c->lockpath, path, sizeof(c->lockpath));
-	else {
-		struct cmd *cmd = xmalloc(sizeof(*cmd));
-		(void)strlcpy(cmd->name, name, sizeof(cmd->name));
-		(void)strlcpy(cmd->path, path, sizeof(cmd->path));
+	if (strcmp(name, "term") == 0) {
+		if (strlcpy(c->termpath, path, sizeof(c->termpath)) >=
+		    sizeof(c->termpath))
+			return (0);
+	} else if (strcmp(name, "lock") == 0) {
+		if (strlcpy(c->lockpath, path, sizeof(c->lockpath)) >=
+		    sizeof(c->lockpath))
+			return (0);
+	} else {
+		cmd = xmalloc(sizeof(*cmd));
+
+		conf_cmd_remove(c, name);
+
+		if (strlcpy(cmd->name, name, sizeof(cmd->name)) >=
+		    sizeof(cmd->name))
+			return (0);
+		if (strlcpy(cmd->path, path, sizeof(cmd->path)) >=
+		    sizeof(cmd->path))
+			return (0);
 		TAILQ_INSERT_TAIL(&c->cmdq, cmd, entry);
 	}
+	return (1);
 }
 
+static void
+conf_cmd_remove(struct conf *c, const char *name)
+{
+	struct cmd	*cmd = NULL, *cmdnxt;
+
+	TAILQ_FOREACH_SAFE(cmd, &c->cmdq, entry, cmdnxt) {
+		if (strcmp(cmd->name, name) == 0) {
+			TAILQ_REMOVE(&c->cmdq, cmd, entry);
+			free(cmd);
+		}
+	}
+}
 void
 conf_autogroup(struct conf *c, int no, const char *val)
 {
@@ -249,9 +275,8 @@ conf_init(struct conf *c)
 	for (i = 0; i < nitems(color_binds); i++)
 		c->color[i] = xstrdup(color_binds[i]);
 
-	/* Default term/lock */
-	(void)strlcpy(c->termpath, "xterm", sizeof(c->termpath));
-	(void)strlcpy(c->lockpath, "xlock", sizeof(c->lockpath));
+	conf_cmd_add(c, "lock", "xlock");
+	conf_cmd_add(c, "term", "xterm");
 
 	(void)snprintf(c->known_hosts, sizeof(c->known_hosts), "%s/%s",
 	    homedir, ".ssh/known_hosts");
