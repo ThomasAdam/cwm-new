@@ -359,8 +359,8 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 		(void)snprintf(mc->dispstr, sizeof(mc->dispstr), "%s%s%s%s",
 		    mc->promptstr, PROMPT_SCHAR, mc->searchstr, PROMPT_ECHAR);
 		mc->width = xu_xft_width(sc->xftfont, mc->dispstr,
-		    strlen(mc->dispstr));
-		mc->height = sc->xftfont->height + 1;
+		    strlen(mc->dispstr)) - Conf.bwidth * 2;
+		mc->height = sc->xftfont->height + 1 - Conf.bwidth * 2;
 		mc->num = 1;
 	}
 
@@ -390,16 +390,16 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 
 	/* Never hide the top, or left side, of the menu. */
 	if (mc->x + mc->width >= xine.w)
-		mc->x = xine.w - mc->width;
+		mc->x = xine.w - mc->width - Conf.bwidth * 2;
 	if (mc->x < xine.x) {
-		mc->x = xine.x;
-		mc->width = MIN(mc->width, (xine.w - xine.x));
+		mc->x = xine.x - Conf.bwidth * 2;
+		mc->width = MIN(mc->width, (xine.w - xine.x)) - Conf.bwidth * 2;
 	}
 	if (mc->y + mc->height >= xine.h)
-		mc->y = xine.h - mc->height;
+		mc->y = xine.h - mc->height + Conf.bwidth * 2;
 	if (mc->y < xine.y) {
-		mc->y = xine.y;
-		mc->height = MIN(mc->height, (xine.h - xine.y));
+		mc->y = xine.y - Conf.bwidth * 2;
+		mc->height = MIN(mc->height, (xine.h - xine.y)) - Conf.bwidth * 2;
 	}
 
 	if (mc->x != xsave || mc->y != ysave)
