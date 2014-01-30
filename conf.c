@@ -287,7 +287,7 @@ conf_init(struct conf *c)
 void
 conf_clear(struct conf *c)
 {
-	struct autogroupwin	*ag;
+	struct autogroupwin	*aw;
 	struct binding		*kb, *mb;
 	struct winmatch		*wm;
 	struct cmd		*cmd;
@@ -303,11 +303,11 @@ conf_clear(struct conf *c)
 		free(kb);
 	}
 
-	while ((ag = TAILQ_FIRST(&c->autogroupq)) != NULL) {
-		TAILQ_REMOVE(&c->autogroupq, ag, entry);
-		free(ag->class);
-		free(ag->name);
-		free(ag);
+	while ((aw = TAILQ_FIRST(&c->autogroupq)) != NULL) {
+		TAILQ_REMOVE(&c->autogroupq, aw, entry);
+		free(aw->class);
+		free(aw->name);
+		free(aw);
 	}
 
 	while ((wm = TAILQ_FIRST(&c->ignoreq)) != NULL) {
