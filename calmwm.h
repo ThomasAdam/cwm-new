@@ -327,7 +327,6 @@ extern struct client_ctx_q		 Clientq;
 extern struct conf			 Conf;
 extern const char			*homedir;
 extern int				 HasRandr, Randr_ev;
-extern volatile sig_atomic_t		 cwm_status;
 
 enum {
 	WM_STATE,
