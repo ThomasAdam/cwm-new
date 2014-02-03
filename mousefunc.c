@@ -179,31 +179,6 @@ mousefunc_client_grouptoggle(struct client_ctx *cc, union arg *arg)
 }
 
 void
-mousefunc_client_lower(struct client_ctx *cc, union arg *arg)
-{
-	client_ptrsave(cc);
-	client_lower(cc);
-}
-
-void
-mousefunc_client_raise(struct client_ctx *cc, union arg *arg)
-{
-	client_raise(cc);
-}
-
-void
-mousefunc_client_hide(struct client_ctx *cc, union arg *arg)
-{
-	client_hide(cc);
-}
-
-void
-mousefunc_client_cyclegroup(struct client_ctx *cc, union arg *arg)
-{
-	group_cycle(cc->sc, arg->i);
-}
-
-void
 mousefunc_menu_group(struct client_ctx *cc, union arg *arg)
 {
 	group_menu(cc->sc);
@@ -221,7 +196,6 @@ mousefunc_menu_unhide(struct client_ctx *cc, union arg *arg)
 	old_cc = client_current();
 
 	TAILQ_INIT(&menuq);
-
 	TAILQ_FOREACH(cc, &Clientq, entry)
 		if (cc->flags & CLIENT_HIDDEN) {
 			wname = (cc->label) ? cc->label : cc->name;
@@ -235,8 +209,8 @@ mousefunc_menu_unhide(struct client_ctx *cc, union arg *arg)
 	if (TAILQ_EMPTY(&menuq))
 		return;
 
-	mi = menu_filter(sc, &menuq, NULL, NULL, 0, NULL, NULL);
-	if (mi != NULL) {
+	if ((mi = menu_filter(sc, &menuq, NULL, NULL, 0,
+	    NULL, NULL)) != NULL) {
 		cc = (struct client_ctx *)mi->ctx;
 		client_unhide(cc);
 
@@ -252,19 +226,19 @@ void
 mousefunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
+	struct cmd		*cmd;
 	struct menu		*mi;
 	struct menu_q		 menuq;
-	struct cmd		*cmd;
 
 	TAILQ_INIT(&menuq);
-
 	TAILQ_FOREACH(cmd, &Conf.cmdq, entry)
 		menuq_add(&menuq, cmd, "%s", cmd->name);
+
 	if (TAILQ_EMPTY(&menuq))
 		return;
 
-	mi = menu_filter(sc, &menuq, NULL, NULL, 0, NULL, NULL);
-	if (mi != NULL)
+	if ((mi = menu_filter(sc, &menuq, NULL, NULL, 0,
+	    NULL, NULL)) != NULL)
 		u_spawn(((struct cmd *)mi->ctx)->path);
 
 	menuq_clear(&menuq);

@@ -35,6 +35,8 @@
 
 #define HASH_MARKER	"|1|"
 
+extern sig_atomic_t	 cwm_status;
+
 void
 kbfunc_client_lower(struct client_ctx *cc, union arg *arg)
 {
@@ -167,7 +169,7 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 }
 
 void
-kbfunc_menu_search(struct client_ctx *cc, union arg *arg)
+kbfunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
 	struct cmd		*cmd;
