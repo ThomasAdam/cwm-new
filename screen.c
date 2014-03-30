@@ -31,9 +31,36 @@
 #include "calmwm.h"
 
 void
-screen_init(int which)
+screen_init_screens(void)
+{
+	int			 i, j, screen_count = 0, xinerama_screens = 0;
+	XineramaScreenInfo	*info = NULL;
+
+	if (XineramaIsActive(X_Dpy)) {
+		info = XineramaQueryScreens(X_Dpy, &xinerama_screens);
+
+		fprintf(stderr, "Xinerama:  %d\n", xinerama_screens);
+	}
+
+	screen_count = ScreenCount(X_Dpy);
+
+	fprintf(stderr, "ScreenCount: %d\n", screen_count);
+
+	for (i = 0; i < screen_count; i++) {
+		for (j = 0; j < xinerama_screens; j++) {
+			screen_init(i, &info[j]);
+		}
+	}
+
+	if (info)
+		XFree(info);
+}
+
+void
+screen_init(int which, XineramaScreenInfo *xin_info)
 {
 	struct screen_ctx	*sc;
+	struct client_ctx	**clients = NULL;
 	Window			*wins, w0, w1;
 	XSetWindowAttributes	 rootattr;
 	unsigned int		 nwins, i;
@@ -41,9 +68,18 @@ screen_init(int which)
 	sc = xcalloc(1, sizeof(*sc));
 
 	TAILQ_INIT(&sc->mruq);
-	TAILQ_INIT(&sc->regionq);
 
 	sc->which = which;
+	sc->xinerama_no = -1;
+	sc->has_xinerama = 0;
+	sc->xinerama_info = NULL;
+
+	if (xin_info != NULL) {
+		sc->has_xinerama = 1;
+		sc->xinerama_no = xin_info->screen_number;
+		sc->xinerama_info = xin_info;
+	}
+
 	sc->rootwin = RootWindow(X_Dpy, sc->which);
 	conf_screen(sc);
 
@@ -63,8 +99,9 @@ screen_init(int which)
 
 	/* Deal with existing clients. */
 	if (XQueryTree(X_Dpy, sc->rootwin, &w0, &w1, &wins, &nwins)) {
+		clients = xcalloc(nwins, sizeof(*clients));
 		for (i = 0; i < nwins; i++)
-			(void)client_init(wins[i], sc);
+			clients[i] = client_init(wins[i], sc);
 
 		XFree(wins);
 	}
@@ -76,6 +113,14 @@ screen_init(int which)
 
 	TAILQ_INSERT_TAIL(&Screenq, sc, entry);
 
+	for (i = 0; i < nwins; i++) {
+		if (clients[i] == NULL)
+			continue;
+
+		client_update_xinerama(clients[i]);
+	}
+	free(clients);
+
 	XSync(X_Dpy, False);
 }
 
@@ -83,9 +128,14 @@ struct screen_ctx *
 screen_fromroot(Window rootwin)
 {
 	struct screen_ctx	*sc;
+	int			 posx, posy;
+
+	xu_ptr_getpos(rootwin, &posx, &posy);
 
 	TAILQ_FOREACH(sc, &Screenq, entry)
-		if (sc->rootwin == rootwin)
+		if (sc->rootwin == rootwin &&
+		    (posx >= sc->view.x && posx < sc->view.x + sc->view.w) &&
+		    (posy >= sc->view.y && posy < sc->view.y + sc->view.h))
 			return (sc);
 
 	/* XXX FAIL HERE */
@@ -118,16 +168,17 @@ screen_updatestackingorder(struct screen_ctx *sc)
 struct geom
 screen_find_xinerama(struct screen_ctx *sc, int x, int y, int flags)
 {
-	struct region_ctx	*region;
-	struct geom		 geom = sc->work;
+	struct screen_ctx	*sc1;
+	struct geom		 geom;
 
-	TAILQ_FOREACH(region, &sc->regionq, entry) {
-		if (x >= region->area.x && x < region->area.x+region->area.w &&
-		    y >= region->area.y && y < region->area.y+region->area.h) {
-			geom = region->area;
+	TAILQ_FOREACH(sc1, &Screenq, entry) {
+		if (x >= sc1->view.x && x < sc1->view.x + sc1->view.w &&
+		    y >= sc1->view.y && y < sc1->view.y + sc1->view.h) {
+			geom = sc1->view;
 			break;
 		}
 	}
+
 	if (flags & CWM_GAP) {
 		geom.x += sc->gap.left;
 		geom.y += sc->gap.top;
@@ -140,39 +191,19 @@ screen_find_xinerama(struct screen_ctx *sc, int x, int y, int flags)
 void
 screen_update_geometry(struct screen_ctx *sc)
 {
-	XineramaScreenInfo	*info = NULL;
-	struct region_ctx	*region;
-	int			 info_no = 0, i;
-
-	sc->view.x = 0;
-	sc->view.y = 0;
-	sc->view.w = DisplayWidth(X_Dpy, sc->which);
-	sc->view.h = DisplayHeight(X_Dpy, sc->which);
+	sc->view.x = sc->has_xinerama ? sc->xinerama_info->x_org : 0;
+	sc->view.y = sc->has_xinerama ? sc->xinerama_info->y_org : 0;
+	sc->view.w = sc->has_xinerama ?
+		sc->xinerama_info->width :
+		DisplayWidth(X_Dpy, sc->which);
+	sc->view.h = sc->has_xinerama ?
+		sc->xinerama_info->height :
+		DisplayHeight(X_Dpy, sc->which);
 
 	sc->work.x = sc->view.x + sc->gap.left;
 	sc->work.y = sc->view.y + sc->gap.top;
 	sc->work.w = sc->view.w - (sc->gap.left + sc->gap.right);
 	sc->work.h = sc->view.h - (sc->gap.top + sc->gap.bottom);
-
-	/* RandR event may have a CTRC added or removed. */
-	if (XineramaIsActive(X_Dpy))
-		info = XineramaQueryScreens(X_Dpy, &info_no);
-
-	while ((region = TAILQ_FIRST(&sc->regionq)) != NULL) {
-		TAILQ_REMOVE(&sc->regionq, region, entry);
-		free(region);
-	}
-	for (i = 0; i < info_no; i++) {
-		region = xmalloc(sizeof(*region));
-		region->num = i;
-		region->area.x = info[i].x_org;
-		region->area.y = info[i].y_org;
-		region->area.w = info[i].width;
-		region->area.h = info[i].height;
-		TAILQ_INSERT_TAIL(&sc->regionq, region, entry);
-	}
-	if (info)
-		XFree(info);
 
 	xu_ewmh_net_desktop_geometry(sc);
 	xu_ewmh_net_workarea(sc);

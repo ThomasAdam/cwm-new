@@ -141,8 +141,13 @@ x_init(const char *dpyname)
 	conf_atoms();
 	conf_cursor(&Conf);
 
+
+	screen_init_screens();
+	/*
+	fprintf(stderr, "SC:  %d\n", ScreenCount(X_Dpy));
 	for (i = 0; i < ScreenCount(X_Dpy); i++)
 		screen_init(i);
+	*/
 }
 
 static void

@@ -234,12 +234,16 @@ TAILQ_HEAD(region_ctx_q, region_ctx);
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
 	int			 which;
+	int			 has_xinerama;
+	int			 xinerama_no;
+	XineramaScreenInfo	*xinerama_info;
 	Window			 rootwin;
 	Window			 menuwin;
 	int			 cycling;
 	int			 snapdist;
 	struct geom		 view; /* viewable area */
 	struct geom		 work; /* workable area, gap-applied */
+	struct geom		 area;
 	struct gap		 gap;
 	struct cycle_entry_q	 mruq;
 	struct region_ctx_q	 regionq;
@@ -407,6 +411,7 @@ void			 client_setname(struct client_ctx *);
 int			 client_snapcalc(int, int, int, int, int);
 void			 client_transient(struct client_ctx *);
 void			 client_unhide(struct client_ctx *);
+void			 client_update_xinerama(struct client_ctx *);
 void			 client_urgency(struct client_ctx *);
 void			 client_vmaximize(struct client_ctx *);
 void 			 client_vtile(struct client_ctx *);
@@ -442,7 +447,8 @@ void			 search_print_client(struct menu *, int);
 struct geom		 screen_find_xinerama(struct screen_ctx *,
     			     int, int, int);
 struct screen_ctx	*screen_fromroot(Window);
-void			 screen_init(int);
+void			 screen_init(int, XineramaScreenInfo *);
+void			 screen_init_screens(void);
 void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);
 
