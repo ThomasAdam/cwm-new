@@ -141,8 +141,7 @@ x_init(const char *dpyname)
 	conf_atoms();
 	conf_cursor(&Conf);
 
-	for (i = 0; i < ScreenCount(X_Dpy); i++)
-		screen_init(i);
+	screen_init_screens();
 }
 
 static void

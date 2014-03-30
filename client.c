@@ -42,6 +42,26 @@ static int			 client_inbound(struct client_ctx *, int, int);
 
 struct client_ctx	*curcc = NULL;
 
+void
+client_update_xinerama(struct client_ctx *cc)
+{
+	struct screen_ctx	*sc;
+	struct group_ctx	*gc;
+	struct geom		 geom = cc->geom;
+
+	if ((sc = screen_at_xy(geom.x, geom.y)) == NULL)
+		return;
+
+	cc->sc = sc;
+	sc = cc->sc;
+
+	TAILQ_FOREACH(gc, &sc->groupq, entry) {
+		if (gc == sc->group_active)
+			group_movetogroup(cc, gc->shortcut);
+	}
+
+}
+
 struct client_ctx *
 client_find(Window win)
 {
@@ -258,8 +278,8 @@ client_fullscreen(struct client_ctx *cc)
 	cc->fullgeom = cc->geom;
 
 	xine = screen_find_xinerama(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_NOGAP);
+	    cc->geom.x + cc->geom.w,
+	    cc->geom.y + cc->geom.h, CWM_NOGAP);
 
 	cc->bwidth = 0;
 	cc->geom = xine;
@@ -301,8 +321,8 @@ client_maximize(struct client_ctx *cc)
 	 * a window is poking over a boundary
 	 */
 	xine = screen_find_xinerama(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.x + cc->geom.w,
+	    cc->geom.y + cc->geom.h, CWM_GAP);
 
 	cc->geom.x = xine.x;
 	cc->geom.y = xine.y;
@@ -335,8 +355,8 @@ client_vmaximize(struct client_ctx *cc)
 	cc->savegeom.h = cc->geom.h;
 
 	xine = screen_find_xinerama(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.x + cc->geom.w,
+	    cc->geom.y + cc->geom.h, CWM_GAP);
 
 	cc->geom.y = xine.y;
 	cc->geom.h = xine.h - (cc->bwidth * 2);
@@ -367,8 +387,8 @@ client_hmaximize(struct client_ctx *cc)
 	cc->savegeom.w = cc->geom.w;
 
 	xine = screen_find_xinerama(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.x + cc->geom.w,
+	    cc->geom.y + cc->geom.h, CWM_GAP);
 
 	cc->geom.x = xine.x;
 	cc->geom.w = xine.w - (cc->bwidth * 2);
@@ -431,6 +451,8 @@ client_config(struct client_ctx *cc)
 	cn.override_redirect = 0;
 
 	XSendEvent(X_Dpy, cc->win, False, StructureNotifyMask, (XEvent *)&cn);
+
+	client_update_xinerama(cc);
 }
 
 void
@@ -933,8 +955,8 @@ client_htile(struct client_ctx *cc)
 		return;
 
 	xine = screen_find_xinerama(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.x + cc->geom.w,
+	    cc->geom.y + cc->geom.h, CWM_GAP);
 
 	if (cc->flags & CLIENT_VMAXIMIZED ||
 	    cc->geom.h + (cc->bwidth * 2) >= xine.h)
@@ -992,8 +1014,8 @@ client_vtile(struct client_ctx *cc)
 		return;
 
 	xine = screen_find_xinerama(sc,
-	    cc->geom.x + cc->geom.w / 2,
-	    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+	    cc->geom.x + cc->geom.w,
+	    cc->geom.y + cc->geom.h, CWM_GAP);
 
 	if (cc->flags & CLIENT_HMAXIMIZED ||
 	    cc->geom.w + (cc->bwidth * 2) >= xine.w)
