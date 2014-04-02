@@ -446,6 +446,7 @@ void			 search_print_client(struct menu *, int);
 
 struct geom		 screen_find_xinerama(struct screen_ctx *,
     			     int, int, int);
+struct screen_ctx	*screen_at_xy(int, int);
 struct screen_ctx	*screen_fromroot(Window);
 void			 screen_init(int, XineramaScreenInfo *);
 void			 screen_init_screens(void);

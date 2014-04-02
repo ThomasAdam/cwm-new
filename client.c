@@ -49,15 +49,12 @@ client_update_xinerama(struct client_ctx *cc)
 	struct group_ctx	*gc;
 	struct geom		 geom = cc->geom;
 
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (geom.x >= sc->view.x && geom.x < sc->view.x + sc->view.w &&
-		    geom.y >= sc->view.y && geom.y < sc->view.y + sc->view.h) {
-			cc->sc = sc;
-			break;
-		}
-	}
+	if ((sc = screen_at_xy(geom.x, geom.y)) == NULL)
+		return;
 
+	cc->sc = sc;
 	sc = cc->sc;
+
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		if (gc == sc->group_active)
 			group_movetogroup(cc, gc->shortcut);

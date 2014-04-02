@@ -36,15 +36,10 @@ screen_init_screens(void)
 	int			 i, j, screen_count = 0, xinerama_screens = 0;
 	XineramaScreenInfo	*info = NULL;
 
-	if (XineramaIsActive(X_Dpy)) {
+	if (XineramaIsActive(X_Dpy))
 		info = XineramaQueryScreens(X_Dpy, &xinerama_screens);
 
-		fprintf(stderr, "Xinerama:  %d\n", xinerama_screens);
-	}
-
 	screen_count = ScreenCount(X_Dpy);
-
-	fprintf(stderr, "ScreenCount: %d\n", screen_count);
 
 	for (i = 0; i < screen_count; i++) {
 		for (j = 0; j < xinerama_screens; j++) {
@@ -125,6 +120,21 @@ screen_init(int which, XineramaScreenInfo *xin_info)
 }
 
 struct screen_ctx *
+screen_at_xy(int x, int y)
+{
+	struct screen_ctx	*sc;
+
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (x >= sc->view.x && x < sc->view.x + sc->view.w &&
+		    y >= sc->view.y && y < sc->view.y + sc->view.h) {
+			return (sc);
+		}
+	}
+
+	return (NULL);
+}
+
+struct screen_ctx *
 screen_fromroot(Window rootwin)
 {
 	struct screen_ctx	*sc;
@@ -132,11 +142,8 @@ screen_fromroot(Window rootwin)
 
 	xu_ptr_getpos(rootwin, &posx, &posy);
 
-	TAILQ_FOREACH(sc, &Screenq, entry)
-		if (sc->rootwin == rootwin &&
-		    (posx >= sc->view.x && posx < sc->view.x + sc->view.w) &&
-		    (posy >= sc->view.y && posy < sc->view.y + sc->view.h))
-			return (sc);
+	if ((sc = screen_at_xy(posx, posy)) != NULL)
+		return (sc);
 
 	/* XXX FAIL HERE */
 	return (TAILQ_FIRST(&Screenq));
@@ -193,11 +200,9 @@ screen_update_geometry(struct screen_ctx *sc)
 {
 	sc->view.x = sc->has_xinerama ? sc->xinerama_info->x_org : 0;
 	sc->view.y = sc->has_xinerama ? sc->xinerama_info->y_org : 0;
-	sc->view.w = sc->has_xinerama ?
-		sc->xinerama_info->width :
+	sc->view.w = sc->has_xinerama ? sc->xinerama_info->width :
 		DisplayWidth(X_Dpy, sc->which);
-	sc->view.h = sc->has_xinerama ?
-		sc->xinerama_info->height :
+	sc->view.h = sc->has_xinerama ?	sc->xinerama_info->height :
 		DisplayHeight(X_Dpy, sc->which);
 
 	sc->work.x = sc->view.x + sc->gap.left;
