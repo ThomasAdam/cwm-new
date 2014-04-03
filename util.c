@@ -92,23 +92,23 @@ u_init_pipes(void)
 
 	TAILQ_FOREACH(sc, &Screenq, entry)
 	{
-		for (screens = 0; screens < sc->xinerama_no; screens++) {
-			(void)snprintf(pipe_name, sizeof(pipe_name),
-					"/tmp/cwm-%d.fifo", screens);
-			unlink(pipe_name);
-			if ((mkfifo(pipe_name, 0666) == -1)) {
-				fprintf(stderr, "mkfifo() error: %s\n",
-					strerror(errno));
-				continue;
-			}
-
-			status_fd = open(pipe_name, O_RDWR|O_NONBLOCK);
-			if (status_fd == -1)
-				fprintf(stderr, "Couldn't open pipe: %s: %s\n",
-					pipe_name, strerror(errno));
-
-			sc->status_fp[screens] = fdopen(status_fd, "w");
+		(void)snprintf(pipe_name, sizeof(pipe_name),
+				"/tmp/cwm-%d.fifo", sc->has_xinerama ?
+				sc->xinerama_no : screens);
+		unlink(pipe_name);
+		if ((mkfifo(pipe_name, 0666) == -1)) {
+			fprintf(stderr, "mkfifo() error: %s\n",
+				strerror(errno));
+			continue;
 		}
+
+		status_fd = open(pipe_name, O_RDWR|O_NONBLOCK);
+		if (status_fd == -1)
+			fprintf(stderr, "Couldn't open pipe: %s: %s\n",
+				pipe_name, strerror(errno));
+
+		sc->status_fp[sc->has_xinerama ? sc->xinerama_no : screens] =
+			fdopen(status_fd, "w");
 	}
 }
 
@@ -123,10 +123,9 @@ u_put_status(struct screen_ctx *sc)
 
 	urgencies = all_groups = active_groups = NULL;
 
-	/* XXX: This will break Xinerama detection of cc == NULL.
-	 *	We need much better Xinerama support!
-	 */
-	if (cc != NULL && cc->xinerama != NULL) {
+	screen = sc->has_xinerama ? sc->xinerama_no : 0;
+
+	if (cc != NULL) {
 		(void)screen_find_xinerama(sc,
 			cc->geom.x + cc->geom.w,
 			cc->geom.y + cc->geom.h, CWM_NOGAP);
@@ -149,7 +148,7 @@ u_put_status(struct screen_ctx *sc)
 	 * might not be active.
 	 */
 	TAILQ_FOREACH(ci, &Clientq, entry) {
-		if (ci->xinerama != cc->xinerama)
+		if (ci->sc->xinerama_info != cc->sc->xinerama_info)
 			continue;
 		if (ci == cc)
 			fprintf(status, "client:%s|", cc->name);
