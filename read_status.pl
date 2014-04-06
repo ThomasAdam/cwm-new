@@ -33,6 +33,7 @@ my %dzen_options = (
         '-ta' => 'l',
         '-w'  => '580',
         '-p'  => '',
+        '-xs'  => '',
 );
 
 sub send_to_dzen
@@ -111,9 +112,12 @@ sub process_line
 }
 
 foreach (@pipes) {
+	my ($screen) = ($_ =~ /cwm-(\d+)\.fifo/);
+	$dzen_options{'-xs'} = $screen == 0 ? 1 : 0;
+
         if (fork()) {
                 # XXX: Close certain filehandles here; STDERR, etc.
-                my $dzen_cmd = "dzen2 " . join(" ",
+                my $dzen_cmd = "$ENV{'HOME'}/bin/dzen2 " . join(" ",
                         map { $_ . " $dzen_options{$_}" } keys(%dzen_options));
                 my $dzen_pipe = IO::Pipe->new();
                 $dzen_pipe->writer($dzen_cmd);
