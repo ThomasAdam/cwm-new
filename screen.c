@@ -33,6 +33,7 @@
 void
 screen_init_screens(void)
 {
+	struct client_ctx	*cc;
 	int			 i, j, screen_count = 0, xinerama_screens = 0;
 	XineramaScreenInfo	*info = NULL;
 
@@ -49,13 +50,15 @@ screen_init_screens(void)
 
 	if (info)
 		XFree(info);
+
+	TAILQ_FOREACH(cc, &Clientq, entry)
+		client_update_xinerama(cc);
 }
 
 void
 screen_init(int which, XineramaScreenInfo *xin_info)
 {
 	struct screen_ctx	*sc;
-	struct client_ctx	**clients = NULL;
 	Window			*wins, w0, w1;
 	XSetWindowAttributes	 rootattr;
 	unsigned int		 nwins, i;
@@ -94,9 +97,8 @@ screen_init(int which, XineramaScreenInfo *xin_info)
 
 	/* Deal with existing clients. */
 	if (XQueryTree(X_Dpy, sc->rootwin, &w0, &w1, &wins, &nwins)) {
-		clients = xcalloc(nwins, sizeof(*clients));
 		for (i = 0; i < nwins; i++)
-			clients[i] = client_init(wins[i], sc);
+			(void)client_init(wins[i], sc);
 
 		XFree(wins);
 	}
@@ -107,14 +109,6 @@ screen_init(int which, XineramaScreenInfo *xin_info)
 		XRRSelectInput(X_Dpy, sc->rootwin, RRScreenChangeNotifyMask);
 
 	TAILQ_INSERT_TAIL(&Screenq, sc, entry);
-
-	for (i = 0; i < nwins; i++) {
-		if (clients[i] == NULL)
-			continue;
-
-		client_update_xinerama(clients[i]);
-	}
-	free(clients);
 
 	XSync(X_Dpy, False);
 }
