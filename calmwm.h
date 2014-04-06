@@ -238,7 +238,7 @@ TAILQ_HEAD(region_ctx_q, region_ctx);
 
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
-	FILE			*status_fp[100];
+	FILE			*status_fp;
 	int			 which;
 	int			 has_xinerama;
 	int			 xinerama_no;

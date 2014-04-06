@@ -107,15 +107,14 @@ u_init_pipes(void)
 			fprintf(stderr, "Couldn't open pipe: %s: %s\n",
 				pipe_name, strerror(errno));
 
-		sc->status_fp[sc->has_xinerama ? sc->xinerama_no : screens] =
-			fdopen(status_fd, "w");
+		sc->status_fp =	fdopen(status_fd, "w");
 	}
 }
 
 void
 u_put_status(struct screen_ctx *sc)
 {
-	FILE			*status;
+	FILE			*status = NULL;
 	struct client_ctx	*cc = client_current(), *ci;
 	struct group_ctx	*gc;
 	int			 screen = 0, client_count = 0;
@@ -123,14 +122,10 @@ u_put_status(struct screen_ctx *sc)
 
 	urgencies = all_groups = active_groups = NULL;
 
-	screen = sc->has_xinerama ? sc->xinerama_no : 0;
+	screen = sc->xinerama_no;
+	status = sc->status_fp;
 
-	if (cc != NULL) {
-		(void)screen_find_xinerama(sc,
-			cc->geom.x + cc->geom.w,
-			cc->geom.y + cc->geom.h, CWM_NOGAP);
-	}
-	if ((status = sc->status_fp[screen]) == NULL)
+	if (status == NULL)
 		return;
 
 	fprintf(status, "screen:%d|", screen);
@@ -212,9 +207,9 @@ u_append_str(char **append, const char *fmt, ...)
 	if (*append == NULL)
 		*append = xcalloc(1, strlen(temp) + 1);
 
-	/* We only append the string if it's not already there. */
-	if (strstr(*append, temp) == NULL)
-		xasprintf(&result, "%s%s", *append, temp);
+	/* Append to the string. */
+	xasprintf(&result, "%s%s", *append, temp);
+
 	free(temp);
 	free(*append);
 	*append = xstrdup(result);
