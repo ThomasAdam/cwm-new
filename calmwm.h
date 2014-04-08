@@ -98,6 +98,8 @@ size_t strlcat(char *, const char *, size_t);
 #define CWM_RUNNING		0x0001
 #define CWM_RESTART		0x0002
 
+#define CALMWM_NGROUPS		 10
+
 union arg {
 	char	*c;
 	int	 i;
@@ -225,7 +227,7 @@ struct autogroupwin {
 	TAILQ_ENTRY(autogroupwin)	 entry;
 	char				*class;
 	char				*name;
-	int 				 num;
+	int 				 num[CALMWM_NGROUPS];
 };
 TAILQ_HEAD(autogroupwin_q, autogroupwin);
 
@@ -248,7 +250,6 @@ struct screen_ctx {
 	XftColor		 xftcolor[CWM_COLOR_NITEMS];
 	XftDraw			*xftdraw;
 	XftFont			*xftfont;
-#define CALMWM_NGROUPS		 10
 	struct group_ctx	 groups[CALMWM_NGROUPS];
 	struct group_ctx_q	 groupq;
 	int			 group_hideall;
@@ -513,7 +514,7 @@ void			 menuq_clear(struct menu_q *);
 int			 parse_config(const char *, struct conf *);
 
 void			 conf_atoms(void);
-void			 conf_autogroup(struct conf *, int, const char *);
+int			 conf_autogroup(struct conf *, char *, const char *);
 int			 conf_bind_kbd(struct conf *, const char *,
     			     const char *);
 int			 conf_bind_mouse(struct conf *, const char *,

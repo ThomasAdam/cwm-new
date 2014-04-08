@@ -359,7 +359,8 @@ group_autogroup(struct client_ctx *cc)
 	struct screen_ctx	*sc = cc->sc;
 	struct autogroupwin	*aw;
 	struct group_ctx	*gc;
-	int			 no = -1, both_match = 0;
+	int			 both_match = 0, i;
+	int			 no[CALMWM_NGROUPS];
 	long			*grpno;
 
 	if (cc->ch.res_class == NULL || cc->ch.res_name == NULL)
@@ -367,31 +368,31 @@ group_autogroup(struct client_ctx *cc)
 
 	if (xu_getprop(cc->win, ewmh[_NET_WM_DESKTOP],
 	    XA_CARDINAL, 1, (unsigned char **)&grpno) > 0) {
-		if (*grpno == -1)
-			no = 0;
-		else if (*grpno > CALMWM_NGROUPS || *grpno < 0)
-			no = CALMWM_NGROUPS - 1;
-		else
-			no = *grpno;
+		if (*grpno == -1) {
+			for (i = 1; i < CALMWM_NGROUPS; i++)
+				no[i] = i;
+		} else if (*grpno > CALMWM_NGROUPS || *grpno < 0) {
+			no[CALMWM_NGROUPS - 1] = CALMWM_NGROUPS - 1;
+		} else
+			no[*grpno] = *grpno;
+
 		XFree(grpno);
 	} else {
 		TAILQ_FOREACH(aw, &Conf.autogroupq, entry) {
 			if (strcmp(aw->class, cc->ch.res_class) == 0) {
 				if ((aw->name != NULL) &&
 				    (strcmp(aw->name, cc->ch.res_name) == 0)) {
-					no = aw->num;
+					memcpy(no, aw->num, sizeof(no));
 					both_match = 1;
 				} else if (aw->name == NULL && !both_match)
-					no = aw->num;
+					memcpy(no, aw->num, sizeof(no));
 			}
 		}
 	}
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
-		if (gc->shortcut == no) {
+		if (no[gc->shortcut] > 0)
 			group_assign(gc, cc);
-			return;
-		}
 	}
 
 	if (Conf.flags & CONF_STICKY_GROUPS)

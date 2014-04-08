@@ -77,14 +77,20 @@ conf_cmd_remove(struct conf *c, const char *name)
 		}
 	}
 }
-void
-conf_autogroup(struct conf *c, int no, const char *val)
+int
+conf_autogroup(struct conf *c, char *groups, const char *val)
 {
 	struct autogroupwin	*aw;
-	char			*p;
+	char			*p, *g;
+	int			 group_nos[CALMWM_NGROUPS], g_num;
 
 	aw = xcalloc(1, sizeof(*aw));
+	memset(&group_nos, -1, sizeof(group_nos));
 
+	while ((g = strsep(&groups, ",")) != NULL) {
+		g_num = strtonum(g, 0, 9, NULL);
+		group_nos[g_num] = g_num;
+	}
 	if ((p = strchr(val, ',')) == NULL) {
 		aw->name = NULL;
 		aw->class = xstrdup(val);
@@ -93,9 +99,11 @@ conf_autogroup(struct conf *c, int no, const char *val)
 		aw->name = xstrdup(val);
 		aw->class = xstrdup(p);
 	}
-	aw->num = no;
+	memcpy(&aw->num, group_nos, sizeof(group_nos));
 
 	TAILQ_INSERT_TAIL(&c->autogroupq, aw, entry);
+
+	return (1);
 }
 
 void

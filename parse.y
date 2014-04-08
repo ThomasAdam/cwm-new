@@ -148,13 +148,14 @@ main		: FONTNAME STRING		{
 			free($2);
 			free($3);
 		}
-		| AUTOGROUP NUMBER STRING	{
-			if ($2 < 0 || $2 > 9) {
+		| AUTOGROUP STRING STRING	{
+			if (!conf_autogroup(conf, $2, $3)) {
+				free($2);
 				free($3);
-				yyerror("invalid autogroup: %d", $2);
+				yyerror("invalid autogroup: %s", $2);
 				YYERROR;
 			}
-			conf_autogroup(conf, $2, $3);
+			free($2);
 			free($3);
 		}
 		| IGNORE STRING {
