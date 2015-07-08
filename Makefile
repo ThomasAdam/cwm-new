@@ -29,7 +29,7 @@ ${PROG}: ${OBJS} y.tab.o
 	${CC} ${OBJS} ${LDFLAGS} -o ${PROG}
 
 .c.o:
-	${CC} -c ${CFLAGS} ${CPPFLAGS} $<
+	${CC} -c ${CFLAGS} ${CPPFLAGS} -c -o $@ $<
 
 install: ${PROG}
 	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANPREFIX}/man1 ${DESTDIR}${MANPREFIX}/man5
