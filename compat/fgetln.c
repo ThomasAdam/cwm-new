@@ -1,4 +1,5 @@
-/*	$NetBSD: fgetln.c,v 1.9 2008/04/29 06:53:03 martin Exp $	*/
+/* $Id$ */
+/*	$NetBSD: fgetln.c,v 1.3 2007/08/07 02:06:58 lukem Exp $	*/
 
 /*-
  * Copyright (c) 1998 The NetBSD Foundation, Inc.
@@ -15,6 +16,9 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of The NetBSD Foundation nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
@@ -29,19 +33,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef HAVE_NBTOOL_CONFIG_H
-#include "nbtool_config.h"
-#endif
+#include <sys/types.h>
 
-#if !HAVE_FGETLN
-#include <stdlib.h>
-#ifndef HAVE_NBTOOL_CONFIG_H
-/* These headers are required, but included from nbtool_config.h */
-#include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#endif
 
 char *
 fgetln(FILE *fp, size_t *len)
@@ -74,13 +71,10 @@ fgetln(FILE *fp, size_t *len)
 		} else
 			buf = nbuf;
 
-		if (fgets(&buf[bufsiz], BUFSIZ, fp) == NULL) {
-			buf[bufsiz] = '\0';
-			*len = strlen(buf);
-			return buf;
-		}
-
 		*len = bufsiz;
+		if (fgets(&buf[bufsiz], BUFSIZ, fp) == NULL)
+			return buf;
+
 		bufsiz = nbufsiz;
 	}
 
@@ -88,19 +82,3 @@ fgetln(FILE *fp, size_t *len)
 	return buf;
 }
 
-#endif
-
-#ifdef TEST
-int
-main(int argc, char *argv[])
-{
-	char *p;
-	size_t len;
-
-	while ((p = fgetln(stdin, &len)) != NULL) {
-		(void)printf("%zu %s", len, p);
-		free(p);
-	}
-	return 0;
-}
-#endif

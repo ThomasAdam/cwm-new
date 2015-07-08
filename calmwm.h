@@ -21,25 +21,37 @@
 #ifndef _CALMWM_H_
 #define _CALMWM_H_
 
-#include <sys/param.h>
 #include <stdio.h>
-#include "queue.h"
-
-/* prototypes for portable-included functions */
-char *fgetln(FILE *, size_t *);
-long long strtonum(const char *, long long, long long, const char **);
-void *reallocarray(void *, size_t, size_t);
-
-
-#ifdef strlcat
-#define HAVE_STRLCAT
+#include <stdbool.h>
+#include <stdlib.h>
+#include <sys/param.h>
+#if defined(__linux__)
+#	include "compat/queue.h"
+#	include "compat/tree.h"
 #else
-size_t strlcat(char *, const char *, size_t);
+#include <sys/queue.h>
+#include <sys/tree.h>
 #endif
-#ifdef strlcpy
-#define HAVE_STRLCPY
-#else
-size_t strlcpy(char *, const char *, size_t);
+#include <xcb/xcb.h>
+#include <xcb/xcb_event.h>
+#include <xcb/xcb_icccm.h>
+#include <xcb/xcb_ewmh.h>
+#include <xcb/randr.h>
+#include <X11/keysymdef.h>
+#include <xcb/xcb_keysyms.h>
+#include "array.h"
+#include "config.h"
+
+#ifdef NO_STRTONUM
+   long long strtonum(const char *, long long, long long, const char **);
+#endif
+
+#ifdef NO_STRLCPY
+    size_t strlcpy(char *, const char *, size_t);
+#endif
+
+#ifdef NO_FGETLN
+    char *fgetln(FILE *, size_t *);
 #endif
 
 #include <X11/XKBlib.h>

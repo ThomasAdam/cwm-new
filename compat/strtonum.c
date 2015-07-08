@@ -1,4 +1,5 @@
-/*	$OpenBSD: strtonum.c,v 1.7 2013/04/17 18:40:58 tedu Exp $	*/
+/* $Id$ */
+/*	$OpenBSD: strtonum.c,v 1.6 2004/08/03 19:38:01 millert Exp $	*/
 
 /*
  * Copyright (c) 2004 Ted Unangst and Todd Miller
@@ -17,24 +18,21 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-/* OPENBSD ORIGINAL: lib/libc/stdlib/strtonum.c */
-
-#ifndef HAVE_STRTONUM
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 
-#define	INVALID		1
-#define	TOOSMALL	2
-#define	TOOLARGE	3
+#define INVALID 	1
+#define TOOSMALL 	2
+#define TOOLARGE 	3
 
 long long
 strtonum(const char *numstr, long long minval, long long maxval,
     const char **errstrp)
 {
 	long long ll = 0;
-	int error = 0;
 	char *ep;
+	int error = 0;
 	struct errval {
 		const char *errstr;
 		int err;
@@ -47,9 +45,9 @@ strtonum(const char *numstr, long long minval, long long maxval,
 
 	ev[0].err = errno;
 	errno = 0;
-	if (minval > maxval) {
+	if (minval > maxval)
 		error = INVALID;
-	} else {
+	else {
 		ll = strtoll(numstr, &ep, 10);
 		if (numstr == ep || *ep != '\0')
 			error = INVALID;
@@ -66,5 +64,3 @@ strtonum(const char *numstr, long long minval, long long maxval,
 
 	return (ll);
 }
-
-#endif /* HAVE_STRTONUM */
