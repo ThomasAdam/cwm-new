@@ -20,7 +20,7 @@ MANPREFIX?=	${PREFIX}/share/man
 all: ${PROG}
 
 clean:
-	rm -f ${OBJS} ${PROG} y.tab.c
+	rm -f *.o compat/*.o core* ${PROG} y.tab.c
 
 y.tab.c: parse.y
 	yacc parse.y

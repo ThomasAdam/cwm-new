@@ -42,18 +42,6 @@
 #include "array.h"
 #include "config.h"
 
-#ifdef NO_STRTONUM
-   long long strtonum(const char *, long long, long long, const char **);
-#endif
-
-#ifdef NO_STRLCPY
-    size_t strlcpy(char *, const char *, size_t);
-#endif
-
-#ifdef NO_FGETLN
-    char *fgetln(FILE *, size_t *);
-#endif
-
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xft/Xft.h>
@@ -123,6 +111,10 @@
 #define CWM_QUIT		0x0000
 #define CWM_RUNNING		0x0001
 #define CWM_RESTART		0x0002
+
+long long	 strtonum(const char *, long long, long long, const char **);
+size_t		 strlcpy(char *, const char *, size_t);
+char		*fgetln(FILE *, size_t *);
 
 union arg {
 	char	*c;
