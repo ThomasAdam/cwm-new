@@ -15,7 +15,6 @@
  */
 
 #include <limits.h>
-#include "calmwm.h"
 
 #ifndef ARRAY_H
 #define ARRAY_H

@@ -32,26 +32,27 @@
 #include <sys/queue.h>
 #include <sys/tree.h>
 #endif
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
 #include <xcb/randr.h>
-#include <X11/keysymdef.h>
 #include <xcb/xcb_keysyms.h>
-#include "array.h"
-#include "config.h"
-
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xft/Xft.h>
 #include <X11/Xlib.h>
+#include <X11/keysymdef.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/Xinerama.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/keysym.h>
+
+#include "array.h"
+#include "config.h"
 
 #undef MIN
 #undef MAX

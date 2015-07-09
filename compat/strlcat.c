@@ -20,7 +20,6 @@
 
 #include <sys/types.h>
 #include <string.h>
-#include "calmwm.h"
 
 #ifndef HAVE_STRLCAT
 

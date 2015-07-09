@@ -19,7 +19,6 @@
  */
 
 #include <sys/types.h>
-#include "queue.h"
 
 #include <dirent.h>
 #include <err.h>
