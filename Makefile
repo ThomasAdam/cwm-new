@@ -5,17 +5,15 @@ PROG=		cwm-new
 
 PREFIX?=	/usr/local
 
-SRCS=		$(wildcard compat/*.[ch] *.[ch])
+SRCS=		$(wildcard compat/*.[ch] *.[ch]) y.tab.c
 
 OBJS=		$(patsubst %.c,%.o,$(SRCS))
 
-CPPFLAGS+=	`pkg-config --cflags fontconfig x11 xft xinerama xrandr` \
-			`freetype-config --cflags`
+CPPFLAGS+=	$(shell pkg-config --cflags fontconfig x11 xft xinerama xrandr)
 
 CFLAGS?=	-Wall -O2 -g -D_GNU_SOURCE
 
-LDFLAGS+=	`pkg-config --libs fontconfig x11 xft xinerama xrandr` \
-			`freetype-config --libs`
+LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xinerama xrandr)
 
 MANPREFIX?=	${PREFIX}/share/man
 
@@ -27,11 +25,11 @@ clean:
 y.tab.c: parse.y
 	yacc parse.y
 
-${PROG}: ${OBJS} y.tab.o
-	${CC} ${OBJS} ${LDFLAGS} -o ${PROG}
+${PROG}: ${OBJS}
+	${CC} ${OBJS} ${CPPFLAGS} ${LDFLAGS} -o ${PROG}
 
 .c.o:
-	${CC} ${CFLAGS} ${LDFLAGS} ${CPPFLAGS} -c -o $@ $<
+	${CC} -c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@ $<
 
 install: ${PROG}
 	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANPREFIX}/man1 ${DESTDIR}${MANPREFIX}/man5
