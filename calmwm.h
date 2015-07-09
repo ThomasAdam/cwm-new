@@ -114,6 +114,8 @@
 
 long long	 strtonum(const char *, long long, long long, const char **);
 size_t		 strlcpy(char *, const char *, size_t);
+size_t		 strlcat(char *, const char*, size_t);
+void		*reallocarray(void *, size_t, size_t);
 char		*fgetln(FILE *, size_t *);
 
 union arg {
