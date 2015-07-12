@@ -100,7 +100,7 @@ kbfunc_client_moveresize(struct client_ctx *cc, union arg *arg)
 		if (cc->geom.y > sc->view.h - 1)
 			cc->geom.y = sc->view.h - 1;
 
-		xine = screen_find_xinerama(sc,
+		xine = screen_find_xinerama(
 		    cc->geom.x + cc->geom.w / 2,
 		    cc->geom.y + cc->geom.h / 2, CWM_GAP);
 		cc->geom.x += client_snapcalc(cc->geom.x,

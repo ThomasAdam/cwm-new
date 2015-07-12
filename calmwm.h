@@ -47,7 +47,6 @@
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
-#include <X11/extensions/Xinerama.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/keysym.h>
 
@@ -250,15 +249,9 @@ struct autogroupwin {
 };
 TAILQ_HEAD(autogroupwin_q, autogroupwin);
 
-struct region_ctx {
-	TAILQ_ENTRY(region_ctx)	 entry;
-	int			 num;
-	struct geom		 area;
-};
-TAILQ_HEAD(region_ctx_q, region_ctx);
-
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
+	const char		*name;
 	int			 which;
 	Window			 rootwin;
 	Window			 menuwin;
@@ -269,7 +262,6 @@ struct screen_ctx {
 	struct geom		 work; /* workable area, gap-applied */
 	struct gap		 gap;
 	struct client_ctx_q	 clientq;
-	struct region_ctx_q	 regionq;
 #define CALMWM_NGROUPS		 10
 	struct group_ctx_q	 groupq;
 	struct group_ctx	*group_active;
@@ -364,7 +356,7 @@ extern Time				 Last_Event_Time;
 extern struct screen_ctx_q		 Screenq;
 extern struct conf			 Conf;
 extern const char			*homedir;
-extern int				 HasRandr, Randr_ev;
+extern int				 Randr_ev;
 
 enum {
 	WM_STATE,
@@ -428,11 +420,12 @@ void			 client_lower(struct client_ctx *);
 void			 client_map(struct client_ctx *);
 void			 client_msg(struct client_ctx *, Atom, Time);
 void			 client_move(struct client_ctx *);
-struct client_ctx	*client_init(Window, struct screen_ctx *);
+struct client_ctx	*client_init(Window, int);
 void			 client_ptrsave(struct client_ctx *);
 void			 client_ptrwarp(struct client_ctx *);
 void			 client_raise(struct client_ctx *);
 void			 client_resize(struct client_ctx *, int);
+void			 client_scan_for_windows(void);
 void			 client_send_delete(struct client_ctx *);
 void			 client_set_wm_state(struct client_ctx *, long);
 void			 client_setactive(struct client_ctx *);
@@ -480,11 +473,14 @@ void			 search_match_text(struct menu_q *, struct menu_q *,
 void			 search_print_client(struct menu *, int);
 
 struct screen_ctx	*screen_find(Window);
-struct geom		 screen_find_xinerama(struct screen_ctx *,
-    			     int, int, int);
-void			 screen_init(int);
+struct geom		 screen_find_xinerama(int, int, int);
+struct screen_ctx	*screen_find_screen(int, int);
+void			 screen_maybe_init_randr(void);
 void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);
+bool			 screen_should_ignore_global(struct screen_ctx *);
+struct screen_ctx	*screen_find_by_name(const char *);
+
 
 void			 kbfunc_client_cycle(struct client_ctx *, union arg *);
 void			 kbfunc_client_cyclegroup(struct client_ctx *,

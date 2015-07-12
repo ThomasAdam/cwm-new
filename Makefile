@@ -9,11 +9,11 @@ SRCS=		$(wildcard compat/*.[ch] *.[ch]) y.tab.c
 
 OBJS=		$(patsubst %.c,%.o,$(SRCS))
 
-CPPFLAGS+=	$(shell pkg-config --cflags fontconfig x11 xft xinerama xrandr)
+CPPFLAGS+=	$(shell pkg-config --cflags fontconfig x11 xft xrandr)
 
 CFLAGS?=	-Wall -O2 -g -D_GNU_SOURCE
 
-LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xinerama xrandr)
+LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xrandr)
 
 MANPREFIX?=	${PREFIX}/share/man
 

@@ -373,7 +373,7 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 		mc->num++;
 	}
 
-	xine = screen_find_xinerama(sc, mc->geom.x, mc->geom.y, CWM_GAP);
+	xine = screen_find_xinerama(mc->geom.x, mc->geom.y, CWM_GAP);
 	xine.w += xine.x - Conf.bwidth * 2;
 	xine.h += xine.y - Conf.bwidth * 2;
 

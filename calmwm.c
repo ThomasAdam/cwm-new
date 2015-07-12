@@ -125,8 +125,6 @@ main(int argc, char **argv)
 static void
 x_init(const char *dpyname)
 {
-	int	i;
-
 	if ((X_Dpy = XOpenDisplay(dpyname)) == NULL)
 		errx(1, "unable to open display \"%s\"", XDisplayName(dpyname));
 
@@ -135,13 +133,9 @@ x_init(const char *dpyname)
 	XSync(X_Dpy, False);
 	XSetErrorHandler(x_errorhandler);
 
-	HasRandr = XRRQueryExtension(X_Dpy, &Randr_ev, &i);
-
 	conf_atoms();
 	conf_cursor(&Conf);
-
-	for (i = 0; i < ScreenCount(X_Dpy); i++)
-		screen_init(i);
+	screen_maybe_init_randr();
 }
 
 static void

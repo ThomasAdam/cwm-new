@@ -80,7 +80,7 @@ xev_handle_maprequest(XEvent *ee)
 		client_ptrsave(old_cc);
 
 	if ((cc = client_find(e->window)) == NULL)
-		cc = client_init(e->window, NULL);
+		cc = client_init(e->window, 1);
 
 	if ((cc != NULL) && (!(cc->flags & CLIENT_IGNORE)))
 		client_ptrwarp(cc);
@@ -194,6 +194,8 @@ xev_handle_propertynotify(XEvent *ee)
 		}
 	} else {
 		TAILQ_FOREACH(sc, &Screenq, entry) {
+			if (screen_should_ignore_global(sc))
+				continue;
 			if (sc->rootwin == e->window) {
 				if (e->atom == ewmh[_NET_DESKTOP_NAMES])
 					xu_ewmh_net_desktop_names(sc);
@@ -371,6 +373,8 @@ xev_handle_randr(XEvent *ee)
 
 	i = XRRRootToScreen(X_Dpy, rev->root);
 	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
 		if (sc->which == i) {
 			XRRUpdateConfiguration(ee);
 			screen_update_geometry(sc);
@@ -390,8 +394,11 @@ xev_handle_mappingnotify(XEvent *ee)
 
 	XRefreshKeyboardMapping(e);
 	if (e->request == MappingKeyboard) {
-		TAILQ_FOREACH(sc, &Screenq, entry)
+		TAILQ_FOREACH(sc, &Screenq, entry) {
+			if (screen_should_ignore_global(sc))
+				continue;
 			conf_grab_kbd(sc->rootwin);
+		}
 	}
 }
 
