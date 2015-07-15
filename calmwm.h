@@ -53,6 +53,10 @@
 #include "array.h"
 #include "config.h"
 
+#ifndef __dead
+#define __dead __attribute__ ((__noreturn__))
+#endif
+
 #undef MIN
 #undef MAX
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -523,6 +527,13 @@ void			 kbfunc_menu_cmd(struct client_ctx *, union arg *);
 void			 kbfunc_ssh(struct client_ctx *, union arg *);
 void			 kbfunc_term(struct client_ctx *, union arg *);
 void 			 kbfunc_tile(struct client_ctx *, union arg *);
+
+/* log.c */
+void			 log_open(const char *);
+void			 log_close(void);
+void			 log_debug(const char *, ...);
+__dead void		 log_fatal(const char *, ...);
+__dead void		 log_fatalx(const char *, ...);
 
 void			 mousefunc_client_move(struct client_ctx *,
     			    union arg *);
