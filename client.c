@@ -465,6 +465,14 @@ client_move(struct client_ctx *cc)
 {
 	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
 	client_config(cc);
+
+	/* Update which monitor the client is on.
+	 *
+	 * FIXME: Should also handle group assignments, etc.
+	 */
+	cc->sc = screen_find_screen(cc->geom.x, cc->geom.y);
+	fprintf(stderr, "Client '0x%x' now on monitor '%s'\n",
+		(int)cc->win, cc->sc->name);
 }
 
 void
