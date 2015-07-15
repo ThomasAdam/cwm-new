@@ -264,6 +264,7 @@ xev_handle_keypress(XEvent *ee)
 	struct binding		*kb;
 	KeySym			 keysym, skeysym;
 	unsigned int		 modshift;
+	int			 ptr_x, ptr_y;
 
 	keysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 0);
 	skeysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 1);
@@ -287,11 +288,23 @@ xev_handle_keypress(XEvent *ee)
 		return;
 	if (kb->flags & CWM_WIN) {
 		if (((cc = client_find(e->window)) == NULL) &&
-		    (cc = client_current()) == NULL)
-			return;
+		    (cc = client_current()) == NULL) {
+			/*
+			 * If no window is found, then look at the pointer's
+			 * screen position and use that instead.
+			 */
+			xu_ptr_getpos(e->window, &ptr_x, &ptr_y);
+			cc = &fakecc;
+			cc->sc = screen_find_screen(ptr_x, ptr_y);
+			log_debug("%s: no client found, using pointer pos",
+				__func__);
+		}
+		log_debug("%s: client (0x%x): screen '%s'", __func__,
+			(int)cc->win, cc->sc->name);
 	} else {
 		cc = &fakecc;
 		cc->sc = screen_find(e->window);
+		log_debug("%s: using fake client", __func__);
 	}
 
 	(*kb->callback)(cc, &kb->argument);

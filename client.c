@@ -175,8 +175,10 @@ client_init(Window win, int skip_map_check)
 	else
 		client_unhide(cc);
 
-	if (mapped)
-		group_autogroup(cc);
+	if (!mapped)
+		log_debug("client not mapped!");
+
+	group_autogroup(cc);
 
 	XSync(X_Dpy, False);
 	XUngrabServer(X_Dpy);

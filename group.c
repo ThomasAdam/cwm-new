@@ -230,6 +230,8 @@ group_hidetoggle(struct screen_ctx *sc, int idx)
 {
 	struct group_ctx	*gc;
 
+	log_debug("%s: screen is '%s'", __func__, sc->name);
+
 	if (idx < 0 || idx >= CALMWM_NGROUPS)
 		log_fatal("%s: index out of range (%d)", __func__, idx);
 
@@ -288,10 +290,8 @@ group_cycle(struct screen_ctx *sc, int flags)
 			showgroup = gc;
 		else if (!group_holds_only_hidden(gc))
 			group_hide(gc);
+		log_debug("%s: showing group '%d'", __func__, gc->num);
 	}
-
-	if (showgroup == NULL)
-		return;
 
 	group_hide(sc->group_active);
 
@@ -362,4 +362,7 @@ group_autogroup(struct client_ctx *cc)
 		group_assign(sc->group_active, cc);
 	else
 		group_assign(NULL, cc);
+
+	log_debug("%s: client (0x%x): added to group '%d', screen '%s'",
+		__func__, (int)cc->win, sc->group_active->num, cc->sc->name);
 }
