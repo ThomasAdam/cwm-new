@@ -1,0 +1,6 @@
+*.orig
+*.o
+y.tab*.[co]
+cwm-new
+core*
+ctags
