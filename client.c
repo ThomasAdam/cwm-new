@@ -99,12 +99,12 @@ client_init(Window win, int skip_map_check)
 	int			 mapped;
 
 	if (win == None) {
-		fprintf(stderr, "win is NONE\n");
+		log_debug("%s: win is NULL", __func__);
 		return(NULL);
 	}
 
 	if (!XGetWindowAttributes(X_Dpy, win, &wattr)) {
-		fprintf(stderr, "XGetWindowAttributes failed\n");
+		log_debug("%s: XGetWindowAttributes() failed", __func__);
 		return(NULL);
 	}
 
@@ -112,8 +112,6 @@ client_init(Window win, int skip_map_check)
 		mapped = 1;
 	else {
 		if (wattr.override_redirect || wattr.map_state != IsViewable) {
-			fprintf(stderr, "Override-redirect or map_state is %d\n",
-				wattr.map_state);
 			return(NULL);
 		}
 	}
@@ -146,9 +144,6 @@ client_init(Window win, int skip_map_check)
 	cc->geom.h = wattr.height;
 	cc->colormap = wattr.colormap;
 
-	fprintf(stderr, "Client appears to be at: x: %d, y: %d, w: %d, h: %d\n",
-		cc->geom.x, cc->geom.y, cc->geom.w, cc->geom.h);
-
 	if (wattr.map_state != IsViewable) {
 		client_placecalc(cc);
 		client_move(cc);
@@ -157,8 +152,7 @@ client_init(Window win, int skip_map_check)
 	}
 
 	sc = screen_find_screen(cc->geom.x, cc->geom.y);
-	fprintf(stderr, "Assinging client '0x%x' to screen '%s'\n",
-		(int)cc->win, sc->name);
+	log_debug("client: (0x%x) to screen '%s'", (int)cc->win, sc->name);
 	cc->sc = sc;
 
 	XSelectInput(X_Dpy, cc->win, ColormapChangeMask | EnterWindowMask |
@@ -471,8 +465,8 @@ client_move(struct client_ctx *cc)
 	 * FIXME: Should also handle group assignments, etc.
 	 */
 	cc->sc = screen_find_screen(cc->geom.x, cc->geom.y);
-	fprintf(stderr, "Client '0x%x' now on monitor '%s'\n",
-		(int)cc->win, cc->sc->name);
+	log_debug("client:  (0x%x) now on monitor '%s'", (int)cc->win,
+	    cc->sc->name);
 }
 
 void

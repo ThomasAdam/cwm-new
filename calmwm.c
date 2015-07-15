@@ -57,24 +57,30 @@ static int	x_wmerrorhandler(Display *, XErrorEvent *);
 int
 main(int argc, char **argv)
 {
+	extern char	*__progname;
 	const char	*conf_file = NULL;
 	char		*conf_path, *display_name = NULL;
 	char		**cwm_argv;
 	int		 ch;
 	struct passwd	*pw;
+	bool		 open_logfile = false;
+	char		*logfile_name;
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		warnx("no locale support");
 	mbtowc(NULL, NULL, MB_CUR_MAX);
 
 	cwm_argv = argv;
-	while ((ch = getopt(argc, argv, "c:d:")) != -1) {
+	while ((ch = getopt(argc, argv, "vc:d:")) != -1) {
 		switch (ch) {
 		case 'c':
 			conf_file = optarg;
 			break;
 		case 'd':
 			display_name = optarg;
+			break;
+		case 'v':
+			open_logfile = true;
 			break;
 		default:
 			usage();
@@ -85,6 +91,12 @@ main(int argc, char **argv)
 
 	if (signal(SIGCHLD, sighdlr) == SIG_ERR)
 		err(1, "signal");
+
+	if (open_logfile) {
+		xasprintf(&logfile_name, "cwm-new-%ld.log", (long)getpid());
+		log_open(logfile_name);
+		free(logfile_name);
+	}
 
 	if ((homedir = getenv("HOME")) == NULL || *homedir == '\0') {
 		pw = getpwuid(getuid());
@@ -101,15 +113,17 @@ main(int argc, char **argv)
 
 	if (access(conf_path, R_OK) != 0) {
 		if (conf_file != NULL)
-			warn("%s", conf_file);
+			log_debug("%s", conf_file);
 		free(conf_path);
 		conf_path = NULL;
 	}
 
 	conf_init(&Conf);
 	if (conf_path && (parse_config(conf_path, &Conf) == -1))
-		warnx("config file %s has errors", conf_path);
+		log_debug("config file %s has errors", conf_path);
 	free(conf_path);
+
+	log_debug("%s starting...", __progname);
 
 	x_init(display_name);
 	cwm_status = CWM_RUNNING;
@@ -126,7 +140,8 @@ static void
 x_init(const char *dpyname)
 {
 	if ((X_Dpy = XOpenDisplay(dpyname)) == NULL)
-		errx(1, "unable to open display \"%s\"", XDisplayName(dpyname));
+		log_fatal("unable to open display \"%s\"",
+		    XDisplayName(dpyname));
 
 	XSetErrorHandler(x_wmerrorhandler);
 	XSelectInput(X_Dpy, DefaultRootWindow(X_Dpy), SubstructureRedirectMask);
@@ -176,9 +191,9 @@ x_teardown(void)
 static int
 x_wmerrorhandler(Display *dpy, XErrorEvent *e)
 {
-	errx(1, "root window unavailable - perhaps another wm is running?");
+	log_fatal("root window unavailable - perhaps another wm is running?");
 
-	return(0);
+	return (0);
 }
 
 static int
@@ -194,7 +209,7 @@ x_errorhandler(Display *dpy, XErrorEvent *e)
 
 	warnx("%s(0x%x): %s", req, (unsigned int)e->resourceid, msg);
 #endif
-	return(0);
+	return (0);
 }
 
 static void
@@ -220,7 +235,7 @@ usage(void)
 {
 	extern char	*__progname;
 
-	(void)fprintf(stderr, "usage: %s [-c file] [-d display]\n",
+	(void)fprintf(stderr, "usage: %s [-c file] [-d display] [-v]\n",
 	    __progname);
 	exit(1);
 }

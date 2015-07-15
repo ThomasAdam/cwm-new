@@ -53,6 +53,9 @@ group_assign(struct group_ctx *gc, struct client_ctx *cc)
 		TAILQ_INSERT_TAIL(&gc->clientq, cc, group_entry);
 
 	xu_ewmh_net_wm_desktop(cc);
+
+	log_debug("client: (0x%x) assigned to group '%d' screen '%s'",
+		(int)cc->win, cc->group->num, cc->sc->name);
 }
 
 void
@@ -124,6 +127,9 @@ group_init(struct screen_ctx *sc, int num)
 	gc->num = num;
 	TAILQ_INIT(&gc->clientq);
 
+	log_debug("%s: added group '%d' (%s) to screen '%s'",
+		__func__, gc->num, gc->name, sc->name);
+
 	TAILQ_INSERT_TAIL(&sc->groupq, gc, entry);
 
 	if (num == 1)
@@ -138,6 +144,9 @@ group_setactive(struct group_ctx *gc)
 	sc->group_active = gc;
 
 	xu_ewmh_net_current_desktop(sc);
+
+	log_debug("%s: set active group '%d' on screen '%s'",
+		__func__, gc->num, sc->name);
 }
 
 void
@@ -147,7 +156,7 @@ group_movetogroup(struct client_ctx *cc, int idx)
 	struct group_ctx	*gc;
 
 	if (idx < 0 || idx >= CALMWM_NGROUPS)
-		errx(1, "group_movetogroup: index out of range (%d)", idx);
+		log_fatal("%s: index out of range (%d)", __func__, idx);
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		if (gc->num == idx)
@@ -222,7 +231,7 @@ group_hidetoggle(struct screen_ctx *sc, int idx)
 	struct group_ctx	*gc;
 
 	if (idx < 0 || idx >= CALMWM_NGROUPS)
-		errx(1, "group_hidetoggle: index out of range (%d)", idx);
+		log_fatal("%s: index out of range (%d)", __func__, idx);
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		if (gc->num == idx)
@@ -245,7 +254,7 @@ group_only(struct screen_ctx *sc, int idx)
 	struct group_ctx	*gc;
 
 	if (idx < 0 || idx >= CALMWM_NGROUPS)
-		errx(1, "group_only: index out of range (%d)", idx);
+		log_fatal("%s: index out of range (%d)", __func__, idx);
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		if (gc->num == idx)
