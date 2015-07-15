@@ -136,7 +136,7 @@ conf_screen(struct screen_ctx *sc)
 	if (sc->xftfont == NULL) {
 		sc->xftfont = XftFontOpenName(X_Dpy, sc->which, Conf.font);
 		if (sc->xftfont == NULL)
-			errx(1, "XftFontOpenName");
+			log_fatal("XftFontOpenName() failed");
 	}
 
 	for (i = 0; i < nitems(color_binds); i++) {
@@ -146,7 +146,7 @@ conf_screen(struct screen_ctx *sc)
 			xu_xorcolor(sc->xftcolor[CWM_COLOR_MENU_FONT], xc, &xc);
 			if (!XftColorAllocValue(X_Dpy, visual, colormap,
 			    &xc.color, &sc->xftcolor[CWM_COLOR_MENU_FONT_SEL]))
-				warnx("XftColorAllocValue: %s", Conf.color[i]);
+				log_debug("%s: %s", __func__, Conf.color[i]);
 			break;
 		}
 		if (XftColorAllocName(X_Dpy, visual, colormap,
@@ -154,7 +154,7 @@ conf_screen(struct screen_ctx *sc)
 			sc->xftcolor[i] = xc;
 			XftColorFree(X_Dpy, visual, colormap, &xc);
 		} else {
-			warnx("XftColorAllocName: %s", Conf.color[i]);
+			log_debug("%s: %s", __func__, Conf.color[i]);
 			XftColorAllocName(X_Dpy, visual, colormap,
 			    color_binds[i], &sc->xftcolor[i]);
 		}
@@ -167,7 +167,7 @@ conf_screen(struct screen_ctx *sc)
 
 	sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
 	if (sc->xftdraw == NULL)
-		errx(1, "XftDrawCreate");
+		log_fatal("XftDrawCreate() failed");
 
 	conf_grab_kbd(sc->rootwin);
 }
@@ -506,7 +506,7 @@ conf_bind_kbd(struct conf *c, const char *bind, const char *cmd)
 
 	kb->press.keysym = XStringToKeysym(key);
 	if (kb->press.keysym == NoSymbol) {
-		warnx("unknown symbol: %s", key);
+		log_debug("unknown symbol: %s", key);
 		free(kb);
 		return(0);
 	}
@@ -567,7 +567,7 @@ conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
 
 	mb->press.button = strtonum(button, Button1, Button5, &errstr);
 	if (errstr) {
-		warnx("button number is %s: %s", errstr, button);
+		log_debug("button number is %s: %s", errstr, button);
 		free(mb);
 		return(0);
 	}

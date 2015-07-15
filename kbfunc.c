@@ -255,8 +255,7 @@ kbfunc_exec(struct client_ctx *cc, union arg *arg)
 		label = "wm";
 		break;
 	default:
-		errx(1, "kbfunc_exec: invalid cmd %d", cmd);
-		/*NOTREACHED*/
+		log_fatal("%s: invalid cmd %d", __func__, cmd);
 	}
 
 	TAILQ_INIT(&menuq);
@@ -310,7 +309,7 @@ kbfunc_exec(struct client_ctx *cc, union arg *arg)
 			warn("%s", mi->text);
 			break;
 		default:
-			errx(1, "kb_func: egad, cmd changed value!");
+			log_fatal("%s: cmd changed value!", __func__);
 			break;
 		}
 	}
@@ -335,7 +334,7 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 	size_t			 len;
 
 	if ((fp = fopen(Conf.known_hosts, "r")) == NULL) {
-		warn("kbfunc_ssh: %s", Conf.known_hosts);
+		log_debug("%s: %s", __func__, Conf.known_hosts);
 		return;
 	}
 

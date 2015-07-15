@@ -51,14 +51,14 @@ screen_find_by_name(const char *name)
 	struct screen_ctx	*sc;
 
 	if (name == NULL)
-		err(1, "name was NULL for screen_find_by_name");
+		log_fatal("%s: name was NULL", __func__);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		if (strcmp(sc->name, name) == 0)
 			return (sc);
 	}
 
-	err(1, "Couldn't find monitor '%s'", name);
+	log_fatal("%s: couldn't find monitor '%s'", __func__, name);
 }
 
 void
@@ -131,8 +131,8 @@ static void
 screen_create_randr_region(struct screen_ctx *sc, const char *name,
     struct geom *geom)
 {
-	fprintf(stderr, "RandR output:\t%s\n", name);
-	fprintf(stderr, "\t\tx: %d\n\t\ty: %d\n\t\tw: %d\n\t\th: %d\n",
+	log_debug("RandR output:\t%s\n", name);
+	log_debug("\t\tx: %d\n\t\ty: %d\n\t\tw: %d\n\t\th: %d\n",
 		geom->x, geom->y, geom->w, geom->h);
 
 	sc->name = xstrdup(name);
@@ -165,6 +165,7 @@ screen_init_contents(void)
 		conf_screen(sc);
 		screen_update_geometry(sc);
 
+		log_debug("%s: Adding groups...", __func__);
 		for (i = 0; i < CALMWM_NGROUPS; i++)
 			group_init(sc, i);
 	}
@@ -256,10 +257,8 @@ screen_find_screen(int x, int y)
 		}
 	}
 
-	if (sc_ret == NULL) {
-		warn ("Couldn't find monitor at %d x %d", x, y);
-		abort();
-	}
+	if (sc_ret == NULL)
+		log_debug("%s: couldn't find monitor at %dx%d", __func__, x, y);
 
 	return (sc_ret);
 }
