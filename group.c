@@ -271,32 +271,31 @@ group_only(struct screen_ctx *sc, int idx)
 }
 
 /*
- * Cycle through active groups.  If none exist, then just stay put.
+ * Cycle through all groups on the given screen.
  */
 void
 group_cycle(struct screen_ctx *sc, int flags)
 {
-	struct group_ctx	*gc, *showgroup = NULL;
+	struct group_ctx	*gc, *gc_loop, *gc_active, *showgroup = NULL;
 
 	assert(sc->group_active != NULL);
-
-	gc = sc->group_active;
-	for (;;) {
-		gc = (flags & CWM_RCYCLE) ? TAILQ_PREV(gc, group_ctx_q,
-		    entry) : TAILQ_NEXT(gc, entry);
-		if (gc == NULL)
-			gc = (flags & CWM_RCYCLE) ? TAILQ_LAST(&sc->groupq,
-			    group_ctx_q) : TAILQ_FIRST(&sc->groupq);
-		if (gc == sc->group_active)
+	gc_active = sc->group_active;
+	TAILQ_FOREACH(gc_loop, &sc->groupq, entry) {
+		if (gc_loop == gc_active) {
+			gc = gc_loop;
 			break;
+		}
+	}
+	gc = (flags & CWM_RCYCLE) ? TAILQ_PREV(gc_loop, group_ctx_q,
+		entry) : TAILQ_NEXT(gc_loop, entry);
 
-		if (!group_holds_only_sticky(gc) && showgroup == NULL)
-			showgroup = gc;
-		else if (!group_holds_only_hidden(gc))
-			group_hide(gc);
-		log_debug("%s: showing group '%d'", __func__, gc->num);
+	if (gc == NULL) {
+		gc = (flags & CWM_RCYCLE) ? TAILQ_LAST(&sc->groupq,
+		    group_ctx_q) : TAILQ_FIRST(&sc->groupq);
 	}
 
+	showgroup = gc;
+	log_debug("%s: showing group '%d'", __func__, gc->num);
 	group_hide(sc->group_active);
 
 	if (group_holds_only_hidden(showgroup))
