@@ -152,8 +152,12 @@ group_setactive(struct group_ctx *gc)
 void
 group_movetogroup(struct client_ctx *cc, int idx)
 {
-	struct screen_ctx	*sc = cc->sc;
+	struct screen_ctx	*sc;
 	struct group_ctx	*gc;
+
+	if (cc == NULL)
+		return;
+	sc = cc->sc;
 
 	if (idx < 0 || idx >= CALMWM_NGROUPS)
 		log_fatal("%s: index out of range (%d)", __func__, idx);
