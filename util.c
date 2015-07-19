@@ -20,6 +20,7 @@
 
 #include <sys/types.h>
 
+#include <fcntl.h>
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
@@ -31,6 +32,8 @@
 #include "calmwm.h"
 
 #define MAXARGLEN 20
+
+static void	 u_append_char(char **, const char *, ...);
 
 void
 u_spawn(char *argstr)
@@ -78,4 +81,61 @@ u_exec(char *argstr)
 	*ap = NULL;
 	(void)setsid();
 	(void)execvp(args[0], args);
+}
+
+void
+u_init_pipes(void)
+{
+	struct screen_ctx	*sc;
+	char			 pipe_name[PATH_MAX];
+	int			 sc_num, status_fd = -1;
+
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		snprintf(pipe_name, sizeof(pipe_name),
+			"/tmp/cwm-%s.fifo", sc->name);
+
+		unlink(pipe_name);
+
+		if ((mkfifo(pipe_name, 0666) == -1)) {
+			log_debug("mkfifo: %s", strerror(errno));
+			continue;
+		}
+
+		if ((status_fd = open(pipe_name, O_RDWR|O_NONBLOCK)) == -1)
+			log_debug("Couldn't open pipe '%s': %s", pipe_name,
+				strerror(errno));
+
+		sc->status_fp = fdopen(status_fd, "w");
+	}
+}
+
+void
+u_put_status(struct screen_ctx *sc)
+{
+	/* FIXME: implement this! */
+
+	return;
+}
+
+static void
+u_append(char **append, const char *fmt, ...)
+{
+	char	*temp, *result;
+	va_list	 ap;
+
+	va_start(ap, fmt);
+	vasprintf(&temp, fmt, ap);
+	va_end(ap);
+
+	/* Big enough on the first iteration to hold the value of temp. */
+	if (*append == NULL)
+		*append = xcalloc(1, strlen(temp) + 1);
+
+	/* We only append the string if it's not already there. */
+	if (strstr(*append, temp) == NULL)
+		xasprintf(&result, "%s%s", *append, temp);
+	free(temp);
+	free(*append);
+
+	*append = xstrdup(result);
 }

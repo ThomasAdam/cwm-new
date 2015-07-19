@@ -258,6 +258,7 @@ struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
 	const char		*name;
 	int			 which;
+	FILE			*status_fp;
 	Window			 rootwin;
 	Window			 menuwin;
 	int			 cycling;
@@ -614,6 +615,8 @@ void 			 xu_ewmh_restore_net_wm_state(struct client_ctx *);
 
 void			 u_exec(char *);
 void			 u_spawn(char *);
+void			 u_init_pipes(void);
+void			 u_put_status(struct screen_ctx *);
 
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);
