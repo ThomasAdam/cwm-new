@@ -126,7 +126,6 @@ main(int argc, char **argv)
 	log_debug("%s starting...", __progname);
 
 	x_init(display_name);
-	u_init_pipes();
 	cwm_status = CWM_RUNNING;
 	while (cwm_status == CWM_RUNNING)
 		xev_process();

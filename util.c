@@ -33,7 +33,7 @@
 
 #define MAXARGLEN 20
 
-static void	 u_append_char(char **, const char *, ...);
+static void	 u_append_str(char **, const char *, ...);
 
 void
 u_spawn(char *argstr)
@@ -84,41 +84,105 @@ u_exec(char *argstr)
 }
 
 void
-u_init_pipes(void)
+u_init_pipes(struct screen_ctx *sc)
 {
-	struct screen_ctx	*sc;
 	char			 pipe_name[PATH_MAX];
-	int			 sc_num, status_fd = -1;
+	int			 status_fd = -1;
 
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		snprintf(pipe_name, sizeof(pipe_name),
-			"/tmp/cwm-%s.fifo", sc->name);
+	snprintf(pipe_name, sizeof(pipe_name),
+		"/tmp/cwm-%s.fifo", sc->name);
 
-		unlink(pipe_name);
+	unlink(pipe_name);
 
-		if ((mkfifo(pipe_name, 0666) == -1)) {
-			log_debug("mkfifo: %s", strerror(errno));
-			continue;
-		}
-
-		if ((status_fd = open(pipe_name, O_RDWR|O_NONBLOCK)) == -1)
-			log_debug("Couldn't open pipe '%s': %s", pipe_name,
-				strerror(errno));
-
-		sc->status_fp = fdopen(status_fd, "w");
+	if ((mkfifo(pipe_name, 0666) == -1)) {
+		log_debug("mkfifo: %s", strerror(errno));
+		return;
 	}
+
+	if ((status_fd = open(pipe_name, O_RDWR|O_NONBLOCK)) == -1)
+		log_debug("Couldn't open pipe '%s': %s", pipe_name,
+			strerror(errno));
+
+	sc->status_fp = fdopen(status_fd, "w");
 }
 
 void
 u_put_status(struct screen_ctx *sc)
 {
-	/* FIXME: implement this! */
+	struct client_ctx       *cc = client_current(), *ci;
+	struct group_ctx        *gc;
+	int                      client_count = 0;
+	char                    *active_groups, *all_groups, *urgencies;
 
-	return;
+	urgencies = all_groups = active_groups = NULL;
+
+	if (sc->status_fp == NULL)
+	        return;
+
+	fprintf(sc->status_fp, "screen:%s|", sc->name);
+
+	/* If there's no currently active client, we might be looking at an
+	 * empty group---skip any client processing and instead just mark this
+	 * group as active.
+	 */
+	if (cc == NULL)
+	        goto out;
+
+	/*
+	 * Go through all clients regardless of the group.  Looking at all
+	 * clients will allow for catching urgent clients on other groups which
+	 * might not be active.
+	 */
+	TAILQ_FOREACH(ci, &sc->clientq, entry) {
+	        if (ci->flags & CLIENT_HIDDEN)
+	                continue;
+	        if (ci == cc)
+	                fprintf(sc->status_fp, "client:%s|", cc->name);
+	        if (ci->flags & CLIENT_URGENCY) {
+	                u_append_str(&urgencies, "%s,",
+	                        ci->group->name ? ci->group->name : "nogroup");
+	        }
+	}
+out:
+	/* Now go through all groups and find how many clients are on each.
+	 * This is useful so that status indicators can mark groups as having
+	 * clients on them, if they're not the active group(s); making a
+	 * distinction between empty and occupied groups, for example.
+	 */
+	TAILQ_FOREACH(gc, &sc->groupq, entry) {
+	        client_count = 0;
+	        TAILQ_FOREACH(ci, &gc->clientq, group_entry)
+	                client_count++;
+	        if (!group_holds_only_hidden(gc)) {
+	                u_append_str(&active_groups, "%s,",
+	                        gc->name);
+	        }
+	        u_append_str(&all_groups, "%s (%d) (%d),",
+	                        gc->name,
+	                        gc->num, client_count);
+	}
+	/* Remove any trailing commas. */
+	if (urgencies != NULL)
+	        urgencies[strlen(urgencies) - 1] = '\0';
+	if (all_groups != NULL)
+	        all_groups[strlen(all_groups) - 1] = '\0';
+	if (active_groups != NULL)
+	        active_groups[strlen(active_groups) - 1] = '\0';
+
+	fprintf(sc->status_fp, "urgency:%s|", urgencies != NULL ? urgencies : "");
+	fprintf(sc->status_fp, "desktops:%s|", all_groups != NULL ? all_groups : "");
+	fprintf(sc->status_fp, "active_desktops:%s", active_groups != NULL ?
+	                active_groups : "");
+	fprintf(sc->status_fp, "\n");
+	fflush(sc->status_fp);
+
+	free(urgencies);
+	free(all_groups);
+	free(active_groups);
 }
 
 static void
-u_append(char **append, const char *fmt, ...)
+u_append_str(char **append, const char *fmt, ...)
 {
 	char	*temp, *result;
 	va_list	 ap;

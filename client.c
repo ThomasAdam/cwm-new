@@ -187,6 +187,8 @@ client_init(Window win, int skip_map_check)
 	XSync(X_Dpy, False);
 	XUngrabServer(X_Dpy);
 
+	u_put_status(cc->sc);
+
 	return(cc);
 }
 
@@ -256,6 +258,8 @@ client_setactive(struct client_ctx *cc)
 	client_draw_border(cc);
 	conf_grab_mouse(cc->win);
 	xu_ewmh_net_active_window(sc, cc->win);
+
+	u_put_status(sc);
 }
 
 /*
@@ -829,6 +833,8 @@ match:
 		free(wn);
 		cc->nameqlen--;
 	}
+	if (cc->sc != NULL)
+		u_put_status(cc->sc);
 }
 
 void

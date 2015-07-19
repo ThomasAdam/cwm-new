@@ -144,6 +144,7 @@ group_setactive(struct group_ctx *gc)
 	sc->group_active = gc;
 
 	xu_ewmh_net_current_desktop(sc);
+	u_put_status(sc);
 
 	log_debug("%s: set active group '%d' on screen '%s'",
 		__func__, gc->num, sc->name);
@@ -368,4 +369,6 @@ group_autogroup(struct client_ctx *cc)
 
 	log_debug("%s: client (0x%x): added to group '%d', screen '%s'",
 		__func__, (int)cc->win, sc->group_active->num, cc->sc->name);
+
+	u_put_status(sc);
 }

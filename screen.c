@@ -168,6 +168,8 @@ screen_init_contents(void)
 		log_debug("%s: Adding groups...", __func__);
 		for (i = 0; i < CALMWM_NGROUPS; i++)
 			group_init(sc, i);
+
+		u_init_pipes(sc);
 	}
 
 	/*
