@@ -31,83 +31,9 @@
 
 #include "calmwm.h"
 
-static const char	*conf_bind_getmask(const char *, unsigned int *);
-static void	 	 conf_cmd_remove(struct conf *, const char *);
-static void	 	 conf_unbind_kbd(struct conf *, struct binding *);
-static void	 	 conf_unbind_mouse(struct conf *, struct binding *);
-
-int
-conf_cmd_add(struct conf *c, const char *name, const char *path)
-{
-	struct cmd	*cmd;
-
-	cmd = xmalloc(sizeof(*cmd));
-
-	cmd->name = xstrdup(name);
-	if (strlcpy(cmd->path, path, sizeof(cmd->path)) >= sizeof(cmd->path)) {
-		free(cmd->name);
-		free(cmd);
-		return(0);
-	}
-
-	conf_cmd_remove(c, name);
-
-	TAILQ_INSERT_TAIL(&c->cmdq, cmd, entry);
-	return(1);
-}
-
-static void
-conf_cmd_remove(struct conf *c, const char *name)
-{
-	struct cmd	*cmd = NULL, *cmdnxt;
-
-	TAILQ_FOREACH_SAFE(cmd, &c->cmdq, entry, cmdnxt) {
-		if (strcmp(cmd->name, name) == 0) {
-			TAILQ_REMOVE(&c->cmdq, cmd, entry);
-			free(cmd->name);
-			free(cmd);
-		}
-	}
-}
-void
-conf_autogroup(struct conf *c, int num, const char *name, const char *class)
-{
-	struct autogroupwin	*aw;
-	char			*p;
-
-	aw = xmalloc(sizeof(*aw));
-
-	if ((p = strchr(class, ',')) == NULL) {
-		if (name == NULL)
-			aw->name = NULL;
-		else
-			aw->name = xstrdup(name);
-
-		aw->class = xstrdup(class);
-	} else {
-		*(p++) = '\0';
-
-		if (name == NULL)
-			aw->name = xstrdup(class);
-		else
-			aw->name = xstrdup(name);
-
-		aw->class = xstrdup(p);
-	}
-	aw->num = num;
-
-	TAILQ_INSERT_TAIL(&c->autogroupq, aw, entry);
-}
-
-void
-conf_ignore(struct conf *c, const char *name)
-{
-	struct winname	*wn;
-
-	wn = xmalloc(sizeof(*wn));
-	wn->name = xstrdup(name);
-	TAILQ_INSERT_TAIL(&c->ignoreq, wn, entry);
-}
+static const char      *conf_bind_getmask(const char *, unsigned int *);
+static void             conf_unbind_kbd(struct conf *, struct binding *);
+static void             conf_unbind_mouse(struct conf *, struct binding *);
 
 static const char *color_binds[] = {
 	"#CCCCCC",	/* CWM_COLOR_BORDER_ACTIVE */
@@ -257,7 +183,6 @@ conf_init(struct conf *c)
 	c->snapdist = CONF_SNAPDIST;
 
 	TAILQ_INIT(&c->ignoreq);
-	TAILQ_INIT(&c->cmdq);
 	TAILQ_INIT(&c->keybindingq);
 	TAILQ_INIT(&c->autogroupq);
 	TAILQ_INIT(&c->mousebindingq);
@@ -271,9 +196,6 @@ conf_init(struct conf *c)
 	for (i = 0; i < nitems(color_binds); i++)
 		c->color[i] = xstrdup(color_binds[i]);
 
-	conf_cmd_add(c, "lock", "xlock");
-	conf_cmd_add(c, "term", "xterm");
-
 	(void)snprintf(c->known_hosts, sizeof(c->known_hosts), "%s/%s",
 	    homedir, ".ssh/known_hosts");
 
@@ -286,14 +208,7 @@ conf_clear(struct conf *c)
 	struct autogroupwin	*aw;
 	struct binding		*kb, *mb;
 	struct winname		*wn;
-	struct cmd		*cmd;
 	int			 i;
-
-	while ((cmd = TAILQ_FIRST(&c->cmdq)) != NULL) {
-		TAILQ_REMOVE(&c->cmdq, cmd, entry);
-		free(cmd->name);
-		free(cmd);
-	}
 
 	while ((kb = TAILQ_FIRST(&c->keybindingq)) != NULL) {
 		TAILQ_REMOVE(&c->keybindingq, kb, entry);

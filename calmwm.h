@@ -57,6 +57,16 @@
 #define __dead __attribute__ ((__noreturn__))
 #endif
 
+/* Definition to shut gcc up about unused arguments. */
+#define unused __attribute__ ((unused))
+
+/* Attribute to make gcc check printf-like arguments. */
+#define printflike1 __attribute__ ((format (printf, 1, 2)))
+#define printflike2 __attribute__ ((format (printf, 2, 3)))
+#define printflike3 __attribute__ ((format (printf, 3, 4)))
+#define printflike4 __attribute__ ((format (printf, 4, 5)))
+#define printflike5 __attribute__ ((format (printf, 5, 6)))
+
 #undef MIN
 #undef MAX
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -123,9 +133,83 @@ void		*reallocarray(void *, size_t, size_t);
 char		*fgetln(FILE *, size_t *);
 
 union arg {
-	char	*c;
-	int	 i;
+       char    *c;
+       int      i;
 };
+
+/* Parsed arguments structures. */
+struct args_entry {
+	u_char			 flag;
+	char			*value;
+	RB_ENTRY(args_entry)	 entry;
+};
+RB_HEAD(args_tree, args_entry);
+
+struct args {
+	struct args_tree	  tree;
+	int		 	  argc;
+	char	       		**argv;
+};
+
+/* Information used to register commands lswm understands. */
+struct cmd {
+	const struct cmd_entry	*entry;
+	struct args		*args;
+
+	char			*file;
+	u_int			 line;
+
+	TAILQ_ENTRY(cmd)	 qentry;
+};
+
+struct cmd_list {
+	int		 	 references;
+	TAILQ_HEAD(, cmd) 	 list;
+};
+
+/* Command return values. */
+enum cmd_retval {
+	CMD_RETURN_ERROR = -1,
+	CMD_RETURN_NORMAL = 0,
+};
+
+/* Command queue entry. */
+struct cmd_q_item {
+	struct cmd_list		*cmdlist;
+	TAILQ_ENTRY(cmd_q_item)	 qentry;
+};
+TAILQ_HEAD(cmd_q_items, cmd_q_item);
+
+/* Command queue. */
+struct cmd_q {
+	int			 references;
+	int			 dead;
+
+	struct cmd_q_items	 queue;
+	struct cmd_q_item	*item;
+	struct cmd		*cmd;
+
+	time_t			 time;
+	u_int			 number;
+
+	void			 (*emptyfn)(struct cmd_q *);
+	void			*data;
+};
+
+/* Command definition. */
+struct cmd_entry {
+	const char	*name;
+
+	const char	*args_template;
+	int		 args_lower;
+	int		 args_upper;
+
+	const char	*usage;
+
+	/*void		 (*key_binding)(struct cmd *, int);*/
+	enum cmd_retval	 (*exec)(struct cmd *, struct cmd_q *);
+};
+
 
 union press {
 	KeySym		 keysym;
@@ -287,13 +371,6 @@ struct binding {
 TAILQ_HEAD(keybinding_q, binding);
 TAILQ_HEAD(mousebinding_q, binding);
 
-struct cmd {
-	TAILQ_ENTRY(cmd)	 entry;
-	char			*name;
-	char			 path[PATH_MAX];
-};
-TAILQ_HEAD(cmd_q, cmd);
-
 struct menu {
 	TAILQ_ENTRY(menu)	 entry;
 	TAILQ_ENTRY(menu)	 resultentry;
@@ -311,7 +388,6 @@ struct conf {
 	struct mousebinding_q	 mousebindingq;
 	struct autogroupwin_q	 autogroupq;
 	struct ignore_q		 ignoreq;
-	struct cmd_q		 cmdq;
 #define	CONF_STICKY_GROUPS		0x0001
 	int			 flags;
 #define CONF_BWIDTH			1
@@ -406,6 +482,24 @@ enum {
 };
 extern Atom				 cwmh[CWMH_NITEMS];
 extern Atom				 ewmh[EWMH_NITEMS];
+
+/* For failures of running commands during config loading. */
+extern struct causelist cfg_causes;
+/* List of error causes. */
+ARRAY_DECL(causelist, char *);
+
+/* arguments.c */
+int		 args_cmp(struct args_entry *, struct args_entry *);
+RB_PROTOTYPE(args_tree, args_entry, entry, args_cmp);
+struct args	*args_create(int, ...);
+struct args	*args_parse(const char *, int, char **);
+void		 args_free(struct args *);
+size_t		 args_print(struct args *, char *, size_t);
+int		 args_has(struct args *, u_char);
+void		 args_set(struct args *, u_char, const char *);
+const char	*args_get(struct args *, u_char);
+long long	 args_strtonum(
+		    struct args *, u_char, long long, long long, char **);
 
 void			 usage(void);
 
@@ -615,8 +709,39 @@ void 			 xu_ewmh_restore_net_wm_state(struct client_ctx *);
 void			 u_exec(char *);
 void			 u_spawn(char *);
 
+/* cfg.c */
+int		 load_cfg(const char *, struct cmd_q *, char **);
+void		 cfg_show_causes(void);
+
+/* cmd.c */
+struct cmd_entry	*cmd_find_cmd(const char *);
+char			**cmd_copy_argv(int, char *const *);
+void			cmd_free_argv(int, char **);
+size_t			cmd_print(struct cmd *, char *, size_t);
+struct cmd		*cmd_parse(int, char **, const char *, u_int, char **);
+void			*cmd_get_context(struct cmd *);
+
+/* cmd-list.c */
+struct cmd_list	*cmd_list_parse(int, char **, const char *, u_int, char **);
+void		 cmd_list_free(struct cmd_list *);
+size_t		 cmd_list_print(struct cmd_list *, char *, size_t);
+
+/* cmd-string.c */
+int	 cmd_string_parse(const char *, struct cmd_list **, const char *,
+		u_int, char **);
+
+/* cmd-queue.c */
+struct cmd_q		*cmdq_new(void);
+int			 cmdq_free(struct cmd_q *);
+void printflike2	 cmdq_error(struct cmd_q *, const char *, ...);
+void			 cmdq_run(struct cmd_q *, struct cmd_list *);
+void			 cmdq_append(struct cmd_q *, struct cmd_list *);
+int			 cmdq_continue(struct cmd_q *);
+void			 cmdq_flush(struct cmd_q *);
+
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);
+void			*xrealloc(void *, size_t);
 void			*xreallocarray(void *, size_t, size_t);
 char			*xstrdup(const char *);
 int			 xasprintf(char **, const char *, ...)

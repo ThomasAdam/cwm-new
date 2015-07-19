@@ -170,18 +170,9 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 void
 kbfunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 {
-	struct screen_ctx	*sc = cc->sc;
-	struct cmd		*cmd;
-	struct menu		*mi;
 	struct menu_q		 menuq;
 
 	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry)
-		menuq_add(&menuq, cmd, "%s", cmd->name);
-
-	if ((mi = menu_filter(sc, &menuq, "application", NULL, 0,
-	    search_match_text, NULL)) != NULL)
-		u_spawn(((struct cmd *)mi->ctx)->path);
 
 	menuq_clear(&menuq);
 }
@@ -213,23 +204,13 @@ kbfunc_cmdexec(struct client_ctx *cc, union arg *arg)
 void
 kbfunc_term(struct client_ctx *cc, union arg *arg)
 {
-	struct cmd *cmd;
-
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry) {
-		if (strcmp(cmd->name, "term") == 0)
-			u_spawn(cmd->path);
-	}
+	return;
 }
 
 void
 kbfunc_lock(struct client_ctx *cc, union arg *arg)
 {
-	struct cmd *cmd;
-
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry) {
-		if (strcmp(cmd->name, "lock") == 0)
-			u_spawn(cmd->path);
-	}
+	return;
 }
 
 void
@@ -323,7 +304,6 @@ void
 kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
-	struct cmd		*cmd;
 	struct menu		*mi;
 	struct menu_q		 menuq;
 	FILE			*fp;
@@ -336,11 +316,6 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 	if ((fp = fopen(Conf.known_hosts, "r")) == NULL) {
 		log_debug("%s: %s", __func__, Conf.known_hosts);
 		return;
-	}
-
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry) {
-		if (strcmp(cmd->name, "term") == 0)
-			break;
 	}
 
 	TAILQ_INIT(&menuq);
@@ -376,7 +351,7 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 		if (mi->text[0] == '\0')
 			goto out;
 		l = snprintf(path, sizeof(path), "%s -T '[ssh] %s' -e ssh %s",
-		    cmd->path, mi->text, mi->text);
+		    "null", mi->text, mi->text);
 		if (l == -1 || l >= sizeof(path))
 			goto out;
 		u_spawn(path);

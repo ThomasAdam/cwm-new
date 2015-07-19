@@ -228,18 +228,5 @@ mousefunc_menu_unhide(struct client_ctx *cc, union arg *arg)
 void
 mousefunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 {
-	struct screen_ctx	*sc = cc->sc;
-	struct cmd		*cmd;
-	struct menu		*mi;
-	struct menu_q		 menuq;
-
-	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry)
-		menuq_add(&menuq, cmd, "%s", cmd->name);
-
-	if ((mi = menu_filter(sc, &menuq, NULL, NULL, CWM_MENU_LIST,
-	    NULL, NULL)) != NULL)
-		u_spawn(((struct cmd *)mi->ctx)->path);
-
-	menuq_clear(&menuq);
+	return;
 }

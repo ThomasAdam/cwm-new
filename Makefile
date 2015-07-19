@@ -5,7 +5,7 @@ PROG=		cwm-new
 
 PREFIX?=	/usr/local
 
-SRCS=		$(wildcard compat/*.[ch] *.[ch]) y.tab.c
+SRCS=		$(wildcard compat/*.[ch] *.[ch])
 
 OBJS=		$(patsubst %.c,%.o,$(SRCS))
 
@@ -21,9 +21,6 @@ all: ${PROG}
 
 clean:
 	rm -f *.o compat/*.o core* ${PROG} y.tab.c
-
-y.tab.c: parse.y
-	yacc parse.y
 
 ${PROG}: ${OBJS}
 	${CC} ${OBJS} ${CPPFLAGS} ${LDFLAGS} -o ${PROG}

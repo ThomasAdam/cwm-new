@@ -63,8 +63,10 @@ main(int argc, char **argv)
 	char		**cwm_argv;
 	int		 ch;
 	struct passwd	*pw;
+	struct cmd_q    *cfg_cmd_q;
 	bool		 open_logfile = false;
-	char		*logfile_name;
+	char		*logfile_name, *causes;
+	u_int		 a;
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		warnx("no locale support");
@@ -119,8 +121,16 @@ main(int argc, char **argv)
 	}
 
 	conf_init(&Conf);
-	if (conf_path && (parse_config(conf_path, &Conf) == -1))
-		log_debug("config file %s has errors", conf_path);
+	
+	/* Parse config file. */
+	log_debug("Reading config file: %s...", conf_path);
+	cfg_cmd_q = cmdq_new();
+	if (load_cfg(conf_path, cfg_cmd_q, &causes) == -1) {
+		for (a = 0; a < ARRAY_LENGTH(&cfg_causes); a++) {
+			log_debug("Config error: '%s'",
+				ARRAY_ITEM(&cfg_causes, a));
+		}
+	}
 	free(conf_path);
 
 	log_debug("%s starting...", __progname);
