@@ -28,11 +28,29 @@ my @pipes = glob("/tmp/cwm-*.fifo");
 exit unless @pipes;
 
 my %dzen_options = (
-        '-fg' => 'white',
-        '-bg' => 'blue',
-        '-ta' => 'l',
-        '-w'  => '580',
-        '-p'  => '',
+	'HDMI1' => {
+		'-fg' => 'white',
+		'-bg' => 'blue',
+		'-ta' => 'l',
+		'-w'  => '1024',
+		'-p'  => '',
+		'-xs' => 0,
+	},
+	'VGA1' => {
+		'-fg' => 'white',
+		'-bg' => 'blue',
+		'-ta' => 'l',
+		'-w'  => '1024',
+		'-p'  => '',
+		'-xs' => 1,
+	},
+	'global_monitor' => {
+		'-fg' => 'white',
+		'-bg' => 'blue',
+		'-ta' => 'l',
+		'-w'  => '1024',
+		'-p'  => '',
+	},
 );
 
 sub send_to_dzen
@@ -61,7 +79,7 @@ sub send_to_dzen
                         next;
                 } else {
                         $msg .= "|^fg() $sym_name ";
-                } 
+                }
         }
 
         if (defined $data->{'client'}) {
@@ -110,11 +128,15 @@ sub process_line
         close ($pipe_fh);
 }
 
+my $screen;
 foreach (@pipes) {
+	($screen) = ($_ =~ /cwm-(.*?)\.fifo/);
+	warn "SCREEN: $screen";
         if (fork()) {
                 # XXX: Close certain filehandles here; STDERR, etc.
                 my $dzen_cmd = "dzen2 " . join(" ",
-                        map { $_ . " $dzen_options{$_}" } keys(%dzen_options));
+                        map { $_ . " $dzen_options{$screen}->{$_}" }
+				keys(%{ $dzen_options{$screen} }));
                 my $dzen_pipe = IO::Pipe->new();
                 $dzen_pipe->writer($dzen_cmd);
 

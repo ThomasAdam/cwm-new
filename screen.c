@@ -100,7 +100,7 @@ screen_maybe_init_randr(void)
 	    if (crtc_info == NULL)
 		    continue;
 
-	    sc = xmalloc(sizeof(*sc));
+	    sc = xcalloc(1, sizeof(*sc));
 	    size.x = crtc_info->x;
 	    size.y = crtc_info->y;
 	    size.w = crtc_info->width;

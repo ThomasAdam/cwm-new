@@ -149,6 +149,7 @@ out:
 	 * clients on them, if they're not the active group(s); making a
 	 * distinction between empty and occupied groups, for example.
 	 */
+	u_append_str(&active_groups, "%s,", sc->group_active->name);
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 	        client_count = 0;
 	        TAILQ_FOREACH(ci, &gc->clientq, group_entry)

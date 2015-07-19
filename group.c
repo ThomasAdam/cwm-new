@@ -44,6 +44,10 @@ const char *num_to_name[] = {
 static void
 group_assign(struct group_ctx *gc, struct client_ctx *cc)
 {
+
+	if (gc == NULL)
+		gc = TAILQ_FIRST(&cc->sc->groupq);
+
 	if (cc->group != NULL)
 		TAILQ_REMOVE(&cc->group->clientq, cc, group_entry);
 
@@ -299,10 +303,10 @@ group_cycle(struct screen_ctx *sc, int flags)
 	log_debug("%s: showing group '%d'", __func__, gc->num);
 	group_hide(sc->group_active);
 
-	if (group_holds_only_hidden(showgroup))
-		group_show(showgroup);
-	else
-		group_setactive(showgroup);
+	group_show(showgroup);
+	group_setactive(showgroup);
+
+	u_put_status(sc);
 }
 
 void
