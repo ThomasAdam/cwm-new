@@ -466,6 +466,7 @@ void			 group_init(struct screen_ctx *, int);
 void			 group_movetogroup(struct client_ctx *, int);
 void			 group_only(struct screen_ctx *, int);
 void			 group_show(struct group_ctx *);
+void			 group_setactive(struct group_ctx *);
 void			 group_toggle_membership_enter(struct client_ctx *);
 void			 group_toggle_membership_leave(struct client_ctx *);
 void			 group_update_names(struct screen_ctx *);

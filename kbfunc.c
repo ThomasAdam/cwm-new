@@ -166,6 +166,11 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 		if (old_cc)
 			client_ptrsave(old_cc);
 		client_ptrwarp(cc);
+
+		/* In moving the pointer to the window, set the active group
+		 * the client is on.
+		 */
+		group_setactive(cc->group);
 	}
 
 	menuq_clear(&menuq);

@@ -34,7 +34,6 @@
 
 static void		 group_assign(struct group_ctx *, struct client_ctx *);
 static void		 group_restack(struct group_ctx *);
-static void		 group_setactive(struct group_ctx *);
 
 const char *num_to_name[] = {
 	"zero", "one", "two", "three", "four", "five", "six",
