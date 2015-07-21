@@ -243,6 +243,7 @@ struct group_ctx {
 	char			*name;
 	int			 num;
 #define GROUP_ACTIVE		 0x0001
+#define GROUP_HIDDEN		 0x0002
 	int			 flags;
 	struct client_ctx_q	 clientq;
 };

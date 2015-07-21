@@ -255,10 +255,13 @@ group_hidetoggle(struct screen_ctx *sc, int idx)
 			break;
 	}
 
-	if (group_holds_only_hidden(gc))
+	if (gc->flags & GROUP_HIDDEN) {
 		group_show(gc);
-	else
+		gc->flags &= ~GROUP_HIDDEN;
+	} else {
 		group_hide(gc);
+		gc->flags |= GROUP_HIDDEN;
+	}
 }
 
 void
