@@ -143,7 +143,7 @@ kbfunc_client_moveresize(struct client_ctx *cc, union arg *arg)
 void
 kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 {
-	struct screen_ctx	*sc = cc->sc;
+	struct screen_ctx	*sc = cc->sc, *all_sc;
 	struct client_ctx	*old_cc;
 	struct menu		*mi;
 	struct menu_q		 menuq;
@@ -151,8 +151,12 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 	old_cc = client_current();
 
 	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cc, &sc->clientq, entry)
-		menuq_add(&menuq, cc, NULL);
+	TAILQ_FOREACH(all_sc, &Screenq, entry) {
+		if (screen_should_ignore_global(all_sc))
+			continue;
+		TAILQ_FOREACH(cc, &all_sc->clientq, entry)
+			menuq_add(&menuq, cc, NULL);
+	}
 
 	if ((mi = menu_filter(sc, &menuq, "window", NULL, 0,
 	    search_match_client, search_print_client)) != NULL) {
