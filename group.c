@@ -37,7 +37,7 @@ static void		 group_restack(struct group_ctx *);
 static void		 group_setactive(struct group_ctx *);
 
 const char *num_to_name[] = {
-	"nogroup", "one", "two", "three", "four", "five", "six",
+	"zero", "one", "two", "three", "four", "five", "six",
 	"seven", "eight", "nine"
 };
 
@@ -71,6 +71,10 @@ group_hide(struct group_ctx *gc)
 
 	TAILQ_FOREACH(cc, &gc->clientq, group_entry)
 		client_hide(cc);
+
+	gc->flags &= ~GROUP_ACTIVE;
+
+	u_put_status(gc->sc);
 }
 
 void
@@ -82,7 +86,9 @@ group_show(struct group_ctx *gc)
 		client_unhide(cc);
 
 	group_restack(gc);
-	group_setactive(gc);
+	gc->flags |= GROUP_ACTIVE;
+
+	u_put_status(gc->sc);
 }
 
 static void
@@ -145,7 +151,7 @@ group_setactive(struct group_ctx *gc)
 {
 	struct screen_ctx	*sc = gc->sc;
 
-	sc->group_active = gc;
+	sc->group_current = gc;
 
 	xu_ewmh_net_current_desktop(sc);
 	u_put_status(sc);
@@ -183,7 +189,7 @@ void
 group_toggle_membership_enter(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
-	struct group_ctx	*gc = sc->group_active;
+	struct group_ctx	*gc = sc->group_current;
 
 	if (gc == cc->group) {
 		group_assign(NULL, cc);
@@ -251,12 +257,8 @@ group_hidetoggle(struct screen_ctx *sc, int idx)
 
 	if (group_holds_only_hidden(gc))
 		group_show(gc);
-	else {
+	else
 		group_hide(gc);
-		/* make clients stick to empty group */
-		if (TAILQ_EMPTY(&gc->clientq))
-			group_setactive(gc);
-	}
 }
 
 void
@@ -268,9 +270,10 @@ group_only(struct screen_ctx *sc, int idx)
 		log_fatal("%s: index out of range (%d)", __func__, idx);
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
-		if (gc->num == idx)
+		if (gc->num == idx) {
 			group_show(gc);
-		else
+			group_setactive(gc);
+		} else
 			group_hide(gc);
 	}
 }
@@ -281,12 +284,12 @@ group_only(struct screen_ctx *sc, int idx)
 void
 group_cycle(struct screen_ctx *sc, int flags)
 {
-	struct group_ctx	*gc, *gc_loop, *gc_active, *showgroup = NULL;
+	struct group_ctx	*gc, *gc_loop, *gc_current, *showgroup = NULL;
 
-	assert(sc->group_active != NULL);
-	gc_active = sc->group_active;
+	assert(sc->group_current != NULL);
+	gc_current = sc->group_current;
 	TAILQ_FOREACH(gc_loop, &sc->groupq, entry) {
-		if (gc_loop == gc_active) {
+		if (gc_loop == gc_current) {
 			gc = gc_loop;
 			break;
 		}
@@ -301,10 +304,8 @@ group_cycle(struct screen_ctx *sc, int flags)
 
 	showgroup = gc;
 	log_debug("%s: showing group '%d'", __func__, gc->num);
-	group_hide(sc->group_active);
 
-	group_show(showgroup);
-	group_setactive(showgroup);
+	group_only(sc, showgroup->num);
 
 	u_put_status(sc);
 }
@@ -367,12 +368,12 @@ group_autogroup(struct client_ctx *cc)
 	}
 
 	if (Conf.flags & CONF_STICKY_GROUPS)
-		group_assign(sc->group_active, cc);
+		group_assign(sc->group_current, cc);
 	else
 		group_assign(NULL, cc);
 
 	log_debug("%s: client (0x%x): added to group '%d', screen '%s'",
-		__func__, (int)cc->win, sc->group_active->num, cc->sc->name);
+		__func__, (int)cc->win, sc->group_current->num, cc->sc->name);
 
 	u_put_status(sc);
 }

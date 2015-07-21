@@ -242,6 +242,8 @@ struct group_ctx {
 	struct screen_ctx	*sc;
 	char			*name;
 	int			 num;
+#define GROUP_ACTIVE		 0x0001
+	int			 flags;
 	struct client_ctx_q	 clientq;
 };
 TAILQ_HEAD(group_ctx_q, group_ctx);
@@ -270,7 +272,7 @@ struct screen_ctx {
 	struct client_ctx_q	 clientq;
 #define CALMWM_NGROUPS		 10
 	struct group_ctx_q	 groupq;
-	struct group_ctx	*group_active;
+	struct group_ctx	*group_current;
 	XftColor		 xftcolor[CWM_COLOR_NITEMS];
 	XftDraw			*xftdraw;
 	XftFont			*xftfont;

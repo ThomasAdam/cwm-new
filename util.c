@@ -149,12 +149,11 @@ out:
 	 * clients on them, if they're not the active group(s); making a
 	 * distinction between empty and occupied groups, for example.
 	 */
-	u_append_str(&active_groups, "%s,", sc->group_active->name);
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 	        client_count = 0;
 	        TAILQ_FOREACH(ci, &gc->clientq, group_entry)
 	                client_count++;
-	        if (!group_holds_only_hidden(gc)) {
+	        if (gc->flags & GROUP_ACTIVE) {
 	                u_append_str(&active_groups, "%s,",
 	                        gc->name);
 	        }
@@ -172,8 +171,9 @@ out:
 
 	fprintf(sc->status_fp, "urgency:%s|", urgencies != NULL ? urgencies : "");
 	fprintf(sc->status_fp, "desktops:%s|", all_groups != NULL ? all_groups : "");
-	fprintf(sc->status_fp, "active_desktops:%s", active_groups != NULL ?
+	fprintf(sc->status_fp, "active_desktops:%s|", active_groups != NULL ?
 	                active_groups : "");
+	fprintf(sc->status_fp, "current_desktop:%s", sc->group_current->name);
 	fprintf(sc->status_fp, "\n");
 	fflush(sc->status_fp);
 

@@ -349,7 +349,6 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 	struct geom		 win_geom;
 	struct screen_ctx	*sc;
 	struct client_ctx	*ci;
-	struct group_ctx	*gc = cc->group;
 	int			 cc_x, cc_y, cc_end_x, cc_end_y;
 	int			 ci_x, ci_y, ci_end_x, ci_end_y;
 	int			 new_x1, new_x2;
@@ -404,7 +403,6 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 	struct geom		 win_geom;
 	struct screen_ctx	*sc;
 	struct client_ctx	*ci;
-	struct group_ctx	*gc = cc->group;
 	int			 cc_x, cc_y, cc_end_x, cc_end_y;
 	int			 ci_x, ci_y, ci_end_x, ci_end_y;
 	int			 new_y1, new_y2;
@@ -693,6 +691,8 @@ client_hide(struct client_ctx *cc)
 
 	if (cc == client_current())
 		client_none(cc->sc);
+
+	u_put_status(cc->sc);
 }
 
 void
@@ -706,6 +706,8 @@ client_unhide(struct client_ctx *cc)
 	cc->flags &= ~CLIENT_HIDDEN;
 	client_set_wm_state(cc, NormalState);
 	client_draw_border(cc);
+
+	u_put_status(cc->sc);
 }
 
 void
@@ -713,6 +715,9 @@ client_urgency(struct client_ctx *cc)
 {
 	if (!(cc->flags & CLIENT_ACTIVE))
 		cc->flags |= CLIENT_URGENCY;
+
+	if (cc->sc != NULL)
+		u_put_status(cc->sc);
 }
 
 void
