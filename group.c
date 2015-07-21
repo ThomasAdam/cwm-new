@@ -318,6 +318,8 @@ group_alltoggle(struct screen_ctx *sc)
 {
 	struct group_ctx	*gc;
 
+	log_debug("%s: using screen '%s'", __func__, sc->name);
+
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		if (TAILQ_EMPTY(&gc->clientq))
 			continue;
