@@ -142,8 +142,8 @@ search_print_client(struct menu *mi, int list)
 	if (list)
 		cc->matchname = cc->name;
 
-	(void)snprintf(mi->print, sizeof(mi->print), "(%d) %c[%s] %s",
-	    cc->group ? cc->group->num : 0, flag,
+	(void)snprintf(mi->print, sizeof(mi->print), "%s: (%d) %c[%s] %s",
+	    cc->sc->name, cc->group ? cc->group->num : 0, flag,
 	    cc->label ? cc->label : "", cc->matchname);
 
 	if (!list && cc->matchname != cc->name &&
