@@ -28,21 +28,20 @@ my @pipes = glob("/tmp/cwm-*.fifo");
 exit unless @pipes;
 
 my %dzen_options = (
-	'HDMI1' => {
+	'VGA-0' => {
 		'-fg' => 'white',
 		'-bg' => 'blue',
 		'-ta' => 'l',
 		'-w'  => '1024',
 		'-p'  => '',
-		'-xs' => 0,
 	},
-	'VGA1' => {
+	'DVI-I-1' => {
 		'-fg' => 'white',
 		'-bg' => 'blue',
 		'-ta' => 'l',
+		'-x'  => '1920',
 		'-w'  => '1024',
 		'-p'  => '',
-		'-xs' => 1,
 	},
 	'global_monitor' => {
 		'-fg' => 'white',
@@ -67,20 +66,28 @@ sub send_to_dzen
                 } keys %{$data->{'desktops'}})
         {
                 my $sym_name = $data->{'desktops'}->{$deskname}->{'sym_name'};
-                if (grep /^$deskname$/, @{$data->{'active_desktops'}}) {
-                        $msg .= "|^bg(#007fff) $sym_name ^bg()";
-                } elsif (grep /^$deskname$/, @{$data->{'urgency'}}) {
-                        $msg .= "|^bg(#7c8814) $sym_name ^bg()";
-                } elsif ($data->{'desktops'}->{$deskname}->{'count'} > 0) {
-                        # Highlight groups with clients on them.
-                        $msg .= "|^bg(#004c98) $sym_name ^bg()";
-                } elsif ($data->{'desktops'}->{$deskname}->{'count'} == 0) {
-                        # Don't show groups which have no clients.
-                        next;
-                } else {
-                        $msg .= "|^fg() $sym_name ";
-                }
-        }
+		my $is_active = $deskname eq $data->{'current_desktop'};
+
+		# If the window is active, give it a differnet colour.
+		if ($is_active) {
+			$msg .= "|^bg(#39c488) $sym_name ^bg()";
+		} else {
+			if (grep /^$deskname$/, @{$data->{'urgency'}}) {
+				$msg .= "|^bg(#7c8814) $sym_name ^bg()";
+			} elsif (grep /^$deskname$/, @{$data->{'active_desktops'}}) {
+				$msg .= "|^bg(#007fff) $sym_name ^bg()";
+			# If the deskname is in the active desktops lists then
+			# mark it as being viewed in addition to the currently
+			# active group.
+			} elsif ($data->{'desktops'}->{$deskname}->{'count'} > 0) {
+				# Highlight groups with clients on them.
+				$msg .= "|^bg(#004c98) $sym_name ^bg()";
+			} elsif ($data->{'desktops'}->{$deskname}->{'count'} == 0) {
+				# Don't show groups which have no clients.
+				next;
+			}
+		}
+	}
 
         if (defined $data->{'client'}) {
                 $msg .= "|^bg(#7f00ff)^fg()".$data->{'client'};
@@ -102,6 +109,7 @@ sub process_line
                         # comma-separated, and multiple values for those are
                         # comma-separated.
                         %data = map {
+				chomp;
                                 my ($k, $v) = split /:/, $_, 2;
                                 defined $v ? ($k => $v) : ($k => '');
                         } split(/\|/, $line);
@@ -131,7 +139,6 @@ sub process_line
 my $screen;
 foreach (@pipes) {
 	($screen) = ($_ =~ /cwm-(.*?)\.fifo/);
-	warn "SCREEN: $screen";
         if (fork()) {
                 # XXX: Close certain filehandles here; STDERR, etc.
                 my $dzen_cmd = "dzen2 " . join(" ",
