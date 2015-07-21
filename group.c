@@ -319,6 +319,8 @@ group_alltoggle(struct screen_ctx *sc)
 	struct group_ctx	*gc;
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
+		if (TAILQ_EMPTY(&gc->clientq))
+			continue;
 		if (sc->hideall)
 			group_show(gc);
 		else
