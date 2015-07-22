@@ -601,14 +601,23 @@ client_resize(struct client_ctx *cc, int reset)
 void
 client_move(struct client_ctx *cc)
 {
+	struct screen_ctx	*sc_new;
+
 	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
 	client_config(cc);
 
-	/* Update which monitor the client is on, and therefore which group
+	/*
+	 * Update which monitor the client is on, and therefore which group
 	 * the client is in.
+	 *
+	 * This assigns the client to the active group the output is on, if
+	 * the client being moved acrosses the boundaries between outputs.
 	 */
-	cc->sc = screen_find_screen(cc->geom.x, cc->geom.y);
-	group_assign(cc->sc->group_current, cc);
+	sc_new = screen_find_screen(cc->geom.x, cc->geom.y);
+	if (cc->sc != NULL && cc->sc != sc_new)
+		group_assign(sc_new->group_current, cc);
+
+	cc->sc = sc_new;
 }
 
 void
