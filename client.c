@@ -608,7 +608,7 @@ client_move(struct client_ctx *cc)
 	 * the client is in.
 	 */
 	cc->sc = screen_find_screen(cc->geom.x, cc->geom.y);
-	group_autogroup(cc);
+	group_assign(cc->sc->group_current, cc);
 }
 
 void
