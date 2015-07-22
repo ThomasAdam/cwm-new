@@ -32,7 +32,6 @@
 
 #include "calmwm.h"
 
-static void		 group_assign(struct group_ctx *, struct client_ctx *);
 static void		 group_restack(struct group_ctx *);
 
 const char *num_to_name[] = {
@@ -40,7 +39,7 @@ const char *num_to_name[] = {
 	"seven", "eight", "nine"
 };
 
-static void
+void
 group_assign(struct group_ctx *gc, struct client_ctx *cc)
 {
 
