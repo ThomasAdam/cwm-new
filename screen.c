@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -248,19 +249,20 @@ struct screen_ctx *
 screen_find_screen(int x, int y)
 {
 	struct screen_ctx	*sc, *sc_ret = NULL;
+	int			 x1 = abs(x), y1 = abs(y);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		if (screen_should_ignore_global(sc))
 			continue;
-		if (x >= sc->view.x && x < sc->view.x + sc->view.w &&
-		    y >= sc->view.y && y < sc->view.y + sc->view.h) {
+		if (x1 >= sc->view.x && x1 < sc->view.x + sc->view.w &&
+		    y1 >= sc->view.y && y1 < sc->view.y + sc->view.h) {
 			sc_ret = sc;
 			break;
 		}
 	}
 
 	if (sc_ret == NULL)
-		log_debug("%s: couldn't find monitor at %dx%d", __func__, x, y);
+		log_fatal("%s: couldn't find monitor at %dx%d", __func__, x, y);
 
 	return (sc_ret);
 }

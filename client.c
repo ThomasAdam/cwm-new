@@ -608,8 +608,6 @@ client_move(struct client_ctx *cc)
 	 * the client is in.
 	 */
 	cc->sc = screen_find_screen(cc->geom.x, cc->geom.y);
-	log_debug("client:  (0x%x) now on monitor '%s'", (int)cc->win,
-	    cc->sc->name);
 	group_autogroup(cc);
 }
 
