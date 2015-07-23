@@ -121,29 +121,20 @@ u_put_status(struct screen_ctx *sc)
 
 	fprintf(sc->status_fp, "screen:%s|", sc->name);
 
-	/* If there's no currently active client, we might be looking at an
-	 * empty group---skip any client processing and instead just mark this
-	 * group as active.
-	 */
-	if (cc == NULL)
-	        goto out;
-
 	/*
 	 * Go through all clients regardless of the group.  Looking at all
 	 * clients will allow for catching urgent clients on other groups which
 	 * might not be active.
 	 */
 	TAILQ_FOREACH(ci, &sc->clientq, entry) {
-	        if (ci->flags & CLIENT_HIDDEN)
-	                continue;
-	        if (ci == cc)
+	        if (cc != NULL && ci == cc)
 	                fprintf(sc->status_fp, "client:%s|", cc->name);
 	        if (ci->flags & CLIENT_URGENCY) {
 	                u_append_str(&urgencies, "%s,",
 	                        ci->group->name ? ci->group->name : "nogroup");
 	        }
 	}
-out:
+
 	/* Now go through all groups and find how many clients are on each.
 	 * This is useful so that status indicators can mark groups as having
 	 * clients on them, if they're not the active group(s); making a
