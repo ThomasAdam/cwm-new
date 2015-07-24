@@ -30,7 +30,7 @@ exit unless @pipes;
 my $preferred = 'lemonbar';
 
 my %dzen_options = (
-	'HDMI1' => {
+	'VGA-0' => {
 		'-fg' => 'white',
 		'-bg' => 'blue',
 		'-ta' => 'l',
@@ -38,7 +38,7 @@ my %dzen_options = (
 		'-p'  => '',
 		'-xs' => 0,
 	},
-	'VGA1' => {
+	'DVI-I-1' => {
 		'-fg' => 'white',
 		'-bg' => 'blue',
 		'-ta' => 'l',
@@ -56,29 +56,43 @@ my %dzen_options = (
 );
 
 my %lemonbar_options = (
-	'HDMI1' => {
+	'VGA-0' => {
 		'-p'	=> '',
-		'-g'	=> '+0 +0',
+		'-d'	=> '',
+		'-g'	=> '1920x16+0+0',
 		'-B'	=> 'blue',
-		'-u'	=> 0,
+		'-u'	=> 2,
 	},
-	'VGA1' => {
+	'DVI-I-1' => {
 		'-p'	=> '',
-		'-g'	=> '+1920 +0',
+		'-d'	=> '',
+		'-g'	=> '1920x16+1920+0',
 		'-B'	=> 'blue',
-		'-u'	=> 0,
+		'-u'	=> 2,
 	},
 	'global_monitor' => {
 		'-p'	=> '',
+		'-d'	=> '',
 		'-B'	=> 'blue',
 		'-u'	=> 0,
 	},
 );
 
+my %scr_map = (
+	'VGA-0'		 => 0,
+	'DVI-I-1'	 => 1,
+	'global_monitor' => '',
+);
+
 sub send_to_bar
 {
-        my ($data, $fh) = @_;
-        my $msg;
+	my ($data, $fh) = @_;
+	my $msg;
+	my $screen = $data->{'screen'};
+
+	if ($preferred eq 'lemonbar') {
+		$msg .= "%{S$scr_map{$screen}}";
+	}
 
         # For the list of desktops, we maintain the sort order based on the
         # group names being 0 -> 9.
@@ -131,53 +145,62 @@ sub send_to_bar
 
         if (defined $data->{'client'}) {
 			if ($preferred eq 'dzen2') {
-                $msg .= "|^bg(#7f00ff)^fg()".$data->{'client'};
+				$msg .= "|^bg(#7f00ff)^fg()".$data->{'client'};
 			} else {
-				$msg .= "|%{B#7F00FF}%{F-}".$data->{'client'};
+				$msg .= "|%{Upurple}%{+u}%{+o}%{B#7F00FF}%{F-}" .
+				$data->{'client'} .
+				"%{-u}%{-o}";
 			}
         }
 
-        print {$fh} $msg, "\n";
-        $fh->flush();
+		return $msg;
 }
 
 sub process_line
 {
         my ($fifo, $fh) = @_;
         my %data = ();
+		my $msg;
 
-        open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
-        while (1) {
-                while (my $line = <$pipe_fh>) {
-                        # Each element is pipe-separated.  Key/values are then
-                        # comma-separated, and multiple values for those are
-                        # comma-separated.
-                        %data = map {
-								chomp;
-                                my ($k, $v) = split /:/, $_, 2;
-                                defined $v ? ($k => $v) : ($k => '');
-                        } split(/\|/, $line);
+		open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
+		while (my $line = <$pipe_fh>) {
+			# Each element is pipe-separated.  Key/values are then
+			# comma-separated, and multiple values for those are
+			# comma-separated.
+			%data = map {
+			chomp;
+			my ($k, $v) = split /:/, $_, 2;
+			defined $v ? ($k => $v) : ($k => '');
+			} split(/\|/, $line);
 
-                        # For those entries we know might contain more than one
-                        # element, convert the comma-separated list in to an
-                        # array.
-                        exists $data{$_} and $data{$_} = [split /,/, $data{$_}]
-                                for (qw/urgency desktops active_desktops/);
+			# For those entries we know might contain more than one
+			# element, convert the comma-separated list in to an
+			# array.
+			exists $data{$_} and $data{$_} = [split /,/, $data{$_}]
+			for (qw/urgency desktops active_desktops/);
 
-                        # For the list of desktops, there's both the name and
-                        # the number of clients on that desk.  This can be used
-                        # to flag inactive groups with clients on them.
-                        $data{'desktops'} = {
-                                map {
-                                        ($1 => {sym_name => $2, count => $3})
-                                        if /(.*?)\s+\((.*?)\)\s+\((.*?)\)/;
-                                } @{$data{'desktops'}}
-                        };
+			# For the list of desktops, there's both the name and
+			# the number of clients on that desk.  This can be used
+			# to flag inactive groups with clients on them.
+			$data{'desktops'} = {
+				map {
+				($1 => {sym_name => $2, count => $3})
+				if /(.*?)\s+\((.*?)\)\s+\((.*?)\)/;
+				} @{$data{'desktops'}}
+			};
 
-                        send_to_bar(\%data, $fh);
-                }
-        }
-        close ($pipe_fh);
+			$msg = send_to_bar(\%data, $fh);
+			print {$fh} $msg;
+			$fh->flush();
+
+			if ($preferred eq 'lemonbar') {
+				$msg .= "%{r}%{B-}%{Ucyan}%{+u}%{+o}" .
+				scalar localtime . "%{-u}%{-o}";
+
+				print {$fh} $msg;
+			}
+			print {$fh} "\n";
+		}
 }
 
 my $screen;
