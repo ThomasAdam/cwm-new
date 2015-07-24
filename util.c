@@ -131,7 +131,8 @@ u_put_status(struct screen_ctx *sc)
 	                fprintf(sc->status_fp, "client:%s|", cc->name);
 	        if (ci->flags & CLIENT_URGENCY) {
 	                u_append_str(&urgencies, "%s,",
-	                        ci->group->name ? ci->group->name : "nogroup");
+	                        (ci->group != NULL && ci->group->name) ?
+				ci->group->name : "nogroup");
 	        }
 	}
 
