@@ -30,7 +30,7 @@ exit unless @pipes;
 my $preferred = 'lemonbar';
 
 my %dzen_options = (
-	'VGA-0' => {
+	'HDMI1' => {
 		'-fg' => 'white',
 		'-bg' => 'blue',
 		'-ta' => 'l',
@@ -38,7 +38,7 @@ my %dzen_options = (
 		'-p'  => '',
 		'-xs' => 0,
 	},
-	'DVI-I-1' => {
+	'VGA1' => {
 		'-fg' => 'white',
 		'-bg' => 'blue',
 		'-ta' => 'l',
@@ -56,14 +56,14 @@ my %dzen_options = (
 );
 
 my %lemonbar_options = (
-	'VGA-0' => {
+	'HDMI1' => {
 		'-p'	=> '',
 		'-d'	=> '',
 		'-g'	=> '1920x16+0+0',
 		'-B'	=> 'blue',
 		'-u'	=> 2,
 	},
-	'DVI-I-1' => {
+	'VGA1' => {
 		'-p'	=> '',
 		'-d'	=> '',
 		'-g'	=> '1920x16+1920+0',
@@ -79,8 +79,8 @@ my %lemonbar_options = (
 );
 
 my %scr_map = (
-	'VGA-0'		 => 0,
-	'DVI-I-1'	 => 1,
+	'HDMI1'	=> 0,
+	'VGA1'	=> 1,
 	'global_monitor' => '',
 );
 
@@ -94,127 +94,119 @@ sub send_to_bar
 		$msg .= "%{S$scr_map{$screen}}";
 	}
 
-        # For the list of desktops, we maintain the sort order based on the
-        # group names being 0 -> 9.
-        foreach my $deskname (
-                sort {
-                        $data->{'desktops'}->{$a}->{'sym_name'} <=>
-                        $data->{'desktops'}->{$b}->{'sym_name'}
-                } keys %{$data->{'desktops'}})
-        {
-			my $sym_name = $data->{'desktops'}->{$deskname}->{'sym_name'};
-			my $is_active = $deskname eq $data->{'current_desktop'};
 
-			# If the window is active, give it a differnet colour.
-			if ($is_active) {
-				if ($preferred eq 'dzen2') {
-					$msg .= "|^bg(#39c488) $sym_name ^bg()";
-				} else {
-					$msg .= "|%{B#39c488} $sym_name %{B-}";
-				}
+	# For the list of desktops, we maintain the sort order based on the
+	# group names being 0 -> 9.
+	foreach my $deskname (
+		sort {
+			$data->{'desktops'}->{$a}->{'sym_name'} <=>
+			$data->{'desktops'}->{$b}->{'sym_name'}
+		} keys %{$data->{'desktops'}})
+	{
+		my $sym_name = $data->{'desktops'}->{$deskname}->{'sym_name'};
+		my $is_active = $deskname eq $data->{'current_desktop'};
+
+		# If the window is active, give it a differnet colour.
+		if ($is_active) {
+			if ($preferred eq 'dzen2') {
+				$msg .= "|^bg(#39c488) $sym_name ^bg()";
 			} else {
-				if (grep /^$deskname$/, @{$data->{'urgency'}}) {
-					if ($preferred eq 'dzen2') {
-						$msg .= "|^bg(#7c8814) $sym_name ^bg()";
-					} else {
-						$msg .= "|%{B#7c8814} $sym_name %{B-}";
-					}
-				} elsif (grep /^$deskname$/, @{$data->{'active_desktops'}}) {
-					if ($preferred eq 'dzen2') {
-						$msg .= "|^bg(#007fff) $sym_name ^bg()";
-					} else {
-						$msg .= "|%{B#007FFF} $sym_name %{B-}";
-					}
-
-					# If the deskname is in the active desktops lists then
-					# mark it as being viewed in addition to the currently
-					# active group.
-				} elsif ($data->{'desktops'}->{$deskname}->{'count'} > 0) {
-					# Highlight groups with clients on them.
-					if ($preferred eq 'dzen2') {
-						$msg .= "|^bg(#004c98) $sym_name ^bg()";
-					} else {
-						$msg .= "|%{B#004C98} $sym_name %{B-}";
-					}
-				} elsif ($data->{'desktops'}->{$deskname}->{'count'} == 0) {
-					# Don't show groups which have no clients.
-					next;
+				$msg .= "|%{B#39c488} $sym_name %{B-}";
+			}
+		} else {
+			if (grep /^$deskname$/, @{$data->{'urgency'}}) {
+				if ($preferred eq 'dzen2') {
+					$msg .= "|^bg(#7c8814) $sym_name ^bg()";
+				} else {
+					$msg .= "|%{B#7c8814} $sym_name %{B-}";
 				}
+			} elsif (grep /^$deskname$/, @{$data->{'active_desktops'}}) {
+				if ($preferred eq 'dzen2') {
+					$msg .= "|^bg(#007fff) $sym_name ^bg()";
+				} else {
+					$msg .= "|%{B#007FFF} $sym_name %{B-}";
+				}
+
+				# If the deskname is in the active desktops lists then
+				# mark it as being viewed in addition to the currently
+				# active group.
+			} elsif ($data->{'desktops'}->{$deskname}->{'count'} > 0) {
+				# Highlight groups with clients on them.
+				if ($preferred eq 'dzen2') {
+					$msg .= "|^bg(#004c98) $sym_name ^bg()";
+				} else {
+					$msg .= "|%{B#004C98} $sym_name %{B-}";
+				}
+			} elsif ($data->{'desktops'}->{$deskname}->{'count'} == 0) {
+				# Don't show groups which have no clients.
+				next;
 			}
 		}
+	}
 
-        if (defined $data->{'client'}) {
-			if ($preferred eq 'dzen2') {
-				$msg .= "|^bg(#7f00ff)^fg()".$data->{'client'};
-			} else {
-				$msg .= "|%{Upurple}%{+u}%{+o}%{B#7F00FF}%{F-}" .
-				$data->{'client'} .
-				"%{-u}%{-o}";
-			}
-        }
+	if (defined $data->{'client'}) {
+		if ($preferred eq 'dzen2') {
+			$msg .= "|^bg(#7f00ff)^fg()".$data->{'client'};
+		} else {
+			$msg .= "|%{Ugreen}%{+u}%{+o}%{B#7F00FF}%{F-}" .
+			$data->{'client'} . "%{-u}%{-o}%{B-}";
+		}
+	}
 
-		return $msg;
+	return $msg;
 }
 
 sub process_line
 {
-        my ($fifo, $fh) = @_;
-        my %data = ();
-		my $msg;
+	my ($fifo, $fh) = @_;
+	my %data = ();
+	my $msg;
 
-		open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
-		while (my $line = <$pipe_fh>) {
-			# Each element is pipe-separated.  Key/values are then
-			# comma-separated, and multiple values for those are
-			# comma-separated.
-			%data = map {
+	open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
+	while (my $line = <$pipe_fh>) {
+		# Each element is pipe-separated.  Key/values are then
+		# comma-separated, and multiple values for those are
+		# comma-separated.
+		%data = map {
 			chomp;
 			my ($k, $v) = split /:/, $_, 2;
 			defined $v ? ($k => $v) : ($k => '');
-			} split(/\|/, $line);
+		} split(/\|/, $line);
 
-			# For those entries we know might contain more than one
-			# element, convert the comma-separated list in to an
-			# array.
-			exists $data{$_} and $data{$_} = [split /,/, $data{$_}]
+		# For those entries we know might contain more than one
+		# element, convert the comma-separated list in to an
+		# array.
+		exists $data{$_} and $data{$_} = [split /,/, $data{$_}]
 			for (qw/urgency desktops active_desktops/);
 
-			# For the list of desktops, there's both the name and
-			# the number of clients on that desk.  This can be used
-			# to flag inactive groups with clients on them.
-			$data{'desktops'} = {
-				map {
+		# For the list of desktops, there's both the name and
+		# the number of clients on that desk.  This can be used
+		# to flag inactive groups with clients on them.
+		$data{'desktops'} = {
+			map {
 				($1 => {sym_name => $2, count => $3})
-				if /(.*?)\s+\((.*?)\)\s+\((.*?)\)/;
-				} @{$data{'desktops'}}
-			};
+					if /(.*?)\s+\((.*?)\)\s+\((.*?)\)/;
+			} @{$data{'desktops'}}
+		};
 
-			$msg = send_to_bar(\%data, $fh);
-			print {$fh} $msg;
-			$fh->flush();
-
-			if ($preferred eq 'lemonbar') {
-				$msg .= "%{r}%{B-}%{Ucyan}%{+u}%{+o}" .
-				scalar localtime . "%{-u}%{-o}";
-
-				print {$fh} $msg;
-			}
-			print {$fh} "\n";
-		}
+		$msg = send_to_bar(\%data, $fh);
+		$fh->flush();
+		print {$fh} $msg, "\n";
+	}
 }
 
 my $screen;
 my %opts = ($preferred eq 'dzen2') ? %dzen_options : %lemonbar_options;
 foreach (@pipes) {
 	($screen) = ($_ =~ /cwm-(.*?)\.fifo/);
-        if (fork()) {
-                # XXX: Close certain filehandles here; STDERR, etc.
-                my $cmd = "$preferred " . join(" ",
-                        map { $_ . " $opts{$screen}->{$_}" }
-				keys(%{ $opts{$screen} }));
-                my $pipe = IO::Pipe->new();
-                $pipe->writer($cmd);
+	if (fork()) {
+		# XXX: Close certain filehandles here; STDERR, etc.
+		my $cmd = "$preferred " . join(" ",
+			map { $_ . " $opts{$screen}->{$_}" }
+			keys(%{ $opts{$screen} }));
+		my $pipe = IO::Pipe->new();
+		$pipe->writer($cmd);
 
-                process_line($_, $pipe);
-        }
+		process_line($_, $pipe);
+	}
 }
