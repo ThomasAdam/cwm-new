@@ -18,7 +18,6 @@
 
 use strict;
 use warnings;
-use IO::Pipe;
 
 $| = 1;
 
@@ -84,9 +83,9 @@ my %scr_map = (
 	'global_monitor' => '',
 );
 
-sub send_to_bar
+sub format_output
 {
-	my ($data, $fh) = @_;
+	my ($data) = @_;
 	my $msg;
 	my $screen = $data->{'screen'};
 
@@ -158,12 +157,17 @@ sub send_to_bar
 
 sub process_line
 {
-	my ($fifo, $fh) = @_;
+	my ($fifo) = @_;
 	my %data = ();
 	my $msg;
 
 	open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
 	while (my $line = <$pipe_fh>) {
+		unless ($line =~ /^screen:/) {
+			print $line, "\n";
+			next;
+		}
+
 		# Each element is pipe-separated.  Key/values are then
 		# comma-separated, and multiple values for those are
 		# comma-separated.
@@ -189,24 +193,19 @@ sub process_line
 			} @{$data{'desktops'}}
 		};
 
-		$msg = send_to_bar(\%data, $fh);
-		$fh->flush();
-		print {$fh} $msg, "\n";
+		print format_output(\%data), "\n";
 	}
 }
 
-my $screen;
 my %opts = ($preferred eq 'dzen2') ? %dzen_options : %lemonbar_options;
+my $screen;
 foreach (@pipes) {
 	($screen) = ($_ =~ /cwm-(.*?)\.fifo/);
 	if (fork()) {
 		# XXX: Close certain filehandles here; STDERR, etc.
 		my $cmd = "$preferred " . join(" ",
-			map { $_ . " $opts{$screen}->{$_}" }
-			keys(%{ $opts{$screen} }));
-		my $pipe = IO::Pipe->new();
-		$pipe->writer($cmd);
+			map { $_ . " $opts{$screen}->{$_}" } keys(%{ $opts{$screen} }));
 
-		process_line($_, $pipe);
+		process_line($_);
 	}
 }
