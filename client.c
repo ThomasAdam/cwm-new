@@ -355,8 +355,8 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 
 	sc = cc->sc;
 
-	new_x1 = sc->view.x;
-	new_x2 = new_x1 + sc->view.w - (cc->bwidth * 2);
+	new_x1 = sc->work.x;
+	new_x2 = new_x1 + sc->work.w - (cc->bwidth * 2);
 
 	cc_x = new_geom->x;
 	cc_y = new_geom->y;
@@ -414,8 +414,8 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 	cc_end_x = cc_x + new_geom->w;
 	cc_end_y = cc_y + new_geom->h;
 
-	new_y1 = sc->view.y;
-	new_y2 = sc->view.h - (cc->bwidth * 2);
+	new_y1 = sc->work.y;
+	new_y2 = sc->work.h - (cc->bwidth * 2);
 
 	/* Go through all clients and move up and down. */
 	TAILQ_FOREACH(ci, &sc->clientq, entry) {
