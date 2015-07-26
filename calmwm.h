@@ -154,6 +154,13 @@ enum color {
 	CWM_COLOR_NITEMS
 };
 
+enum cc_slide_direction {
+	CC_SLIDE_UP,
+	CC_SLIDE_DOWN,
+	CC_SLIDE_LEFT,
+	CC_SLIDE_RIGHT
+};
+
 struct geom {
 	int		 x;
 	int		 y;
@@ -441,6 +448,8 @@ void			 client_set_wm_state(struct client_ctx *, long);
 void			 client_setactive(struct client_ctx *);
 void			 client_setname(struct client_ctx *);
 int			 client_snapcalc(int, int, int, int, int);
+void			 client_slide(struct client_ctx *,
+			     enum cc_slide_direction);
 void			 client_toggle_freeze(struct client_ctx *);
 void			 client_toggle_fullscreen(struct client_ctx *);
 void			 client_toggle_hidden(struct client_ctx *);
@@ -523,6 +532,7 @@ void			 kbfunc_client_toggle_hmaximize(struct client_ctx *,
 			     union arg *);
 void			 kbfunc_client_toggle_maximize(struct client_ctx *,
 			     union arg *);
+void			 kbfunc_client_slide(struct client_ctx *, union arg *);
 void			 kbfunc_client_toggle_sticky(struct client_ctx *,
     			     union arg *);
 void			 kbfunc_client_toggle_vmaximize(struct client_ctx *,

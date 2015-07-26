@@ -196,6 +196,12 @@ kbfunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 }
 
 void
+kbfunc_client_slide(struct client_ctx *cc, union arg *arg)
+{
+	client_slide(cc, 0);
+}
+
+void
 kbfunc_client_cycle(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;

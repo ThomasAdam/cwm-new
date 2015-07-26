@@ -478,6 +478,36 @@ resize:
 }
 
 void
+client_slide(struct client_ctx *cc, enum cc_slide_direction dir)
+{
+	struct client_ctx	*ci;
+	struct screen_ctx	*sc;
+	int			 new_y = 0;
+
+	fprintf(stderr, "Running...\n");
+
+	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+		if (ci == cc)
+			continue;
+		if ((new_y < ci->geom.y + ci->geom.h) &&
+		    (ci->geom.y + ci->geom.h < cc->geom.y) &&
+		    ((ci->geom.x >= cc->geom.x &&
+		      ci->geom.x <= cc->geom.x + cc->geom.w) ||
+		     (ci->geom.x + ci->geom.w >= cc->geom.x) &&
+		     (ci->geom.x + ci->geom.w <= cc->geom.x + cc->geom.w)))
+		{
+			new_y = ci->geom.y + ci->geom.h;
+		}
+	}
+
+	if (new_y < cc->geom.y) {
+		cc->geom.y = new_y;
+		fprintf(stderr, "Set new_y: %d\n", new_y);
+		client_move(cc);
+	}
+}
+
+void
 client_toggle_maximize(struct client_ctx *cc)
 {
         struct geom              xine;
