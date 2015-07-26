@@ -363,7 +363,7 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 	cc_end_x = cc_x + new_geom->w;
 	cc_end_y = cc_y + new_geom->h;
 
-	TAILQ_FOREACH(ci, &sc->clientq, entry) {
+	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 		if (ci == cc)
 			continue;
 
@@ -418,7 +418,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 	new_y2 = sc->work.h - (cc->bwidth * 2);
 
 	/* Go through all clients and move up and down. */
-	TAILQ_FOREACH(ci, &sc->clientq, entry) {
+	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 		if (ci == cc)
 			continue;
 
@@ -429,7 +429,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 		ci_end_x = ci_x + win_geom.w;
 		ci_end_y = ci_y + win_geom.h;
 
-		if (!((ci_end_x <= cc_x) || (ci_end_x >= cc_end_x)))
+		if (!((ci_end_x <= cc_x) || (ci_x >= cc_end_x)))
 		{
 			if ((ci_end_y <= cc_y) && (ci_end_y >= new_y1))
 			{
