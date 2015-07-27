@@ -31,6 +31,9 @@
 
 #include "calmwm.h"
 
+#define OVERLAP(a,b,c,d) (((a)==(c) && (b)==(d)) || \
+		MIN((a)+(b), (c)+(d)) - MAX((a), (c)) > 0)
+
 static struct client_ctx	*client_next(struct client_ctx *);
 static struct client_ctx	*client_prev(struct client_ctx *);
 static void			 client_mtf(struct client_ctx *);
@@ -45,6 +48,32 @@ static void			 client_expand_vert(struct client_ctx *,
 					struct geom *);
 
 struct client_ctx	*curcc = NULL;
+
+void
+client_data_extend(struct client_ctx *cc)
+{
+	struct screen_ctx	*sc;
+	XWindowAttributes	 wattr;
+	int			 x, y, w, h;
+
+	if (cc == NULL || cc->extended_data)
+		return;
+
+	sc = cc->sc;
+
+	XGetWindowAttributes(X_Dpy, cc->win, &wattr);
+
+	x = wattr.x - sc->work.x - cc->bwidth;
+	y = wattr.y - sc->work.y - cc->bwidth;
+	w = wattr.width + cc->bwidth * 2;
+	h = wattr.height + cc->bwidth * 2;
+
+	cc->geom.x = sc->work.x + x;
+	cc->geom.y = sc->work.y + y;
+	cc->geom.w = w;
+	cc->geom.h = h;
+	cc->extended_data = 1;
+}
 
 void
 client_scan_for_windows(void)
@@ -126,6 +155,7 @@ client_init(Window win, int skip_map_check)
 	XGrabServer(X_Dpy);
 
 	cc->win = win;
+	cc->extended_data = 0;
 
 	TAILQ_INIT(&cc->nameq);
 	client_setname(cc);
@@ -167,6 +197,7 @@ client_init(Window win, int skip_map_check)
 	client_transient(cc);
 
 	/* Notify client of its configuration. */
+	client_data_extend(cc);
 	client_config(cc);
 
 	TAILQ_INSERT_TAIL(&sc->clientq, cc, entry);
@@ -275,6 +306,118 @@ client_none(struct screen_ctx *sc)
 	curcc = NULL;
 }
 
+void
+client_snap(struct client_ctx *cc, int dir)
+{
+	struct client_ctx	*ci;
+	struct screen_ctx	*sc = cc->sc;
+	int			 n, x, y, w, h;
+
+	client_data_extend(cc);
+
+	n = 0;
+	x = cc->geom.x, y = cc->geom.y, w = cc->geom.w, h = cc->geom.h;
+
+	if (dir == CWM_SNAP_UP) {
+		y--;
+		n = sc->work.y;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+
+			if (!OVERLAP(cc->geom.x - 1, cc->geom.w + 2, ci->geom.x,
+				     ci->geom.w)) {
+				continue;
+			}
+			if (ci->geom.y + ci->geom.h <= y)
+				n = MAX(n, ci->geom.y + ci->geom.h);
+			if (ci->geom.y <= y)
+				n = MAX(n, ci->geom.y);
+			if (ci->geom.y + ci->geom.h <= y + h)
+				n = MAX(n, ci->geom.y + ci->geom.h - h);
+			if (ci->geom.y <= y + h)
+				n = MAX(n, ci->geom.y - h);
+		}
+		y = n;
+	}
+
+	if (dir == CWM_SNAP_DOWN) {
+		y++;
+		n = sc->work.y + sc->work.h;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+
+			client_data_extend(ci);
+			if (!OVERLAP(cc->geom.x - 1, cc->geom.w + 2, ci->geom.x,
+			    ci->geom.w)) {
+				continue;
+			}
+
+			if (ci->geom.y + ci->geom.h >= y + h)
+				n = MIN(n, ci->geom.y + ci->geom.h);
+			if (ci->geom.y >= y + h)
+				n = MIN(n, ci->geom.y);
+			if (ci->geom.y + ci->geom.h >= y)
+				n = MIN(n, ci->geom.y + ci->geom.h + h);
+			if (ci->geom.y >= y)
+				n = MIN(n, ci->geom.y + h);
+		}
+		y = n - h;
+	}
+
+	if (dir == CWM_SNAP_LEFT) {
+		x--;
+		n = sc->work.x;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+
+			client_data_extend(ci);
+			if (!OVERLAP(cc->geom.y - 1, cc->geom.h + 2, ci->geom.y,
+			    ci->geom.h)) {
+				continue;
+			}
+			if (ci->geom.x + ci->geom.w <= x)
+				n = MAX(n, ci->geom.x + ci->geom.w);
+			if (ci->geom.x <= x)
+				n = MAX(n, ci->geom.x);
+			if (ci->geom.x + ci->geom.w <= x + w)
+				n = MAX(n, ci->geom.x + ci->geom.w - w);
+			if (ci->geom.x <= x + w)
+				n = MAX(n, ci->geom.x - w);
+		}
+		x = n;
+	}
+
+	if (dir == CWM_SNAP_RIGHT) {
+		x++;
+		n = sc->work.x + sc->work.w;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+
+			client_data_extend(ci);
+			if (!OVERLAP(cc->geom.y - 1, cc->geom.h + 2, ci->geom.y,
+			    ci->geom.h)) {
+				continue;
+			}
+			if (ci->geom.x + ci->geom.w >= x + w)
+				n = MIN(n, ci->geom.x + ci->geom.w);
+			if (ci->geom.x >= x + w)
+				n = MIN(n, ci->geom.x);
+			if (ci->geom.x + ci->geom.w >= x)
+				n = MIN(n, ci->geom.x + ci->geom.w + w);
+			if (ci->geom.x >= x) n = MIN(n, ci->geom.x + w);
+		}
+		x = n - w;
+	}
+
+	cc->geom.x = x;
+	cc->geom.y = y;
+	client_move(cc);
+}
+
 struct client_ctx *
 client_current(void)
 {
@@ -356,7 +499,7 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 	sc = cc->sc;
 
 	new_x1 = sc->work.x;
-	new_x2 = new_x1 + sc->work.w - (cc->bwidth * 2);
+	new_x2 = new_x1 + sc->work.w;
 
 	cc_x = new_geom->x;
 	cc_y = new_geom->y;
@@ -371,7 +514,7 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 
 		ci_x = win_geom.x;
 		ci_y = win_geom.y;
-		ci_end_x = ci_x + win_geom.w;
+		ci_end_x = (ci_x + win_geom.w) + cc->bwidth * 2;
 		ci_end_y = ci_y + win_geom.h;
 
 		/* Check to see if the client is the same Y axis. */
@@ -382,18 +525,18 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 				/* Expand up to the window, including the
 				 * border's edge.
 				 */
-				new_x1 = ci_end_x + (cc->bwidth * 2);
+				new_x1 = ci_end_x;
 			}
 			else if ((cc_end_x <= ci_x) && (new_x2 >= ci_x))
 			{
 				/* Shrink back to the top of the border,
 				 * outside of its width so we don't overlap.
 				 */
-				new_x2 = ci_x - (cc->bwidth * 2);
+				new_x2 = ci_x;
 			}
 		}
 	}
-	new_geom->w = new_x2 - new_x1;
+	new_geom->w = (new_x2 - new_x1) - cc->bwidth * 2;
 	new_geom->x = new_x1;
 }
 
@@ -411,11 +554,11 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 
 	cc_x = new_geom->x;
 	cc_y = new_geom->y;
-	cc_end_x = cc_x + new_geom->w;
+	cc_end_x = cc_x + new_geom->w + cc->bwidth * 2;
 	cc_end_y = cc_y + new_geom->h;
 
 	new_y1 = sc->work.y;
-	new_y2 = sc->work.h;
+	new_y2 = new_y1 + sc->work.h;
 
 	/* Go through all clients and move up and down. */
 	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
@@ -441,8 +584,8 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 			}
 		}
 	}
-	new_geom->h = (new_y2 - new_y1);
-	new_geom->y = new_y1 + (cc->bwidth * 2);
+	new_geom->h = (new_y2 - new_y1) - cc->bwidth * 2;
+	new_geom->y = new_y1;
 }
 
 void
@@ -460,21 +603,42 @@ client_expand(struct client_ctx *cc)
 		cc->geom = cc->savegeom;
 		cc->bwidth = Conf.bwidth;
 
+		/* Don't allow to overrun boundaries. */
+		{
+			struct geom	 scedge = cc->sc->work;
+			scedge.w += scedge.x - Conf.bwidth * 2;
+			scedge.h += scedge.y - Conf.bwidth * 2;
+
+			if (cc->geom.x + cc->geom.y >= scedge.w)
+				cc->geom.x = scedge.w - cc->geom.w;
+			if (cc->geom.x < scedge.x) {
+				cc->geom.x = scedge.x;
+				cc->geom.w = MIN(cc->geom.w,
+						(scedge.w - scedge.x));
+			}
+			if (cc->geom.y + cc->geom.h >= scedge.h)
+				cc->geom.y = scedge.h - cc->geom.h;
+			if (cc->geom.y < scedge.y) {
+				cc->geom.y = scedge.y;
+				cc->geom.h = MIN(cc->geom.h,
+						(scedge.h - scedge.y));
+			}
+		}
 		goto resize;
 	} else {
 		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
 		memcpy(&new_geom, &cc->geom, sizeof(cc->geom));
 	}
 
-	client_expand_vert(cc, &new_geom);
 	client_expand_horiz(cc, &new_geom);
+	client_expand_vert(cc, &new_geom);
 
 	memcpy(&cc->geom, &new_geom, sizeof(new_geom));
+	cc->extended_data = 0;
         cc->flags |= CLIENT_EXPANDED;
 
 resize:
         client_resize(cc, 0);
-	xu_ewmh_set_net_wm_state(cc);
 }
 
 void
@@ -604,7 +768,6 @@ client_move(struct client_ctx *cc)
 	struct screen_ctx	*sc_new;
 
 	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
-	client_config(cc);
 
 	/*
 	 * Update which monitor the client is on, and therefore which group
@@ -618,6 +781,8 @@ client_move(struct client_ctx *cc)
 		group_assign(sc_new->group_current, cc);
 
 	cc->sc = sc_new;
+	client_data_extend(cc);
+	client_config(cc);
 }
 
 void
@@ -638,6 +803,7 @@ client_config(struct client_ctx *cc)
 	XConfigureEvent	 cn;
 
 	(void)memset(&cn, 0, sizeof(cn));
+
 	cn.type = ConfigureNotify;
 	cn.event = cc->win;
 	cn.window = cc->win;

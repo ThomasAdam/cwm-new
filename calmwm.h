@@ -116,6 +116,11 @@
 #define CWM_RUNNING		0x0001
 #define CWM_RESTART		0x0002
 
+#define CWM_SNAP_UP		0x0001
+#define CWM_SNAP_DOWN		0x0002
+#define CWM_SNAP_LEFT		0x0004
+#define CWM_SNAP_RIGHT		0x0008
+
 long long	 strtonum(const char *, long long, long long, const char **);
 size_t		 strlcpy(char *, const char *, size_t);
 size_t		 strlcat(char *, const char*, size_t);
@@ -225,6 +230,7 @@ struct client_ctx {
 #define CLIENT_MAXIMIZED		(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
 	int			 flags;
 	int			 stackingorder;
+	int			 extended_data;
 	struct winname_q	 nameq;
 #define CLIENT_MAXNAMEQLEN		5
 	int			 nameqlen;
@@ -421,6 +427,7 @@ void			 client_cycle(struct screen_ctx *, int);
 void			 client_cycle_leave(struct screen_ctx *);
 void			 client_delete(struct client_ctx *);
 void			 client_draw_border(struct client_ctx *);
+void			 client_data_extend(struct client_ctx *);
 void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
 long			 client_get_wm_state(struct client_ctx *);
@@ -441,6 +448,7 @@ void			 client_send_delete(struct client_ctx *);
 void			 client_set_wm_state(struct client_ctx *, long);
 void			 client_setactive(struct client_ctx *);
 void			 client_setname(struct client_ctx *);
+void			 client_snap(struct client_ctx *, int);
 int			 client_snapcalc(int, int, int, int, int);
 void			 client_toggle_freeze(struct client_ctx *);
 void			 client_toggle_fullscreen(struct client_ctx *);
@@ -517,6 +525,7 @@ void			 kbfunc_client_nogroup(struct client_ctx *,
 void			 kbfunc_client_raise(struct client_ctx *, union arg *);
 void			 kbfunc_client_rcycle(struct client_ctx *, union arg *);
 void			 kbfunc_client_search(struct client_ctx *, union arg *);
+void			 kbfunc_client_snap(struct client_ctx *, union arg *);
 void			 kbfunc_client_toggle_freeze(struct client_ctx *,
     			     union arg *);
 void			 kbfunc_client_toggle_fullscreen(struct client_ctx *,
