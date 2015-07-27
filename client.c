@@ -31,6 +31,9 @@
 
 #include "calmwm.h"
 
+#define OVERLAP(a,b,c,d) (((a)==(c) && (b)==(d)) || \
+		MIN((a)+(b), (c)+(d)) - MAX((a), (c)) > 0)
+
 static struct client_ctx	*client_next(struct client_ctx *);
 static struct client_ctx	*client_prev(struct client_ctx *);
 static void			 client_mtf(struct client_ctx *);
@@ -273,6 +276,110 @@ client_none(struct screen_ctx *sc)
 	xu_ewmh_net_active_window(sc, none);
 
 	curcc = NULL;
+}
+
+void
+client_snap(struct client_ctx *cc, int dir)
+{
+	struct client_ctx	*ci;
+	struct screen_ctx	*sc = cc->sc;
+	int			 n, x, y, w, h;
+
+	n = 0;
+	x = cc->geom.x, y = cc->geom.y, w = cc->geom.w, h = cc->geom.h;
+
+	if (dir == CWM_SNAP_UP) {
+		y--;
+		n = sc->work.y;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+			if (!OVERLAP(cc->geom.x - 1, cc->geom.w + 2, ci->geom.x,
+				     ci->geom.w)) {
+				continue;
+			}
+			if (ci->geom.y + ci->geom.h <= y)
+				n = MAX(n, ci->geom.y + ci->geom.h);
+			if (ci->geom.y <= y)
+				n = MAX(n, ci->geom.y);
+			if (ci->geom.y + ci->geom.h <= y + h)
+				n = MAX(n, ci->geom.y + ci->geom.h - h);
+			if (ci->geom.y <= y + h)
+				n = MAX(n, ci->geom.y - h);
+		}
+		y = n + (cc->bwidth * 2);
+	}
+
+	if (dir == CWM_SNAP_DOWN) {
+		y++;
+		n = sc->work.y + sc->work.h;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+			if (!OVERLAP(cc->geom.x - 1, cc->geom.w + 2, ci->geom.x,
+			    ci->geom.w)) {
+				continue;
+			}
+
+			if (ci->geom.y + ci->geom.h >= y + h)
+				n = MIN(n, ci->geom.y + ci->geom.h);
+			if (ci->geom.y >= y + h)
+				n = MIN(n, ci->geom.y);
+			if (ci->geom.y + ci->geom.h >= y)
+				n = MIN(n, ci->geom.y + ci->geom.h + h);
+			if (ci->geom.y >= y)
+				n = MIN(n, ci->geom.y + h);
+		}
+		y = n - h - (cc->bwidth * 2);
+	}
+
+	if (dir == CWM_SNAP_LEFT) {
+		x--;
+		n = sc->work.x;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+			if (!OVERLAP(cc->geom.y - 1, cc->geom.h + 2, ci->geom.y,
+			    ci->geom.h)) {
+				continue;
+			}
+			if (ci->geom.x + ci->geom.w <= x)
+				n = MAX(n, ci->geom.x + ci->geom.w);
+			if (ci->geom.x <= x)
+				n = MAX(n, ci->geom.x);
+			if (ci->geom.x + ci->geom.w <= x + w)
+				n = MAX(n, ci->geom.x + ci->geom.w - w);
+			if (ci->geom.x <= x + w)
+				n = MAX(n, ci->geom.x - w);
+		}
+		x = n + (cc->bwidth * 2);
+	}
+
+	if (dir == CWM_SNAP_RIGHT) {
+		x++;
+		n = sc->work.x + sc->work.w;
+		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
+			if (cc == ci)
+				continue;
+			if (!OVERLAP(cc->geom.y - 1, cc->geom.h + 2, ci->geom.y,
+			    ci->geom.h)) {
+				continue;
+			}
+			if (ci->geom.x + ci->geom.w >= x + w)
+				n = MIN(n, ci->geom.x + ci->geom.w);
+			if (ci->geom.x >= x + w)
+				n = MIN(n, ci->geom.x);
+			if (ci->geom.x + ci->geom.w >= x)
+				n = MIN(n, ci->geom.x + ci->geom.w + w);
+			if (ci->geom.x >= x) n = MIN(n, ci->geom.x + w);
+		}
+		x = n - w - (cc->bwidth * 2);
+	}
+
+	cc->geom.x = x;
+	cc->geom.y = y;
+	fprintf(stderr, "MOVING: x: %d, y: %d\n", x, y);
+	client_move(cc);
 }
 
 struct client_ctx *
