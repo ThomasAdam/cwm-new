@@ -506,6 +506,11 @@ kbfunc_client_toggle_freeze(struct client_ctx *cc, union arg *arg)
 	client_toggle_freeze(cc);
 }
 
+void kbfunc_client_snap(struct client_ctx *cc, union arg *arg)
+{
+	client_snap(cc, arg->i);
+}
+
 void
 kbfunc_cwm_status(struct client_ctx *cc, union arg *arg)
 {

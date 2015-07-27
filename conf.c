@@ -236,6 +236,10 @@ static const struct {
 	{ "CS-Down",	"bigptrmovedown" },
 	{ "CS-Up",	"bigptrmoveup" },
 	{ "CS-Right",	"bigptrmoveright" },
+	{ "4S-Up",	"snapup" },
+	{ "4S-Down",	"snapdown" },
+	{ "4S-Left",	"snapleft" },
+	{ "4S-Right",	"snapright" }
 },
 mouse_binds[] = {
 	{ "1",		"menu_unhide" },
@@ -457,6 +461,10 @@ static const struct {
 	    {.i = (CWM_LEFT|CWM_PTRMOVE|CWM_BIGMOVE)} },
 	{ "bigptrmoveright", kbfunc_client_moveresize, 0,
 	    {.i = (CWM_RIGHT|CWM_PTRMOVE|CWM_BIGMOVE)} },
+	{ "snapup", kbfunc_client_snap, CWM_WIN, {.i = (CWM_SNAP_UP) } },
+	{ "snapdown", kbfunc_client_snap, CWM_WIN, {.i = (CWM_SNAP_DOWN) } },
+	{ "snapleft", kbfunc_client_snap, CWM_WIN, {.i = (CWM_SNAP_LEFT) } },
+	{ "snapright", kbfunc_client_snap, CWM_WIN, {.i = (CWM_SNAP_RIGHT) } },
 	{ "htile", kbfunc_tile, CWM_WIN, {.i = CWM_TILE_HORIZ} },
 	{ "vtile", kbfunc_tile, CWM_WIN, {.i = CWM_TILE_VERT} },
 	{ "window_lower", kbfunc_client_lower, CWM_WIN, {0} },
