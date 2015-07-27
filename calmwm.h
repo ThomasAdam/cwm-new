@@ -230,6 +230,7 @@ struct client_ctx {
 #define CLIENT_MAXIMIZED		(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
 	int			 flags;
 	int			 stackingorder;
+	int			 extended_data;
 	struct winname_q	 nameq;
 #define CLIENT_MAXNAMEQLEN		5
 	int			 nameqlen;
@@ -426,6 +427,7 @@ void			 client_cycle(struct screen_ctx *, int);
 void			 client_cycle_leave(struct screen_ctx *);
 void			 client_delete(struct client_ctx *);
 void			 client_draw_border(struct client_ctx *);
+void			 client_data_extend(struct client_ctx *);
 void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
 long			 client_get_wm_state(struct client_ctx *);

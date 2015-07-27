@@ -50,6 +50,32 @@ static void			 client_expand_vert(struct client_ctx *,
 struct client_ctx	*curcc = NULL;
 
 void
+client_data_extend(struct client_ctx *cc)
+{
+	struct screen_ctx	*sc;
+	XWindowAttributes	 wattr;
+	int			 x, y, w, h;
+
+	if (cc == NULL || cc->extended_data)
+		return;
+
+	sc = cc->sc;
+
+	XGetWindowAttributes(X_Dpy, cc->win, &wattr);
+
+	x = wattr.x - sc->work.x - cc->bwidth;
+	y = wattr.y - sc->work.y - cc->bwidth;
+	w = wattr.width + cc->bwidth * 2;
+	h = wattr.height + cc->bwidth * 2;
+
+	cc->geom.x = sc->work.x + x;
+	cc->geom.y = sc->work.y + y;
+	cc->geom.w = w;
+	cc->geom.h = h;
+	cc->extended_data = 1;
+}
+
+void
 client_scan_for_windows(void)
 {
 	struct screen_ctx	*sc;
@@ -129,6 +155,7 @@ client_init(Window win, int skip_map_check)
 	XGrabServer(X_Dpy);
 
 	cc->win = win;
+	cc->extended_data = 0;
 
 	TAILQ_INIT(&cc->nameq);
 	client_setname(cc);
@@ -170,6 +197,7 @@ client_init(Window win, int skip_map_check)
 	client_transient(cc);
 
 	/* Notify client of its configuration. */
+	client_data_extend(cc);
 	client_config(cc);
 
 	TAILQ_INSERT_TAIL(&sc->clientq, cc, entry);
@@ -285,6 +313,8 @@ client_snap(struct client_ctx *cc, int dir)
 	struct screen_ctx	*sc = cc->sc;
 	int			 n, x, y, w, h;
 
+	client_data_extend(cc);
+
 	n = 0;
 	x = cc->geom.x, y = cc->geom.y, w = cc->geom.w, h = cc->geom.h;
 
@@ -294,6 +324,9 @@ client_snap(struct client_ctx *cc, int dir)
 		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 			if (cc == ci)
 				continue;
+
+			client_data_extend(ci);
+
 			if (!OVERLAP(cc->geom.x - 1, cc->geom.w + 2, ci->geom.x,
 				     ci->geom.w)) {
 				continue;
@@ -307,7 +340,8 @@ client_snap(struct client_ctx *cc, int dir)
 			if (ci->geom.y <= y + h)
 				n = MAX(n, ci->geom.y - h);
 		}
-		y = n + (cc->bwidth * 2);
+		y = n;
+		fprintf(stderr, "y: %d, n: %d\n", y, n);
 	}
 
 	if (dir == CWM_SNAP_DOWN) {
@@ -316,6 +350,8 @@ client_snap(struct client_ctx *cc, int dir)
 		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 			if (cc == ci)
 				continue;
+
+			client_data_extend(ci);
 			if (!OVERLAP(cc->geom.x - 1, cc->geom.w + 2, ci->geom.x,
 			    ci->geom.w)) {
 				continue;
@@ -330,7 +366,7 @@ client_snap(struct client_ctx *cc, int dir)
 			if (ci->geom.y >= y)
 				n = MIN(n, ci->geom.y + h);
 		}
-		y = n - h - (cc->bwidth * 2);
+		y = n - h;
 	}
 
 	if (dir == CWM_SNAP_LEFT) {
@@ -339,6 +375,8 @@ client_snap(struct client_ctx *cc, int dir)
 		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 			if (cc == ci)
 				continue;
+
+			client_data_extend(ci);
 			if (!OVERLAP(cc->geom.y - 1, cc->geom.h + 2, ci->geom.y,
 			    ci->geom.h)) {
 				continue;
@@ -352,7 +390,7 @@ client_snap(struct client_ctx *cc, int dir)
 			if (ci->geom.x <= x + w)
 				n = MAX(n, ci->geom.x - w);
 		}
-		x = n + (cc->bwidth * 2);
+		x = n;
 	}
 
 	if (dir == CWM_SNAP_RIGHT) {
@@ -361,6 +399,8 @@ client_snap(struct client_ctx *cc, int dir)
 		TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 			if (cc == ci)
 				continue;
+
+			client_data_extend(ci);
 			if (!OVERLAP(cc->geom.y - 1, cc->geom.h + 2, ci->geom.y,
 			    ci->geom.h)) {
 				continue;
@@ -373,12 +413,11 @@ client_snap(struct client_ctx *cc, int dir)
 				n = MIN(n, ci->geom.x + ci->geom.w + w);
 			if (ci->geom.x >= x) n = MIN(n, ci->geom.x + w);
 		}
-		x = n - w - (cc->bwidth * 2);
+		x = n - w;
 	}
 
 	cc->geom.x = x;
 	cc->geom.y = y;
-	fprintf(stderr, "MOVING: x: %d, y: %d\n", x, y);
 	client_move(cc);
 }
 
@@ -580,7 +619,7 @@ client_expand(struct client_ctx *cc)
         cc->flags |= CLIENT_EXPANDED;
 
 resize:
-        client_resize(cc, 0);
+        client_resize(cc, 1);
 	xu_ewmh_set_net_wm_state(cc);
 }
 
@@ -711,7 +750,6 @@ client_move(struct client_ctx *cc)
 	struct screen_ctx	*sc_new;
 
 	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
-	client_config(cc);
 
 	/*
 	 * Update which monitor the client is on, and therefore which group
@@ -725,6 +763,8 @@ client_move(struct client_ctx *cc)
 		group_assign(sc_new->group_current, cc);
 
 	cc->sc = sc_new;
+	client_data_extend(cc);
+	client_config(cc);
 }
 
 void
@@ -745,6 +785,7 @@ client_config(struct client_ctx *cc)
 	XConfigureEvent	 cn;
 
 	(void)memset(&cn, 0, sizeof(cn));
+
 	cn.type = ConfigureNotify;
 	cn.event = cc->win;
 	cn.window = cc->win;
