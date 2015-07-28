@@ -415,7 +415,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 	cc_end_y = cc_y + new_geom->h;
 
 	new_y1 = sc->work.y;
-	new_y2 = sc->work.h - (cc->bwidth * 2);
+	new_y2 = sc->work.h;
 
 	/* Go through all clients and move up and down. */
 	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
@@ -433,16 +433,16 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 		{
 			if ((ci_end_y <= cc_y) && (ci_end_y >= new_y1))
 			{
-				new_y1 = ci_end_y + (cc->bwidth * 2);
+				new_y1 = ci_end_y;
 			}
 			else if ((cc_end_y <= ci_y) && (new_y2 >= ci_y))
 			{
-				new_y2 = ci_y - (cc->bwidth * 2);
+				new_y2 = ci_y;
 			}
 		}
 	}
 	new_geom->h = (new_y2 - new_y1);
-	new_geom->y = new_y1;
+	new_geom->y = new_y1 + (cc->bwidth * 2);
 }
 
 void
