@@ -1,6 +1,19 @@
-This is a fork of OpenBSD's excellent cwm[0] to Linux and other Unixes.
+# cwm-new
 
-This port requires pkg-config, Xft, and Xrandr.
+This is a working title for what will become a new window manager.  Ideas
+for a name are welcome.
+
+This is based from
+[CWM](http://cvsweb.openbsd.org/cgi-bin/cvsweb/xenocara/app/cwm/) in
+OpenBSD.
+
+# Requirements
+
+* pkg-config
+* Xft
+* RandR
+
+# Features
 
 Current features which differ from cwm are:
 
@@ -12,6 +25,13 @@ Current features which differ from cwm are:
 		- Can be parsed and used with dzen2, for instance, check the
 		  read_status.pl file for an example of this.
 
--- Thomas Adam
+# Tasks
 
-[0]: http://cvsweb.openbsd.org/cgi-bin/cvsweb/xenocara/app/cwm/
+See the [TODO](TODO.md) file.
+
+# Contact
+
+You can reach me via the following:
+
+* Email:  thomas.adam22@gmail.com
+* IRC:	  ```thomas_adam``` on ```freenode.net```
