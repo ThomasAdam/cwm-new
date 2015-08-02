@@ -10,13 +10,10 @@ Rough ideas for CWM
   * Clients could have some undo list for last known positions.
 * Hooks?  Events to be fired off after certain actions.
 *  Window/workspace actions via command-prompt (just like ratpoison).
-
 * Internal structs:
   * Don't use typedefs.
   * Create a geometry struct to hold size/position information and
     update that for operations including maximise.
-
 * Windows should snap to each other and to screen edges.
-
 * No special-casing of maximised state, it's just another geometry set which
   is added to the list, and popped when no longer in that state.
