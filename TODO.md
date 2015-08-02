@@ -2,20 +2,19 @@ Rough ideas for CWM
 ===================
 
 * Consider tmux to be a good model for window behaviour:
-        - Configuration:  defaults hard-coded, then overridden in config
-          file.
-			- Perhaps using liblfg:  http://liblcfg.carnivore.it/
-        - linking a window (read:  "sticky") should have separate
-          geometry per workspace; when switching workspaces, the client's
-          geometries are relocated.
-            - Clients could have some undo list for last known positions.
-        - Hooks?  Events to be fired off after certain actions.
-        - Window/workspace actions via command-prompt (just like ratpoison).
+  * Configuration:  defaults hard-coded, then overridden in config file.
+    * Perhaps using liblfg:  http://liblcfg.carnivore.it/
+* linking a window (read:  "sticky") should have separate
+  geometry per workspace; when switching workspaces, the client's
+  geometries are relocated.
+  * Clients could have some undo list for last known positions.
+* Hooks?  Events to be fired off after certain actions.
+*  Window/workspace actions via command-prompt (just like ratpoison).
 
 * Internal structs:
-        - Don't use typedefs.
-        - Create a geometry struct to hold size/position information and
-          update that for operations including maximise.
+  * Don't use typedefs.
+  * Create a geometry struct to hold size/position information and
+    update that for operations including maximise.
 
 * Windows should snap to each other and to screen edges.
 
