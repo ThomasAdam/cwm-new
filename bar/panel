@@ -1,0 +1,15 @@
+#!/bin/bash
+
+pkill -0 panel || {
+	echo "panel is already running" >&2
+	exit 1
+}
+
+trap 'trap - TERM; kill 0' INT TERM EXIT QUIT
+
+for pipe in /tmp/cwm-*.fifo
+do
+	conky > "$pipe" &
+done
+
+~/bin/read_status.pl | ~/bin/barpanel | lemonbar -g x16 -p -d -Bblue -u2
