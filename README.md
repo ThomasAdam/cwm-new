@@ -25,6 +25,13 @@ Current features which differ from cwm are:
     * Can be parsed and used with dzen2, for instance, check the
 	  read_status.pl file for an example of this.
 
+# Screenshot
+
+Obligatory screenshot below!  The bar at the top is lemonbar, with conky
+output on the right.
+
+![screenshot](www/screenshot.png)
+
 # Tasks
 
 See the [TODO](TODO.md) file.
