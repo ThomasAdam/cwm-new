@@ -14,6 +14,8 @@ Rough ideas for CWM
   * Don't use typedefs.
   * Create a geometry struct to hold size/position information and
     update that for operations including maximise.
+* Client geometry is per group; hence if more than one group is displayed at
+  any one time, and a client is moved, its new geometry is not recorded.
 * Windows should snap to each other and to screen edges.
 * No special-casing of maximised state, it's just another geometry set which
   is added to the list, and popped when no longer in that state.
