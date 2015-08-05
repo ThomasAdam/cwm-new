@@ -484,6 +484,7 @@ void			 search_match_path_any(struct menu_q *, struct menu_q *,
 void			 search_match_text(struct menu_q *, struct menu_q *,
 			     char *);
 void			 search_print_client(struct menu *, int);
+void			 search_print_group(struct menu *, int);
 
 struct screen_ctx	*screen_find(Window);
 struct geom		 screen_find_xinerama(int, int, int);
@@ -534,6 +535,7 @@ void			 kbfunc_cwm_status(struct client_ctx *, union arg *);
 void			 kbfunc_exec(struct client_ctx *, union arg *);
 void			 kbfunc_lock(struct client_ctx *, union arg *);
 void			 kbfunc_menu_cmd(struct client_ctx *, union arg *);
+void			 kbfunc_menu_group(struct client_ctx *, union arg *);
 void			 kbfunc_ssh(struct client_ctx *, union arg *);
 void			 kbfunc_term(struct client_ctx *, union arg *);
 void 			 kbfunc_tile(struct client_ctx *, union arg *);

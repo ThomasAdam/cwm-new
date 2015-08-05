@@ -127,6 +127,16 @@ search_match_client(struct menu_q *menuq, struct menu_q *resultq, char *search)
 }
 
 void
+search_print_group(struct menu *mi, int i)
+{
+	struct group_ctx	*gc = (struct group_ctx *)mi->ctx;
+
+	(void)snprintf(mi->print, sizeof(mi->print),
+	    (group_holds_only_hidden(gc)) ? "%d: [%s]" : "%d: %s",
+	    gc->num, gc->name);
+}
+
+void
 search_print_client(struct menu *mi, int list)
 {
 	struct client_ctx	*cc;
