@@ -74,14 +74,6 @@ mousefunc_client_resize(struct client_ctx *cc, union arg *arg)
 	if (cc->flags & (CLIENT_FREEZE|CLIENT_STICKY))
 		return;
 
-	/*
-	 * Mark the client as having had its extended data set.
-	 * During a resize operation, the resize hints need to be reset once
-	 * the window has finished resizing; taking into account the true
-	 * location against the output.
-	 */
-	cc->extended_data = 1;
-
 	client_raise(cc);
 	client_ptrsave(cc);
 
@@ -118,13 +110,6 @@ mousefunc_client_resize(struct client_ctx *cc, union arg *arg)
 			if (cc->ptr.y > cc->geom.h)
 				cc->ptr.y = cc->geom.h - cc->bwidth;
 			client_ptrwarp(cc);
-
-			/*
-			 * Recalculate the window's position on screen.
-			 */
-			cc->extended_data = 0;
-			client_data_extend(cc);
-
 			return;
 		}
 	}
