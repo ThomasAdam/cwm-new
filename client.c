@@ -941,7 +941,7 @@ client_placecalc(struct client_ctx *cc)
 		 * XRandR bits mean that {x,y}max shouldn't be outside what's
 		 * currently there.
 		 */
-		sc = screen_find_screen(cc->geom.x, cc->geom.y);
+		sc = screen_find_by_name(GLOBAL_SCREEN_NAME);
 		xslack = sc->view.w - cc->geom.w - cc->bwidth * 2;
 		yslack = sc->view.h - cc->geom.h - cc->bwidth * 2;
 		cc->geom.x = MIN(cc->geom.x, xslack);

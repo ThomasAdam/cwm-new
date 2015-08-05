@@ -31,7 +31,6 @@
 
 #include "calmwm.h"
 
-#define GLOBAL_SCREEN_NAME "global_monitor"
 static int	 no_of_screens;
 
 static void			 screen_create_randr_region(struct screen_ctx *,

@@ -257,6 +257,7 @@ struct autogroupwin {
 };
 TAILQ_HEAD(autogroupwin_q, autogroupwin);
 
+#define GLOBAL_SCREEN_NAME "global_monitor"
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
 	const char		*name;
