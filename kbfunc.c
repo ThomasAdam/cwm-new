@@ -170,6 +170,7 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 		/* In moving the pointer to the window, set the active group
 		 * the client is on.
 		 */
+		group_hide(sc->group_current);
 		group_setactive(cc->group);
 	}
 
