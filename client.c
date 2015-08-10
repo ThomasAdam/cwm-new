@@ -161,7 +161,6 @@ client_init(Window win, int skip_map_check)
 	client_setname(cc);
 
 	conf_client(cc);
-
 	XGetClassHint(X_Dpy, cc->win, &cc->ch);
 	client_wm_hints(cc);
 	client_wm_protocols(cc);
@@ -183,6 +182,15 @@ client_init(Window win, int skip_map_check)
 		client_move(cc);
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
+	} else {
+		/*
+		 * The client is mapped; in applying borders to the window,
+		 * the window would be n pixels out.  Reposition the window
+		 * accordingly.
+		 */
+		XMoveWindow(X_Dpy, cc->win, cc->geom.x + Conf.bwidth,
+				cc->geom.y + Conf.bwidth);
+		client_move(cc);
 	}
 
 	sc = screen_find_screen(cc->geom.x, cc->geom.y);
@@ -195,10 +203,6 @@ client_init(Window win, int skip_map_check)
 	XAddToSaveSet(X_Dpy, cc->win);
 
 	client_transient(cc);
-
-	/* Notify client of its configuration. */
-	client_data_extend(cc);
-	client_config(cc);
 
 	TAILQ_INSERT_TAIL(&sc->clientq, cc, entry);
 
@@ -341,7 +345,6 @@ client_snap(struct client_ctx *cc, int dir)
 				n = MAX(n, ci->geom.y - h);
 		}
 		y = n;
-		fprintf(stderr, "y: %d, n: %d\n", y, n);
 	}
 
 	if (dir == CWM_SNAP_DOWN) {
@@ -749,8 +752,6 @@ client_move(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc_new;
 
-	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
-
 	/*
 	 * Update which monitor the client is on, and therefore which group
 	 * the client is in.
@@ -765,6 +766,10 @@ client_move(struct client_ctx *cc)
 	cc->sc = sc_new;
 	client_data_extend(cc);
 	client_config(cc);
+
+	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
+	client_config(cc);
+
 }
 
 void
