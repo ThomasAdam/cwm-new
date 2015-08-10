@@ -622,6 +622,7 @@ client_expand(struct client_ctx *cc)
         cc->flags |= CLIENT_EXPANDED;
 
 resize:
+	cc->extended_data = 0;
         client_resize(cc, 1);
 }
 
