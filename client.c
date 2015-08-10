@@ -560,7 +560,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 
 	cc_x = new_geom->x;
 	cc_y = new_geom->y;
-	cc_end_x = cc_x + new_geom->w;
+	cc_end_x = cc_x + new_geom->w + cc->bwidth * 2;
 	cc_end_y = cc_y + new_geom->h;
 
 	new_y1 = sc->work.y;
@@ -590,7 +590,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 			}
 		}
 	}
-	new_geom->h = (new_y2 - new_y1) + cc->bwidth * 2;
+	new_geom->h = (new_y2 - new_y1) - cc->bwidth * 2;
 	new_geom->y = new_y1;
 }
 
