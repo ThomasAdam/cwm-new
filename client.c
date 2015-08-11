@@ -564,7 +564,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 	cc_end_y = cc_y + new_geom->h;
 
 	new_y1 = sc->work.y;
-	new_y2 = sc->work.h;
+	new_y2 = new_y1 + sc->work.h;
 
 	/* Go through all clients and move up and down. */
 	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
