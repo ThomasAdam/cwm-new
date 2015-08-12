@@ -609,6 +609,27 @@ client_expand(struct client_ctx *cc)
 		cc->geom = cc->savegeom;
 		cc->bwidth = Conf.bwidth;
 
+		/* Don't allow to overrun boundaries. */
+		{
+			struct geom	 scedge = cc->sc->work;
+			scedge.w += scedge.x - Conf.bwidth * 2;
+			scedge.h += scedge.y - Conf.bwidth * 2;
+
+			if (cc->geom.x + cc->geom.y >= scedge.w)
+				cc->geom.x = scedge.w - cc->geom.w;
+			if (cc->geom.x < scedge.x) {
+				cc->geom.x = scedge.x;
+				cc->geom.w = MIN(cc->geom.w,
+						(scedge.w - scedge.x));
+			}
+			if (cc->geom.y + cc->geom.h >= scedge.h)
+				cc->geom.y = scedge.h - cc->geom.h;
+			if (cc->geom.y < scedge.y) {
+				cc->geom.y = scedge.y;
+				cc->geom.h = MIN(cc->geom.h,
+						(scedge.h - scedge.y));
+			}
+		}
 		goto resize;
 	} else {
 		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
@@ -619,11 +640,11 @@ client_expand(struct client_ctx *cc)
 	client_expand_vert(cc, &new_geom);
 
 	memcpy(&cc->geom, &new_geom, sizeof(new_geom));
+	cc->extended_data = 0;
         cc->flags |= CLIENT_EXPANDED;
 
 resize:
-	cc->extended_data = 0;
-        client_resize(cc, 1);
+        client_resize(cc, 0);
 }
 
 void
