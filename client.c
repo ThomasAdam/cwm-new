@@ -179,10 +179,13 @@ client_init(Window win, int skip_map_check)
 
 	if (wattr.map_state != IsViewable) {
 		client_placecalc(cc);
+		cc->extended_data = 1;
 		client_move(cc);
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
-	} else {
+	}
+
+	{
 		/*
 		 * The client is mapped; in applying borders to the window,
 		 * the window would be n pixels out.  Reposition the window
@@ -190,8 +193,10 @@ client_init(Window win, int skip_map_check)
 		 */
 		XMoveWindow(X_Dpy, cc->win, cc->geom.x + Conf.bwidth,
 				cc->geom.y + Conf.bwidth);
+		cc->extended_data = 0;
 		client_move(cc);
 	}
+
 
 	sc = screen_find_screen(cc->geom.x, cc->geom.y);
 	log_debug("client: (0x%x) to screen '%s'", (int)cc->win, sc->name);
@@ -1112,6 +1117,7 @@ client_placecalc(struct client_ctx *cc)
 		 * XRandR bits mean that {x,y}max shouldn't be outside what's
 		 * currently there.
 		 */
+		fprintf(stderr, "positioning via hints\n");
 		sc = screen_find_by_name(GLOBAL_SCREEN_NAME);
 		xslack = sc->view.w - cc->geom.w - cc->bwidth * 2;
 		yslack = sc->view.h - cc->geom.h - cc->bwidth * 2;
@@ -1121,6 +1127,7 @@ client_placecalc(struct client_ctx *cc)
 		struct geom		 xine;
 		int			 xmouse, ymouse;
 
+		fprintf(stderr, "using the mouse\n");
 		xu_ptr_getpos(root, &xmouse, &ymouse);
 		xine = screen_find_xinerama(xmouse, ymouse, CWM_GAP);
 		xine.w += xine.x;
@@ -1146,6 +1153,9 @@ client_placecalc(struct client_ctx *cc)
 			cc->geom.y = xine.y;
 			cc->geom.h = xine.h;
 		}
+
+		fprintf(stderr, "Placing at: x: %d, y: %d, w: %d, h: %d\n",
+			cc->geom.x, cc->geom.y, cc->geom.w, cc->geom.h);
 	}
 }
 
