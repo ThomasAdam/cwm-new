@@ -28,6 +28,7 @@ my @pipes = glob("/tmp/cwm-*.fifo");
 # If there are no pipes, that's OK.
 exit unless @pipes;
 
+# FIXME: Parse xrandr output to automatically determine these values.
 my %lemonbar_options = (
 	'HDMI1' => {
 		'-p'	=> '',
@@ -61,8 +62,8 @@ sub format_output
 {
 	my ($data) = @_;
 	my $msg;
-	my $extra_msg = undef;
-	my $extra_urgent = undef;
+	my $extra_msg = '';
+	my $extra_urgent = '';
 	my $screen = $data->{'screen'};
 
 	$msg .= "%{S$scr_map{$screen}}";
@@ -78,8 +79,8 @@ sub format_output
 		my $sym_name = $data->{'groups'}->{$deskname}->{'number'};
 		my $is_current = $data->{'groups'}->{$deskname}->{'is_current'};
 		my $desk_count = $data->{'groups'}->{$deskname}->{'number_of_clients'};
-		my $is_urgent =  $data->{'groups'}->{$deskname}->{'is_urgent'};
-		my $is_active =  $data->{'groups'}->{$deskname}->{'is_active'};
+		my $is_urgent =  $data->{'groups'}->{$deskname}->{'is_urgent'} ||= 0;
+		my $is_active =  $data->{'groups'}->{$deskname}->{'is_active'} ||= 0;
 
 		# If the window is active, give it a differnet colour.
 		if ($is_current) {
@@ -91,7 +92,7 @@ sub format_output
 					$extra_urgent = "%{Bred}[U]%{B-}";
 				}
 
-				$extra_msg .= "%{r}%{B#A39A45}[$desk_count]%{B-} ";
+				$extra_msg = "%{r}%{B#A39A45}[$desk_count]%{B-} ";
 		} else {
 			if ($is_urgent) {
 					$msg .= "|%{B#7c8814} $sym_name %{B-}";
@@ -116,9 +117,7 @@ sub format_output
 			"        " . $data->{'client'} . "        " . "%{-u}%{-o}%{B-}";
 	}
 
-	if (defined $extra_msg) {
-		$msg .= "$extra_msg$extra_urgent";
-	}
+	$msg .= "$extra_msg$extra_urgent";
 
 	return $msg;
 }
