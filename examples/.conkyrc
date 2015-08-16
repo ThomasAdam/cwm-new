@@ -1,0 +1,24 @@
+##############################################
+# Settings
+##############################################
+out_to_x no
+background no
+out_to_console yes
+update_interval 1
+total_run_times 0
+use_spacer none
+default_color ffaf5f
+draw_graph_borders yes
+short_units yes
+use_spacer left
+pad_percents 1
+
+#^fg(\#888888)${cpu cpu0}%^fg()   ^fg(\#aaaaaa)${freq_g 1}GHz^fg()   \
+# ^fg(\#00FFC8)CPU: ^fg(\#00B7FF)${cpubar cpu0} (${cpu cpu0}%) ^fg() | \
+#|^fg(\#00FFC8)MPD: ^fg(\#00B7FF)${mpd_smart 28}: ${mpd_bar} (${mpd_percent}%)^fg() | \
+#clock:%{B\#4ECC4E}[CPU: ${cpubar cpu0 11,12}]%{B-} \
+TEXT
+clock:%{B\#4ECC4E}[CPU: ${cpu cpu0 11,12}]%{B-} \
+%{B\#66B2FF}[MEM:  ${mem}]%{B-} \
+%{B\#D68C5A}[AVG:  ${loadavg 1}]%{B-} \
+%{B\#BF4356}[${time %b %d %H:%M:%S}]%{B-}
