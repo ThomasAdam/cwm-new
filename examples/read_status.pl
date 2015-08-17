@@ -30,14 +30,14 @@ exit unless @pipes;
 
 # FIXME: Parse xrandr output to automatically determine these values.
 my %lemonbar_options = (
-	'HDMI1' => {
+	'VGA-0' => {
 		'-p'	=> '',
 		'-d'	=> '',
 		'-g'	=> '1920x16+0+0',
 		'-B'	=> 'blue',
 		'-u'	=> 2,
 	},
-	'VGA1' => {
+	'DVI-I-1' => {
 		'-p'	=> '',
 		'-d'	=> '',
 		'-g'	=> '1920x16+1920+0',
@@ -53,8 +53,8 @@ my %lemonbar_options = (
 );
 
 my %scr_map = (
-	'HDMI1'	=> 0,
-	'VGA1'	=> 1,
+	'VGA-0'	=> 0,
+	'DVI-I-1'	=> 1,
 	'global_monitor' => '',
 );
 
@@ -62,9 +62,8 @@ sub format_output
 {
 	my ($data) = @_;
 	my $msg;
-	my $extra_msg = '';
-	my $extra_urgent = '';
 	my $screen = $data->{'screen'};
+	my $extra_msg = "%{B#D7C72F}[scr:$screen]%{B-}";
 
 	$msg .= "%{S$scr_map{$screen}}";
 
@@ -89,10 +88,9 @@ sub format_output
 				# Gather any other bits of information for the _CURRENT_
 				# group we might want.
 				if ($is_urgent) {
-					$extra_urgent = "%{Bred}[U]%{B-}";
+					$extra_msg .= "%{Bred}[U]%{B-}";
 				}
-
-				$extra_msg = "%{r}%{B#A39A45}[$desk_count]%{B-} ";
+				$extra_msg .= "%{B#D7C72F}[A:$desk_count]%{B-} ";
 		} else {
 			if ($is_urgent) {
 					$msg .= "|%{B#7c8814} $sym_name %{B-}";
@@ -117,7 +115,9 @@ sub format_output
 			"        " . $data->{'client'} . "        " . "%{-u}%{-o}%{B-}";
 	}
 
-	$msg .= "$extra_msg$extra_urgent";
+	if (defined $extra_msg) {
+		$msg .= "%{F#FF00FF}|%{F-}$extra_msg";
+	}
 
 	return $msg;
 }
