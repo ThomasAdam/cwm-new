@@ -28,35 +28,55 @@ my @pipes = glob("/tmp/cwm-*.fifo");
 # If there are no pipes, that's OK.
 exit unless @pipes;
 
-# FIXME: Parse xrandr output to automatically determine these values.
-my %lemonbar_options = (
-	'HDMI1' => {
-		'-p'	=> '',
-		'-d'	=> '',
-		'-g'	=> '1920x16+0+0',
-		'-B'	=> 'blue',
-		'-u'	=> 2,
-	},
-	'VGA1' => {
-		'-p'	=> '',
-		'-d'	=> '',
-		'-g'	=> '1920x16+1920+0',
-		'-B'	=> 'blue',
-		'-u'	=> 2,
-	},
-	'global_monitor' => {
-		'-p'	=> '',
-		'-d'	=> '',
-		'-B'	=> 'blue',
-		'-u'	=> 0,
-	},
-);
+my %scr_map;
 
-my %scr_map = (
-	'HDMI1'	=> 0,
-	'VGA1'	=> 1,
-	'global_monitor' => '',
-);
+sub query_xrandr
+{
+	my $opts = {
+		'-p'	=> '',
+		'-d'	=> '',
+		'-B'	=> 'blue',
+		'-u'	=> 2,
+	};
+
+	my %lb = (
+		'global_monitor' => {
+			screen => '',
+			data => undef,
+		}
+	);
+
+	open(my $fh, '-|', 'xrandr -q') or die $!;
+	my $screen_num = -1;
+	while (my $line = <$fh>) {
+		if ($line =~ /(.*?)\s+connected\s*(.*?)\s+/) {
+			my $output = $1;
+			my $geom = $2;
+
+			$screen_num++;
+
+			# Taking the geometry string, rearrange it slightly so that it's
+			# the correct width for lemonbar.  The placement part (x,y) is
+			# more useful to us.
+			my ($w, $h, $x, $y) = ($geom =~ /(\d+)x(\d+)\+(\d+)\+(\d+)/);
+
+			$opts->{'-g'} = "${w}x16+${x}+${y}";
+
+			$lb{$output} = {
+				# "clone" this each time, so we have a separate copy when
+				# adding it to this has.
+				data	=> { %$opts },
+
+				# In parsing this output, we assume RandR is ordering these
+				# screens in a defined order!
+				screen	=> $screen_num,
+			}
+		}
+	}
+	close($fh);
+
+	return (\%lb);
+}
 
 sub format_output
 {
@@ -86,13 +106,12 @@ sub format_output
 		if ($is_current) {
 				$msg .= "|%{B#39c488} $sym_name %{B-}";
 
+				$extra_msg .= "%{B#D7C72F}[A:$desk_count]%{B-} ";
 				# Gather any other bits of information for the _CURRENT_
 				# group we might want.
 				if ($is_urgent) {
 					$extra_urgent = "%{Bred}[U]%{B-}";
 				}
-
-				$extra_msg = "%{r}%{B#A39A45}[$desk_count]%{B-} ";
 		} else {
 			if ($is_urgent) {
 					$msg .= "|%{B#7c8814} $sym_name %{B-}";
@@ -138,14 +157,17 @@ sub process_line
 	}
 }
 
-my %opts = %lemonbar_options;
+my %opts = %{ query_xrandr() };
+%scr_map = map { $_ => $opts{$_}->{'screen'} } keys (%opts);
+
 my $screen;
 foreach (@pipes) {
 	($screen) = ($_ =~ /cwm-(.*?)\.fifo/);
 	if (fork()) {
 		# XXX: Close certain filehandles here; STDERR, etc.
 		my $cmd = "lemonbar " . join(" ",
-			map { $_ . " $opts{$screen}->{$_}" } keys(%{ $opts{$screen} }));
+			map { $_ . " $opts{$screen}->{'data'}" }
+				keys(%opts));
 
 		process_line($_);
 	}
