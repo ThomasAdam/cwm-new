@@ -106,7 +106,7 @@ sub format_output
 		if ($is_current) {
 				$msg .= "|%{B#39c488} $sym_name %{B-}";
 
-				$extra_msg .= "%{B#D7C72F}[A:$desk_count]%{B-} ";
+				$extra_msg .= "%{B#D7C72F}[Scr:$screen][A:$desk_count]%{B-}";
 				# Gather any other bits of information for the _CURRENT_
 				# group we might want.
 				if ($is_urgent) {
@@ -131,12 +131,13 @@ sub format_output
 		}
 	}
 
-	if (defined $data->{'client'}) {
-		$msg .= "%{c}%{Ugreen}%{+u}%{+o}%{B#AC59FF}%{F-}" .
-			"        " . $data->{'client'} . "        " . "%{-u}%{-o}%{B-}";
-	}
+	$msg .= "%{F#FF00FF}|%{F-}$extra_msg$extra_urgent";
 
-	$msg .= "$extra_msg$extra_urgent";
+	if (defined $data->{'current_client'}) {
+		$msg .= "%{c}%{Ugreen}%{+u}%{+o}%{B#AC59FF}%{F-}" .
+			"        " . $data->{'current_client'} . "        " .
+			"%{-u}%{-o}%{B-}";
+	}
 
 	return $msg;
 }
