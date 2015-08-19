@@ -165,8 +165,6 @@ screen_init_contents(void)
 		conf_screen(sc);
 		screen_update_geometry(sc);
 
-		u_init_pipes(sc);
-
 		log_debug("%s: Adding groups...", __func__);
 		for (i = 0; i < CALMWM_NGROUPS; i++)
 			group_init(sc, i);

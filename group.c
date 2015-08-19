@@ -72,7 +72,7 @@ group_hide(struct group_ctx *gc)
 
 	gc->flags &= ~GROUP_ACTIVE;
 
-	u_put_status(gc->sc);
+	u_put_status();
 }
 
 void
@@ -86,7 +86,7 @@ group_show(struct group_ctx *gc)
 	group_restack(gc);
 	gc->flags |= GROUP_ACTIVE;
 
-	u_put_status(gc->sc);
+	u_put_status();
 }
 
 static void
@@ -152,7 +152,7 @@ group_setactive(struct group_ctx *gc)
 	sc->group_current = gc;
 
 	xu_ewmh_net_current_desktop(sc);
-	u_put_status(sc);
+	u_put_status();
 
 	log_debug("%s: set active group '%d' on screen '%s'",
 		__func__, gc->num, sc->name);
@@ -308,7 +308,7 @@ group_cycle(struct screen_ctx *sc, int flags)
 
 	group_only(sc, showgroup->num);
 
-	u_put_status(sc);
+	u_put_status();
 }
 
 void
@@ -380,5 +380,5 @@ group_autogroup(struct client_ctx *cc)
 	log_debug("%s: client (0x%x): added to group '%d', screen '%s'",
 		__func__, (int)cc->win, sc->group_current->num, cc->sc->name);
 
-	u_put_status(sc);
+	u_put_status();
 }
