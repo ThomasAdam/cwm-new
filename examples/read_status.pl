@@ -1,20 +1,14 @@
 #!/usr/bin/perl
 #
 # A very crude example how to turn status output from CWM in to something
-# that can be interpreted by dzen2.
+# that can be interpreted by lemonbar.
 #
-# Note that there is exactly one pipe per screen which CWM will sent output
-# from, so that multiple status lines per screen is easier to handle.  To
-# this end, this example script will fork off one instance per screen for
-# however many named pipes exist.
-#
-# NO ATTEMPT has been made yet to support the placement of dzen bars on a
-# machine with Xinerama installed; this currently seems to work OK though.
+# https://github.com/LemonBoy/bar
 #
 # Patches improving this script is welcome; I threw it together in about
 # fifteen minutes, there's no support for SIGPIPE or anything like that yet.
 #
-# -- Thomas Adam, Monday 23rd December 2013
+# -- Thomas Adam
 
 use strict;
 use warnings;
@@ -23,7 +17,7 @@ use JSON;
 
 $| = 1;
 
-my @pipes = glob("/tmp/cwm-*.fifo");
+my @pipes = glob("/tmp/cwm-[0-9]*.fifo");
 
 # If there are no pipes, that's OK.
 exit unless @pipes;
@@ -81,25 +75,27 @@ sub query_xrandr
 sub format_output
 {
 	my ($data) = @_;
-	my $extra_msg = '';
-	my $extra_urgent = '';
 
 	foreach my $screen  (keys %{ $data->{'screens'} }) {
+		my $extra_msg = '';
+		my $extra_urgent = '';
 		my $msg = "%{S$scr_map{$screen}->{'screen'}}";
+
+		my $scr_h = $data->{'screens'}->{$screen};
 
 		# For the list of desktops, we maintain the sort order based on the
 		# group names being 0 -> 9.
 		foreach my $deskname (
 			sort {
-				$data->{'screens'}->{$screen}->{'groups'}->{$a}->{'number'} <=>
-				$data->{'screens'}->{$screen}->{'groups'}->{$b}->{'number'}
-			} keys %{$data->{'screens'}->{$screen}->{'groups'}})
+				$scr_h->{'groups'}->{$a}->{'number'} <=>
+				$scr_h->{'groups'}->{$b}->{'number'}
+			} keys %{$scr_h->{'groups'}})
 		{
-			my $sym_name   = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'number'};
-			my $is_current = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'is_current'};
-			my $desk_count = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'number_of_clients'};
-			my $is_urgent  = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'is_urgent'} ||= 0;
-			my $is_active  = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'is_active'} ||= 0;
+			my $sym_name   = $scr_h->{'groups'}->{$deskname}->{'number'};
+			my $is_current = $scr_h->{'groups'}->{$deskname}->{'is_current'};
+			my $desk_count = $scr_h->{'groups'}->{$deskname}->{'number_of_clients'};
+			my $is_urgent  = $scr_h->{'groups'}->{$deskname}->{'is_urgent'} ||= 0;
+			my $is_active  = $scr_h->{'groups'}->{$deskname}->{'is_active'} ||= 0;
 
 			# If the window is active, give it a differnet colour.
 			if ($is_current) {
@@ -132,15 +128,12 @@ sub format_output
 
 		$msg .= "%{F#FF00FF}|%{F-}$extra_msg$extra_urgent";
 
-		if (defined $data->{'screens'}->{$screen}->{'current_client'}) {
-			my $cc =
-			    $data->{'screens'}->{$screen}->{'current_client'};
+		if (defined $scr_h->{'current_client'}) {
+			my $cc = $scr_h->{'current_client'};
 			$msg .= "%{c}%{Ugreen}%{+u}%{+o}%{B#AC59FF}%{F-}" .
-				"        " . $cc . "        " .
-				"%{-u}%{-o}%{B-}";
+				"        " . $cc . "        " .  "%{-u}%{-o}%{B-}";
 		}
-		$scr_map{$screen}->{'last_outputted'} = $msg;
-		print $msg;
+		print $msg, "\n";
 	}
 }
 
@@ -153,20 +146,7 @@ sub process_line
 	while (my $line = <$pipe_fh>) {
 		chomp $line;
 		if ($line =~ /^clock:/) {
-			my $clock = $line;
-			$clock =~ s/^clock://;
-
-			my $clock_line =
-			"|%{r}%{B-}%{Ucyan}%{+u}%{+o}${clock}%{-u}%{-o}%";
-
-			foreach my $scr (keys %scr_map) {
-				if (defined
-					$scr_map{$scr}->{'last_outputted'}) {
-					print $scr_map{$scr}->{'last_outputted'} .
-						$clock_line . "\n";
-					warn "CLOCK: <<$scr_map{$scr}->{'last_outputted'}$clock_line>>\n\n";
-				}
-			}
+			print $line, "\n";
 		} else {
 			format_output(from_json($line));
 		}
@@ -177,7 +157,6 @@ my %opts = %{ query_xrandr() };
 %scr_map = map {
 	$_ => {
 		screen => $opts{$_}->{'screen'},
-		last_outputted => undef
 	} }keys (%opts);
 
 foreach (@pipes) {

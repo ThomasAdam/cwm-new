@@ -1,18 +1,24 @@
-#!/bin/bash
+#!/usr/bin/perl
 
-pipe="$1"
-wminfo_old=
+use strict;
+use warnings;
 
-while read -r line
-do
-		case "$line" in
-		clock:*)
-			cvalue="$(echo "$line" | sed -ne 's/^clock://p')"
-			clockline="|%{r}%{B-}%{Ucyan}%{+u}%{+o}${cvalue}%{-u}%{-o}%";
-			;;
-		*)
-			wminfo_old="$line"
-			;;
-		esac
-		printf "%s\n" "${wminfo_old}${clockline}"
-done
+$| = 1;
+
+my %screen_map;
+my ($screen, $clock);
+
+while (<>) {
+	chomp;
+	if (/^clock:/) {
+		s/^clock://;
+		$clock = "%{r}%{B-}%{Ucyan}%{+u}%{+o}$_%{-u}%{-o}%";
+	} else {
+		($screen) = ($_ =~ /^\%\{(\S\d+)\}/);
+		$screen_map{$screen} = $_;
+	}
+
+	foreach my $k (keys %screen_map) {
+		print "$screen_map{$k}$clock", "\n";
+	}
+}
