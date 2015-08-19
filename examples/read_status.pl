@@ -81,65 +81,67 @@ sub query_xrandr
 sub format_output
 {
 	my ($data) = @_;
-	my $msg;
 	my $extra_msg = '';
 	my $extra_urgent = '';
-	my $screen = $data->{'screen'};
 
-	$msg .= "%{S$scr_map{$screen}}";
+	foreach my $screen  (keys %{ $data->{'screens'} }) {
+		my $msg = "%{S$scr_map{$screen}->{'screen'}}";
 
-	# For the list of desktops, we maintain the sort order based on the
-	# group names being 0 -> 9.
-	foreach my $deskname (
-		sort {
-			$data->{'groups'}->{$a}->{'number'} <=>
-			$data->{'groups'}->{$b}->{'number'}
-		} keys %{$data->{'groups'}})
-	{
-		my $sym_name = $data->{'groups'}->{$deskname}->{'number'};
-		my $is_current = $data->{'groups'}->{$deskname}->{'is_current'};
-		my $desk_count = $data->{'groups'}->{$deskname}->{'number_of_clients'};
-		my $is_urgent =  $data->{'groups'}->{$deskname}->{'is_urgent'} ||= 0;
-		my $is_active =  $data->{'groups'}->{$deskname}->{'is_active'} ||= 0;
+		# For the list of desktops, we maintain the sort order based on the
+		# group names being 0 -> 9.
+		foreach my $deskname (
+			sort {
+				$data->{'screens'}->{$screen}->{'groups'}->{$a}->{'number'} <=>
+				$data->{'screens'}->{$screen}->{'groups'}->{$b}->{'number'}
+			} keys %{$data->{'screens'}->{$screen}->{'groups'}})
+		{
+			my $sym_name   = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'number'};
+			my $is_current = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'is_current'};
+			my $desk_count = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'number_of_clients'};
+			my $is_urgent  = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'is_urgent'} ||= 0;
+			my $is_active  = $data->{'screens'}->{$screen}->{'groups'}->{$deskname}->{'is_active'} ||= 0;
 
-		# If the window is active, give it a differnet colour.
-		if ($is_current) {
-				$msg .= "|%{B#39c488} $sym_name %{B-}";
+			# If the window is active, give it a differnet colour.
+			if ($is_current) {
+					$msg .= "|%{B#39c488} $sym_name %{B-}";
 
-				$extra_msg .= "%{B#D7C72F}[Scr:$screen][A:$desk_count]%{B-}";
-				# Gather any other bits of information for the _CURRENT_
-				# group we might want.
+					$extra_msg .= "%{B#D7C72F}[Scr:$screen][A:$desk_count]%{B-}";
+					# Gather any other bits of information for the _CURRENT_
+					# group we might want.
+					if ($is_urgent) {
+						$extra_urgent = "%{Bred}[U]%{B-}";
+					}
+			} else {
 				if ($is_urgent) {
-					$extra_urgent = "%{Bred}[U]%{B-}";
-				}
-		} else {
-			if ($is_urgent) {
-					$msg .= "|%{B#7c8814} $sym_name %{B-}";
-			} elsif ($is_active) {
-				$msg .= "|%{B#007FFF} $sym_name %{B-}";
+						$msg .= "|%{B#7c8814} $sym_name %{B-}";
+				} elsif ($is_active) {
+					$msg .= "|%{B#007FFF} $sym_name %{B-}";
 
-				# If the deskname is in the active desktops lists then
-				# mark it as being viewed in addition to the currently
-				# active group.
-			} elsif ($desk_count > 0) {
-				# Highlight groups with clients on them.
-				$msg .= "|%{B#004C98} $sym_name %{B-}";
-			} elsif ($desk_count == 0) {
-				# Don't show groups which have no clients.
-				next;
+					# If the deskname is in the active desktops lists then
+					# mark it as being viewed in addition to the currently
+					# active group.
+				} elsif ($desk_count > 0) {
+					# Highlight groups with clients on them.
+					$msg .= "|%{B#004C98} $sym_name %{B-}";
+				} elsif ($desk_count == 0) {
+					# Don't show groups which have no clients.
+					next;
+				}
 			}
 		}
+
+		$msg .= "%{F#FF00FF}|%{F-}$extra_msg$extra_urgent";
+
+		if (defined $data->{'screens'}->{$screen}->{'current_client'}) {
+			my $cc =
+			    $data->{'screens'}->{$screen}->{'current_client'};
+			$msg .= "%{c}%{Ugreen}%{+u}%{+o}%{B#AC59FF}%{F-}" .
+				"        " . $cc . "        " .
+				"%{-u}%{-o}%{B-}";
+		}
+		$scr_map{$screen}->{'last_outputted'} = $msg;
+		print $msg;
 	}
-
-	$msg .= "%{F#FF00FF}|%{F-}$extra_msg$extra_urgent";
-
-	if (defined $data->{'current_client'}) {
-		$msg .= "%{c}%{Ugreen}%{+u}%{+o}%{B#AC59FF}%{F-}" .
-			"        " . $data->{'current_client'} . "        " .
-			"%{-u}%{-o}%{B-}";
-	}
-
-	return $msg;
 }
 
 sub process_line
@@ -149,27 +151,35 @@ sub process_line
 
 	open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
 	while (my $line = <$pipe_fh>) {
-		unless ($line =~ /^\{/) {
-			print $line, "\n";
-			next;
-		}
+		chomp $line;
+		if ($line =~ /^clock:/) {
+			my $clock = $line;
+			$clock =~ s/^clock://;
 
-		print format_output(from_json($line)), "\n";
+			my $clock_line =
+			"|%{r}%{B-}%{Ucyan}%{+u}%{+o}${clock}%{-u}%{-o}%";
+
+			foreach my $scr (keys %scr_map) {
+				if (defined
+					$scr_map{$scr}->{'last_outputted'}) {
+					print $scr_map{$scr}->{'last_outputted'} .
+						$clock_line . "\n";
+					warn "CLOCK: <<$scr_map{$scr}->{'last_outputted'}$clock_line>>\n\n";
+				}
+			}
+		} else {
+			format_output(from_json($line));
+		}
 	}
 }
 
 my %opts = %{ query_xrandr() };
-%scr_map = map { $_ => $opts{$_}->{'screen'} } keys (%opts);
+%scr_map = map {
+	$_ => {
+		screen => $opts{$_}->{'screen'},
+		last_outputted => undef
+	} }keys (%opts);
 
-my $screen;
 foreach (@pipes) {
-	($screen) = ($_ =~ /cwm-(.*?)\.fifo/);
-	if (fork()) {
-		# XXX: Close certain filehandles here; STDERR, etc.
-		my $cmd = "lemonbar " . join(" ",
-			map { $_ . " $opts{$screen}->{'data'}" }
-				keys(%opts));
-
-		process_line($_);
-	}
+	process_line($_);
 }

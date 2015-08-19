@@ -34,6 +34,8 @@
 
 #define MAXARGLEN 20
 
+static FILE	*status_fp;
+
 void
 u_spawn(char *argstr)
 {
@@ -83,13 +85,15 @@ u_exec(char *argstr)
 }
 
 void
-u_init_pipes(struct screen_ctx *sc)
+u_init_pipe(void)
 {
 	char			 pipe_name[PATH_MAX];
 	int			 status_fd = -1;
 
 	snprintf(pipe_name, sizeof(pipe_name),
-		"/tmp/cwm-%s.fifo", sc->name);
+		"/tmp/cwm-%ld.fifo", (long)getpid());
+
+	fprintf(stderr, "Using pipe: %s\n", pipe_name);
 
 	unlink(pipe_name);
 
@@ -102,62 +106,73 @@ u_init_pipes(struct screen_ctx *sc)
 		log_debug("Couldn't open pipe '%s': %s", pipe_name,
 			strerror(errno));
 
-	sc->status_fp = fdopen(status_fd, "w");
+	status_fp = fdopen(status_fd, "w");
 }
 
 void
-u_put_status(struct screen_ctx *sc)
+u_put_status(void)
 {
+	struct screen_ctx	*sc;
 	struct client_ctx	*cc = client_current(), *ci;
 	struct group_ctx	*gc;
 	JSON_Value		*json_root = json_value_init_object();
 	JSON_Object		*json_obj = json_object(json_root);
 	JSON_Array		*clients = NULL;
 	char			*json_out_str;
-	char			 key[1024];
+	char			 key[1024], scr_key[1024];
 
 	json_object_set_number(json_obj, "version", 1);
-	json_object_set_string(json_obj, "screen", sc->name);
-	json_object_set_string(json_obj, "current_client",
-				cc != NULL ? cc->name : NULL);
-	json_object_set_value(json_obj, "groups", json_value_init_object());
-
 	/* Go through all groups, and all clients on those groups, and report
 	 * back information about the state of both.
 	 */
-	TAILQ_FOREACH(gc, &sc->groupq, entry) {
-		snprintf(key, sizeof key, "groups.%s.%s", gc->name, "number");
-		json_object_dotset_number(json_obj, key, gc->num);
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
 
-		snprintf(key, sizeof key, "groups.%s.%s", gc->name, "clients");
-		json_object_dotset_value(json_obj, key, json_value_init_array());
-		clients = json_object_dotget_array(json_obj, key);
+		snprintf(scr_key, sizeof scr_key, "screens.%s", sc->name);
 
-		TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
-			json_array_append_string(clients, ci->name);
-			snprintf(key, sizeof key, "groups.%s.%s", gc->name,
-					"is_urgent");
-			json_object_dotset_boolean(json_obj, key,
-					ci->flags & CLIENT_URGENCY);
+		if (cc != NULL && cc->sc != NULL && cc->sc == sc) {
+			snprintf(key, sizeof key, "%s.current_client", scr_key);
+			json_object_dotset_string(json_obj, key, cc->name);
 		}
 
-		snprintf(key, sizeof key, "groups.%s.%s", gc->name,
-					"is_active");
-		json_object_dotset_boolean(json_obj, key,
-					gc->flags & GROUP_ACTIVE);
+		TAILQ_FOREACH(gc, &sc->groupq, entry) {
+			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
+					gc->name, "number");
+			json_object_dotset_number(json_obj, key, gc->num);
 
-		snprintf(key, sizeof key, "groups.%s.%s", gc->name,
-					"is_current");
-		json_object_dotset_boolean(json_obj, key,
-					gc == sc->group_current);
+			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
+					gc->name, "clients");
+			json_object_dotset_value(json_obj, key,
+					json_value_init_array());
+			clients = json_object_dotget_array(json_obj, key);
 
-		snprintf(key, sizeof key, "groups.%s.%s", gc->name,
-					"number_of_clients");
-		json_object_dotset_number(json_obj, key,
-					json_array_get_count(clients));
+			TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
+				json_array_append_string(clients, ci->name);
+				snprintf(key, sizeof key, "%s.groups.%s.%s",
+						scr_key, gc->name, "is_urgent");
+				json_object_dotset_boolean(json_obj, key,
+						ci->flags & CLIENT_URGENCY);
+			}
+
+			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
+						gc->name, "is_active");
+			json_object_dotset_boolean(json_obj, key,
+						gc->flags & GROUP_ACTIVE);
+
+			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
+						gc->name, "is_current");
+			json_object_dotset_boolean(json_obj, key,
+						gc == sc->group_current);
+
+			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
+						gc->name, "number_of_clients");
+			json_object_dotset_number(json_obj, key,
+						json_array_get_count(clients));
+		}
+
 	}
-
 	json_out_str = json_serialize_to_string(json_root);
-	fprintf(sc->status_fp, "%s\n", json_out_str);
-	fflush(sc->status_fp);
+	fprintf(status_fp, "%s\n", json_out_str);
+	fflush(status_fp);
 }

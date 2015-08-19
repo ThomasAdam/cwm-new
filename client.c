@@ -227,7 +227,7 @@ client_init(Window win, int skip_map_check)
 	XSync(X_Dpy, False);
 	XUngrabServer(X_Dpy);
 
-	u_put_status(cc->sc);
+	u_put_status();
 
 	return(cc);
 }
@@ -299,7 +299,7 @@ client_setactive(struct client_ctx *cc)
 	conf_grab_mouse(cc->win);
 	xu_ewmh_net_active_window(sc, cc->win);
 
-	u_put_status(sc);
+	u_put_status();
 }
 
 /*
@@ -875,7 +875,7 @@ client_hide(struct client_ctx *cc)
 	if (cc == client_current())
 		client_none(cc->sc);
 
-	u_put_status(cc->sc);
+	u_put_status();
 }
 
 void
@@ -890,7 +890,7 @@ client_unhide(struct client_ctx *cc)
 	client_set_wm_state(cc, NormalState);
 	client_draw_border(cc);
 
-	u_put_status(cc->sc);
+	u_put_status();
 }
 
 void
@@ -900,7 +900,7 @@ client_urgency(struct client_ctx *cc)
 		cc->flags |= CLIENT_URGENCY;
 
 	if (cc->sc != NULL)
-		u_put_status(cc->sc);
+		u_put_status();
 }
 
 void
@@ -1022,7 +1022,7 @@ match:
 		cc->nameqlen--;
 	}
 	if (cc->sc != NULL)
-		u_put_status(cc->sc);
+		u_put_status();
 }
 
 void

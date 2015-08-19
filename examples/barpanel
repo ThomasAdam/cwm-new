@@ -8,11 +8,10 @@ do
 		case "$line" in
 		clock:*)
 			cvalue="$(echo "$line" | sed -ne 's/^clock://p')"
-			clockline="  |%{B-}%{Ucyan}%{+u}%{+o}${cvalue}%{-u}%{-o}";
+			clockline="|%{r}%{B-}%{Ucyan}%{+u}%{+o}${cvalue}%{-u}%{-o}%";
 			;;
 		*)
-			[ -z "$line" ] && wminfo_old="${wminfo_old}$line" ||
-				wminfo_old="$line"
+			wminfo_old="$line"
 			;;
 		esac
 		printf "%s\n" "${wminfo_old}${clockline}"

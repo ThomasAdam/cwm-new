@@ -150,6 +150,7 @@ x_init(const char *dpyname)
 
 	conf_atoms();
 	conf_cursor(&Conf);
+	u_init_pipe();
 	screen_maybe_init_randr();
 }
 
