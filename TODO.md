@@ -19,3 +19,8 @@ Rough ideas for CWM
 * Windows should snap to each other and to screen edges.
 * No special-casing of maximised state, it's just another geometry set which
   is added to the list, and popped when no longer in that state.
+
+Documentation
+-------------
+
+* Document JSON format (cwm.1)
