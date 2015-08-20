@@ -15,4 +15,7 @@ In this directory are a few files:
 * barpanel -- aggregates together output from either conky or read_status.pl
   and adds any additional formatting for use in lemonbar.
 
-* .conkyrc -- example RC file for use with conky. 
+* .conkyrc -- example RC file for use with conky.
+
+[ **It is expected that `panel` should be changed to match the path of the
+other scripts.  Currently, $PWD (./) is assumed. **] 
