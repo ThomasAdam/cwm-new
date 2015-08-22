@@ -79,8 +79,10 @@ void
 client_scan_for_windows(void)
 {
 	struct screen_ctx	*sc;
+	struct client_ctx	*cc;
 	Window			*wins, w0, w1, root;
 	unsigned int		 i, nwins;
+	int			 ptr_x, ptr_y;
 
 	/* Assume the entire root window to scan for clients.  client_init()
 	 * can sort out those clients it wants for its screen.
@@ -89,8 +91,15 @@ client_scan_for_windows(void)
 
 	/* Deal with existing clients. */
 	if (XQueryTree(X_Dpy, root, &w0, &w1, &wins, &nwins)) {
-		for (i = 0; i < nwins; i++)
-			(void)client_init(wins[i], 0);
+		for (i = 0; i < nwins; i++) {
+			/* If the pointer is over a window, focus it. */
+			if ((cc = client_init(wins[i], 0)) != NULL) {
+				xu_ptr_getpos(root, &ptr_x, &ptr_y);
+
+				if (client_inbound(cc, ptr_x, ptr_y))
+					client_setactive(cc);
+			}
+		}
 
 		XFree(wins);
 	}
