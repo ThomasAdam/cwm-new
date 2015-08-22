@@ -425,6 +425,7 @@ client_snap(struct client_ctx *cc, int dir)
 	cc->geom.x = x;
 	cc->geom.y = y;
 	client_move(cc);
+	client_ptrwarp(cc);
 }
 
 struct client_ctx *
