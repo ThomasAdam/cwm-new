@@ -221,6 +221,7 @@ client_init(Window win, int skip_map_check)
 	TAILQ_INSERT_TAIL(&sc->clientq, cc, entry);
 
 	xu_ewmh_net_client_list(sc);
+	xu_ewmh_net_client_list_stacking(sc);
 	xu_ewmh_restore_net_wm_state(cc);
 
 	if (client_get_wm_state(cc) == IconicState)
@@ -250,6 +251,7 @@ client_delete(struct client_ctx *cc)
 	TAILQ_REMOVE(&sc->clientq, cc, entry);
 
 	xu_ewmh_net_client_list(sc);
+	xu_ewmh_net_client_list_stacking(sc);
 
 	if (cc->group != NULL)
 		TAILQ_REMOVE(&cc->group->clientq, cc, group_entry);
