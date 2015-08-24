@@ -19,6 +19,8 @@ Rough ideas for CWM
 * Windows should snap to each other and to screen edges.
 * No special-casing of maximised state, it's just another geometry set which
   is added to the list, and popped when no longer in that state.
+* Redo stacking orders.  Would allow for _NET_WM_ACTION_ABOVE/BELOW, etc.,
+  as well as proper window layers.
 
 Documentation
 -------------
