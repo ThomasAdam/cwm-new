@@ -122,6 +122,12 @@ enum color {
 	CWM_COLOR_NITEMS
 };
 
+enum layer {
+	CLIENT_LAYER_ABOVE = 1,
+	CLIENT_LAYER_NORMAL = 2,
+	CLIENT_LAYER_BELOW = 3
+};
+
 struct geom {
 	int		 x;
 	int		 y;
@@ -185,6 +191,7 @@ struct client_ctx {
 #define CLIENT_MAXFLAGS			(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
 #define CLIENT_MAXIMIZED		(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
 	int			 flags;
+	int			 layer;
 	int			 active;
 	int			 stackingorder;
 	struct winname_q	 nameq;
@@ -368,11 +375,13 @@ enum {
 	_NET_WM_DESKTOP,
 	_NET_CLOSE_WINDOW,
 	_NET_WM_STATE,
-#define	_NET_WM_STATES_NITEMS	4
+#define	_NET_WM_STATES_NITEMS	6
 	_NET_WM_STATE_MAXIMIZED_VERT,
 	_NET_WM_STATE_MAXIMIZED_HORZ,
 	_NET_WM_STATE_FULLSCREEN,
 	_NET_WM_STATE_DEMANDS_ATTENTION,
+	_NET_WM_STATE_ABOVE,
+	_NET_WM_STATE_BELOW,
 	EWMH_NITEMS
 };
 enum {
@@ -400,6 +409,9 @@ void			 client_getsizehints(struct client_ctx *);
 void			 client_hide(struct client_ctx *);
 void			 client_hmaximize(struct client_ctx *);
 void 			 client_htile(struct client_ctx *);
+void			 client_layer_above(struct client_ctx *);
+void			 client_layer_below(struct client_ctx *);
+void			 client_layer_normal(struct client_ctx *);
 void			 client_lower(struct client_ctx *);
 void			 client_map(struct client_ctx *);
 void			 client_maximize(struct client_ctx *);

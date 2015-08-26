@@ -39,6 +39,7 @@ static void			 client_placecalc(struct client_ctx *);
 static void			 client_wm_protocols(struct client_ctx *);
 static void			 client_mwm_hints(struct client_ctx *);
 static int			 client_inbound(struct client_ctx *, int, int);
+static void			 client_restack(struct client_ctx *);
 
 struct client_ctx	*_curcc = NULL;
 
@@ -107,6 +108,11 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 
 	client_transient(cc);
 
+	/* Put the client in the normal (default) layer.  Restoring
+	 * NET_WM_STATE later on may well change this.
+	 */
+	client_layer_normal(cc);
+
 	/* Notify client of its configuration. */
 	client_config(cc);
 
@@ -129,6 +135,65 @@ client_init(Window win, struct screen_ctx *sc, int mapped)
 	XUngrabServer(X_Dpy);
 
 	return (cc);
+}
+
+void
+client_restack(struct client_ctx *cc)
+{
+	struct screen_ctx	*sc = cc->sc;
+	struct group_ctx	*gc = cc->group;
+	struct client_ctx	*ci;
+	Window			*all_wins;
+	Window			*wins_above, *wins_below, *wins_normal;
+	u_int			 nwins = 0, above = 0, below = 0, normal = 0;
+
+	if (gc == NULL) {
+		fprintf(stderr, "Not restacking windows...\n");
+		return;
+	}
+
+	/* Restack all clients on the screen according to the specified layer.
+	 * The client passed in to client_restack() will have had its layer
+	 * changed, and hence the restacking of window is relative to this
+	 * client changing its position.
+	 *
+	 * FIXME - we need to consider what happens to transient/child windows
+	 * of cc->win; they will need restacking as well, and presumably the
+	 * policy will be to keep the child windows on top of the parent?
+	 */
+	screen_updatestackingorder(sc);
+
+	gc->highstack = 0;
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		if (ci->stackingorder > gc->highstack)
+			gc->highstack = ci->stackingorder;
+	}
+	all_wins = xcalloc(sizeof(*all_wins), (gc->highstack + 1));
+	wins_above = xcalloc(sizeof(*wins_above), (gc->highstack + 1));
+	wins_below = xcalloc(sizeof(*wins_below), (gc->highstack + 1));
+	wins_normal = xcalloc(sizeof(*wins_normal), (gc->highstack + 1));
+
+	TAILQ_FOREACH(ci, &gc->clients, group_entry) {
+		switch (ci->layer) {
+		case CLIENT_LAYER_BELOW:
+			wins_below[++below] = ci->win;
+			break;
+		case CLIENT_LAYER_NORMAL:
+			wins_normal[++normal] = ci->win;
+			break;
+		case CLIENT_LAYER_ABOVE:
+			wins_above[++above] = ci->win;
+		}
+	}
+	nwins = below + normal + above;
+	fprintf(stderr, "nwins: %d\n", nwins);
+
+	memcpy(all_wins, wins_below, below + sizeof(*wins_below));
+	memcpy(all_wins + above, wins_above, above + sizeof(*wins_above));
+	memcpy(all_wins + normal, wins_normal, normal + sizeof(*wins_normal));
+	fprintf(stderr, "Restacking windows...\n");
+	XRestackWindows(X_Dpy, all_wins, nwins);
+	free(all_wins);
 }
 
 void
@@ -164,6 +229,26 @@ client_delete(struct client_ctx *cc)
 	free(cc);
 }
 
+void
+client_layer_above(struct client_ctx *cc)
+{
+	cc->layer = CLIENT_LAYER_ABOVE;
+	client_restack(cc);
+}
+
+void
+client_layer_normal(struct client_ctx *cc)
+{
+	cc->layer = CLIENT_LAYER_NORMAL;
+	client_restack(cc);
+}
+
+void
+client_layer_below(struct client_ctx *cc)
+{
+	cc->layer = CLIENT_LAYER_BELOW;
+	client_restack(cc);
+}
 void
 client_setactive(struct client_ctx *cc)
 {

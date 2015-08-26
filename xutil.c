@@ -339,6 +339,12 @@ xu_ewmh_handle_net_wm_state_msg(struct client_ctx *cc, int action,
 		{ _NET_WM_STATE_DEMANDS_ATTENTION,
 			CLIENT_URGENCY,
 			client_urgency },
+		{ _NET_WM_STATE_ABOVE,
+			CLIENT_LAYER_ABOVE,
+			client_layer_above },
+		{ _NET_WM_STATE_BELOW,
+			CLIENT_LAYER_BELOW,
+			client_layer_below },
 	};
 
 	for (i = 0; i < nitems(handlers); i++) {
@@ -376,6 +382,10 @@ xu_ewmh_restore_net_wm_state(struct client_ctx *cc)
 			client_fullscreen(cc);
 		if (atoms[i] == ewmh[_NET_WM_STATE_DEMANDS_ATTENTION])
 			client_urgency(cc);
+		if (atoms[i] == ewmh[_NET_WM_STATE_ABOVE])
+			client_layer_above(cc);
+		if (atoms[i] == ewmh[_NET_WM_STATE_BELOW])
+			client_layer_below(cc);
 	}
 	free(atoms);
 }
@@ -392,7 +402,9 @@ xu_ewmh_set_net_wm_state(struct client_ctx *cc)
 		if (oatoms[i] != ewmh[_NET_WM_STATE_MAXIMIZED_HORZ] &&
 		    oatoms[i] != ewmh[_NET_WM_STATE_MAXIMIZED_VERT] &&
 		    oatoms[i] != ewmh[_NET_WM_STATE_FULLSCREEN] &&
-		    oatoms[i] != ewmh[_NET_WM_STATE_DEMANDS_ATTENTION])
+		    oatoms[i] != ewmh[_NET_WM_STATE_DEMANDS_ATTENTION] &&
+		    oatoms[i] != ewmh[_NET_WM_STATE_ABOVE] &&
+		    oatoms[i] != ewmh[_NET_WM_STATE_BELOW])
 			atoms[j++] = oatoms[i];
 	}
 	free(oatoms);
@@ -406,6 +418,11 @@ xu_ewmh_set_net_wm_state(struct client_ctx *cc)
 	}
 	if (cc->flags & CLIENT_URGENCY)
 		atoms[j++] = ewmh[_NET_WM_STATE_DEMANDS_ATTENTION];
+	if (cc->layer == CLIENT_LAYER_ABOVE)
+		atoms[j++] = ewmh[_NET_WM_STATE_ABOVE];
+	if (cc->layer == CLIENT_LAYER_BELOW)
+		atoms[j++] = ewmh[_NET_WM_STATE_BELOW];
+
 	if (j > 0)
 		XChangeProperty(X_Dpy, cc->win, ewmh[_NET_WM_STATE],
 		    XA_ATOM, 32, PropModeReplace, (unsigned char *)atoms, j);
