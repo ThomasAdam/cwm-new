@@ -1,6 +1,7 @@
 .\"	$OpenBSD$
 .\"
 .\" Copyright (c) 2004,2005 Marius Aamodt Eriksen <marius@monkey.org>
+.\" Copyright (c) 2015 Thomas Adam <thomas@xteddy.org>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -233,6 +234,40 @@ Selecting an item will hide/unhide that group.
 Show list of applications as defined in
 .Pa ~/.cwmrc .
 Selecting an item will spawn that application.
+.El
+.Sh STATUS
+.Nm
+creates a named FIFO in /tmp though which it sends a JSON string.
+The structure looks like the following:
+.Bd -literal -offset -indent
+{
+    version: INTEGER,
+    screens: {
+		monitor_1: {
+			current_client: "XTerm",
+			groups: {
+				one: {
+					number: 1,
+					number_of_clients: 1,
+					clients: [
+						'XTerm'
+					],
+					is_active: false,
+					is_current: true,
+					is_urgent: false
+				}
+				two: {
+					...
+				}
+			}
+		},
+		monitor_2: {
+			...
+		}
+	}
+}
+.Ed
+Each section above repeats, per group, per screen.
 .El
 .Sh ENVIRONMENT
 .Bl -tag -width "DISPLAYXXX" -compact
