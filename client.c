@@ -219,7 +219,6 @@ client_init(Window win, int skip_map_check)
 	client_transient(cc);
 
 	TAILQ_INSERT_TAIL(&sc->clientq, cc, entry);
-
 	xu_ewmh_net_client_list(sc);
 	xu_ewmh_net_client_list_stacking(sc);
 	xu_ewmh_restore_net_wm_state(cc);

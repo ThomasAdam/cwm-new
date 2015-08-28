@@ -31,6 +31,38 @@
 #include "calmwm.h"
 
 static unsigned int ign_mods[] = { 0, LockMask, Mod2Mask, Mod2Mask | LockMask };
+static int	 client_winlist(Window **, int);
+
+static int
+client_winlist(Window **winlist, int reverse)
+{
+	struct screen_ctx	*sc;
+	struct client_ctx	*cc;
+	int			 i = 0, j = 0;
+
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
+		TAILQ_FOREACH(cc, &sc->clientq, entry)
+			i++;
+	}
+
+	if (i == 0)
+		return (-1);
+
+	if (reverse)
+		j = i;
+
+	*winlist = xreallocarray(NULL, i, sizeof(**winlist));
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
+		TAILQ_FOREACH(cc, &sc->clientq, entry)
+			*winlist[reverse ? j-- : j++] = cc->win;
+	}
+
+	return (i);
+}
 
 void
 xu_btn_grab(Window win, int mask, unsigned int btn)
@@ -210,18 +242,12 @@ xu_ewmh_net_workarea(struct screen_ctx *sc)
 void
 xu_ewmh_net_client_list(struct screen_ctx *sc)
 {
-	struct client_ctx	*cc;
 	Window			*winlist;
-	int			 i = 0, j = 0;
+	int			 i;
 
-	TAILQ_FOREACH(cc, &sc->clientq, entry)
-		i++;
-	if (i == 0)
+	if ((i = client_winlist(&winlist, 0)) == -1)
 		return;
 
-	winlist = xreallocarray(NULL, i, sizeof(*winlist));
-	TAILQ_FOREACH(cc, &sc->clientq, entry)
-		winlist[j++] = cc->win;
 	XChangeProperty(X_Dpy, sc->rootwin, ewmh[_NET_CLIENT_LIST],
 	    XA_WINDOW, 32, PropModeReplace, (unsigned char *)winlist, i);
 	free(winlist);
@@ -230,23 +256,15 @@ xu_ewmh_net_client_list(struct screen_ctx *sc)
 void
 xu_ewmh_net_client_list_stacking(struct screen_ctx *sc)
 {
-	struct client_ctx	*cc;
 	Window			*winlist;
-	int			 i = 0, j = 0;
+	int			 i;
 
-	TAILQ_FOREACH(cc, &sc->clientq, entry)
-		i++;
-	if (i == 0)
+
+	if ((i = client_winlist(&winlist, 1)) == -1)
 		return;
 
-	j = i;
-
-	winlist = xreallocarray(NULL, i, sizeof(*winlist));
-	TAILQ_FOREACH(cc, &sc->clientq, entry)
-		winlist[--j] = cc->win;
 	XChangeProperty(X_Dpy, sc->rootwin, ewmh[_NET_CLIENT_LIST_STACKING],
 	    XA_WINDOW, 32, PropModeReplace, (unsigned char *)winlist, i);
-	free(winlist);
 }
 
 void

@@ -129,6 +129,9 @@ u_put_status(void)
 		if (screen_should_ignore_global(sc))
 			continue;
 
+		memset(key, 0, sizeof key);
+		memset(scr_key, 0, sizeof key);
+
 		snprintf(scr_key, sizeof scr_key, "screens.%s", sc->name);
 
 		if (cc != NULL && cc->sc != NULL && cc->sc == sc) {
