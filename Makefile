@@ -5,7 +5,7 @@ PROG=		cwm-new
 
 PREFIX?=	/usr/local
 
-SRCS=		$(wildcard compat/*.[ch] *.[ch]) y.tab.c
+SRCS=		$(wildcard compat/*.c *.c) y.tab.c
 
 OBJS=		$(patsubst %.c,%.o,$(SRCS))
 
@@ -29,7 +29,7 @@ ${PROG}: ${OBJS}
 	${CC} ${OBJS} ${CPPFLAGS} ${LDFLAGS} -o ${PROG}
 
 .c.o:
-	${CC} -c ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -o $@ $<
+	${CC} -c ${CFLAGS} ${CPPFLAGS} -o $@ $<
 
 install: ${PROG}
 	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANPREFIX}/man1 ${DESTDIR}${MANPREFIX}/man5
