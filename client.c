@@ -468,9 +468,18 @@ client_toggle_hidden(struct client_ctx *cc)
 void
 client_toggle_sticky(struct client_ctx *cc)
 {
-	if (cc->flags & CLIENT_STICKY)
+	if (cc->flags & CLIENT_STICKY) {
 		cc->flags &= ~CLIENT_STICKY;
-	else
+		/*
+		 * When taking a window out of being sticky, reassign the
+		 * client back to the current group.  If the group has changed
+		 * from the client's original group at the time the client
+		 * became sticky, it should stick to the currently active
+		 * group.  Some people may even use this to implement a crude
+		 * form of moving a window from one group to the next.
+		 */
+		group_assign(cc->sc->group_current, cc);
+	} else
 		cc->flags |= CLIENT_STICKY;
 
 	xu_ewmh_set_net_wm_state(cc);
