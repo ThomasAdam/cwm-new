@@ -140,7 +140,7 @@ group_init(struct screen_ctx *sc, int num)
 
 	TAILQ_INSERT_TAIL(&sc->groupq, gc, entry);
 
-	if (num == 1)
+	if (num == 0)
 		group_setactive(gc);
 }
 
