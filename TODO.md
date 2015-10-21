@@ -21,6 +21,8 @@ Rough ideas for CWM
   is added to the list, and popped when no longer in that state.
 * Redo stacking orders.  Would allow for _NET_WM_ACTION_ABOVE/BELOW, etc.,
   as well as proper window layers.
+* New command `info` which pops up a little window (same as when resizing)
+  which lists information about the window.  Think FvwmIdent from FVWM.
 
 Documentation
 -------------
