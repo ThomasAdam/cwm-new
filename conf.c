@@ -239,7 +239,8 @@ static const struct {
 	{ "4S-Up",	"snapup" },
 	{ "4S-Down",	"snapdown" },
 	{ "4S-Left",	"snapleft" },
-	{ "4S-Right",	"snapright" }
+	{ "4S-Right",	"snapright" },
+	{ "CM-B",	"toggle_border" },
 },
 mouse_binds[] = {
 	{ "1",		"menu_unhide" },
@@ -477,6 +478,7 @@ static const struct {
 	{ "menu_group", mousefunc_menu_group, 0, {0} },
 	{ "menu_unhide", mousefunc_menu_unhide, 0, {0} },
 	{ "menu_cmd", mousefunc_menu_cmd, 0, {0} },
+	{ "toggle_border", kbfunc_client_toggle_border, CWM_WIN, {0} }
 };
 
 static const struct {

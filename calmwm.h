@@ -224,6 +224,7 @@ struct client_ctx {
 #define CLIENT_STICKY			0x1000
 #define CLIENT_ACTIVE			0x2000
 #define CLIENT_EXPANDED			0x4000
+#define CLIENT_BORDER			0x8000
 
 #define CLIENT_HIGHLIGHT		(CLIENT_GROUP | CLIENT_UNGROUP)
 #define CLIENT_MAXFLAGS			(CLIENT_VMAXIMIZED | CLIENT_HMAXIMIZED)
@@ -463,6 +464,7 @@ void			 client_urgency(struct client_ctx *);
 void 			 client_vtile(struct client_ctx *);
 void			 client_warp(struct client_ctx *);
 void			 client_wm_hints(struct client_ctx *);
+void			 client_toggle_border(struct client_ctx *);
 
 void			 group_assign(struct group_ctx *, struct client_ctx *);
 void			 group_alltoggle(struct screen_ctx *);
@@ -526,6 +528,8 @@ void			 kbfunc_client_raise(struct client_ctx *, union arg *);
 void			 kbfunc_client_rcycle(struct client_ctx *, union arg *);
 void			 kbfunc_client_search(struct client_ctx *, union arg *);
 void			 kbfunc_client_snap(struct client_ctx *, union arg *);
+void			 kbfunc_client_toggle_border(struct client_ctx *,
+			     union arg *);
 void			 kbfunc_client_toggle_freeze(struct client_ctx *,
     			     union arg *);
 void			 kbfunc_client_toggle_fullscreen(struct client_ctx *,

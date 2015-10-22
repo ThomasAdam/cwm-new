@@ -176,6 +176,8 @@ client_init(Window win, int skip_map_check)
 	client_getsizehints(cc);
 	client_mwm_hints(cc);
 
+	cc->flags |= CLIENT_BORDER;
+
 	/* Saved pointer position */
 	cc->ptr.x = -1;
 	cc->ptr.y = -1;
@@ -486,6 +488,21 @@ client_toggle_sticky(struct client_ctx *cc)
 }
 
 void
+client_toggle_border(struct client_ctx *cc)
+{
+	if (cc->flags & CLIENT_BORDER) {
+		cc->flags &= ~CLIENT_BORDER;
+		cc->bwidth = 0;
+	} else {
+		cc->flags |= CLIENT_BORDER;
+		cc->bwidth = Conf.bwidth;
+	}
+
+	client_config(cc);
+	client_draw_border(cc);
+}
+
+void
 client_toggle_fullscreen(struct client_ctx *cc)
 {
 	struct geom		 xine;
@@ -495,7 +512,8 @@ client_toggle_fullscreen(struct client_ctx *cc)
 		return;
 
 	if (cc->flags & CLIENT_FULLSCREEN) {
-		cc->bwidth = Conf.bwidth;
+		if (cc->flags & CLIENT_BORDER)
+			cc->bwidth = Conf.bwidth;
 		cc->geom = cc->fullgeom;
 		cc->flags &= ~(CLIENT_FULLSCREEN | CLIENT_FREEZE);
 		goto resize;
@@ -785,11 +803,11 @@ client_resize(struct client_ctx *cc, int reset)
 		xu_ewmh_set_net_wm_state(cc);
 	}
 
-	client_draw_border(cc);
-
 	XMoveResizeWindow(X_Dpy, cc->win, cc->geom.x,
 	    cc->geom.y, cc->geom.w, cc->geom.h);
+
 	client_config(cc);
+	client_draw_border(cc);
 }
 
 void
