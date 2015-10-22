@@ -470,6 +470,12 @@ kbfunc_client_nogroup(struct client_ctx *cc, union arg *arg)
 }
 
 void
+kbfunc_client_toggle_border(struct client_ctx *cc, union arg *arg)
+{
+	client_toggle_border(cc);
+}
+
+void
 kbfunc_client_grouptoggle(struct client_ctx *cc, union arg *arg)
 {
 	if (arg->i == 0) {
