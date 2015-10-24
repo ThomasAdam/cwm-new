@@ -355,6 +355,7 @@ xev_handle_clientmessage(XEvent *ee)
 		if ((old_cc = client_current()))
 			client_ptrsave(old_cc);
 		client_ptrwarp(cc);
+		group_setactive(cc->group);
 	}
 
 	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32) {
