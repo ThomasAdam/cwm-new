@@ -163,9 +163,8 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 			cc->geom.x = ev.xmotion.x_root - px - cc->bwidth;
 			cc->geom.y = ev.xmotion.y_root - py - cc->bwidth;
 
-			xine = screen_find_xinerama(
-			    cc->geom.x + cc->geom.w / 2,
-			    cc->geom.y + cc->geom.h / 2, CWM_GAP);
+			xine = screen_find_xinerama(cc->geom.x, cc->geom.y,
+			    CWM_GAP);
 			cc->geom.x += client_snapcalc(cc->geom.x,
 			    cc->geom.x + cc->geom.w + (cc->bwidth * 2),
 			    xine.x, xine.x + xine.w, sc->snapdist);
