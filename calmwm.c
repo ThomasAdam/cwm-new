@@ -118,10 +118,15 @@ main(int argc, char **argv)
 		conf_path = NULL;
 	}
 
-	conf_init(&Conf);
-	if (conf_path && (parse_config(conf_path, &Conf) == -1))
-		log_debug("config file %s has errors", conf_path);
-	free(conf_path);
+	if (new_config == NULL) {
+		fprintf(stderr, "Using old config values...\n");
+		conf_init(&Conf);
+		if (conf_path && (parse_config(conf_path, &Conf) == -1))
+			log_debug("config file %s has errors", conf_path);
+		free(conf_path);
+	} else {
+		/* New config */
+	}
 
 	log_debug("%s starting...", __progname);
 
