@@ -17,7 +17,7 @@ addons:
             - libxcb-keysyms1-dev
             - libxcb-randr0-dev
             - libxcb-util0-dev
-            - libxcb1-dev 
+            - libxcb1-dev
             - libxft-dev
             - libxrandr-dev
             - pkg-config
