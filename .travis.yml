@@ -20,4 +20,4 @@ addons:
             - libxrandr-dev
             - pkg-config
 script: make clean && make
-sudo: required
+sudo: false
