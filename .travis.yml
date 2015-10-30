@@ -7,7 +7,7 @@ matrix:
 addons:
     apt:
         sources:
-            - debian-sid
+            - ubuntu-precise
         packages:
             - bison
             - build-essential
