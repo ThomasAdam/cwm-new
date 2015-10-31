@@ -7,7 +7,7 @@ matrix:
 addons:
     apt:
         sources:
-            - lucid
+            - ubuntu-precise
         packages:
             - bison
             - build-essential
