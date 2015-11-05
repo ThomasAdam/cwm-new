@@ -27,18 +27,27 @@ Current Format
 ## Current Commands
 
 ```
+activeborder
 autogroup
 bind
 borderwidth
 color
 command
+font
 fontname
 gap
+groupborder
 ignore
+inaciveborder
+menubg
+menufg
 mousebind
 moveamount
+selfont
 snapdist
 sticky
+ungroupborder
+urgencyborder
 ```
 
 Proposed Format
@@ -46,12 +55,12 @@ Proposed Format
 
 ```
 screen $SCREEN {
-	group {
-		1 {
+	groups {
+		group 1 {
 			borderwidth
 			color
 		}
-		2 {
+		group 2 {
 			borderwidth
 			color
 		}
@@ -87,8 +96,8 @@ mousebind {
 ### Clients
 
 ```
-client {
-	class/resource/title {
+clients {
+	client class/resource/title {
 		autogroup 1,2,3
 		color ...
 	}
