@@ -33,21 +33,14 @@ bind
 borderwidth
 color
 command
-font
-fontname
 gap
 groupborder
 ignore
 inaciveborder
-menubg
-menufg
 mousebind
 moveamount
-selfont
 snapdist
 sticky
-ungroupborder
-urgencyborder
 ```
 
 Proposed Format
@@ -102,6 +95,24 @@ clients {
 		color ...
 	}
 }
+```
+
+### Grouping of commands
+
+The following commands are accepted either globally or per-group.
+
+*Global only*:
+```
+gap
+font
+selfont
+snapdist
+```
+
+*Global, but can also be overriden in groups*:
+```
+color
+borderwidth
 ```
 
 Differences / Deprecations
