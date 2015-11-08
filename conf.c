@@ -32,12 +32,12 @@
 #include "calmwm.h"
 
 static const char	*conf_bind_getmask(const char *, unsigned int *);
-static void	 	 conf_cmd_remove(struct conf *, const char *);
-static void	 	 conf_unbind_kbd(struct conf *, struct binding *);
-static void	 	 conf_unbind_mouse(struct conf *, struct binding *);
+static void	 	 conf_cmd_remove(const char *);
+static void	 	 conf_unbind_kbd(struct binding *);
+static void	 	 conf_unbind_mouse(struct binding *);
 
 int
-conf_cmd_add(struct conf *c, const char *name, const char *path)
+conf_cmd_add(const char *name, const char *path)
 {
 	struct cmd	*cmd;
 
@@ -50,27 +50,27 @@ conf_cmd_add(struct conf *c, const char *name, const char *path)
 		return(0);
 	}
 
-	conf_cmd_remove(c, name);
+	conf_cmd_remove(name);
 
-	TAILQ_INSERT_TAIL(&c->cmdq, cmd, entry);
+	TAILQ_INSERT_TAIL(&cmdq, cmd, entry);
 	return(1);
 }
 
 static void
-conf_cmd_remove(struct conf *c, const char *name)
+conf_cmd_remove(const char *name)
 {
 	struct cmd	*cmd = NULL, *cmdnxt;
 
-	TAILQ_FOREACH_SAFE(cmd, &c->cmdq, entry, cmdnxt) {
+	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmdnxt) {
 		if (strcmp(cmd->name, name) == 0) {
-			TAILQ_REMOVE(&c->cmdq, cmd, entry);
+			TAILQ_REMOVE(&cmdq, cmd, entry);
 			free(cmd->name);
 			free(cmd);
 		}
 	}
 }
 void
-conf_autogroup(struct conf *c, int num, const char *name, const char *class)
+conf_autogroup(int num, const char *name, const char *class)
 {
 	struct autogroupwin	*aw;
 	char			*p;
@@ -96,254 +96,134 @@ conf_autogroup(struct conf *c, int num, const char *name, const char *class)
 	}
 	aw->num = num;
 
-	TAILQ_INSERT_TAIL(&c->autogroupq, aw, entry);
+	TAILQ_INSERT_TAIL(&autogroupq, aw, entry);
 }
 
 void
-conf_ignore(struct conf *c, const char *name)
+conf_ignore(const char *name)
 {
 	struct winname	*wn;
 
 	wn = xmalloc(sizeof(*wn));
 	wn->name = xstrdup(name);
-	TAILQ_INSERT_TAIL(&c->ignoreq, wn, entry);
+	TAILQ_INSERT_TAIL(&ignoreq, wn, entry);
 }
 
-static const char *color_binds[] = {
-	"#CCCCCC",	/* CWM_COLOR_BORDER_ACTIVE */
-	"#666666",	/* CWM_COLOR_BORDER_INACTIVE */
-	"#FC8814",	/* CWM_COLOR_BORDER_URGENCY */
-	"blue",		/* CWM_COLOR_BORDER_GROUP */
-	"red",		/* CWM_COLOR_BORDER_UNGROUP */
-	"black",	/* CWM_COLOR_MENU_FG */
-	"white",	/* CWM_COLOR_MENU_BG */
-	"black",	/* CWM_COLOR_MENU_FONT */
-	"",		/* CWM_COLOR_MENU_FONT_SEL */
-};
-
 void
-conf_screen(struct screen_ctx *sc)
+conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
 {
-	unsigned int	 i;
-	XftColor	 xc;
-	Colormap	 colormap = DefaultColormap(X_Dpy, sc->which);
-	Visual		*visual = DefaultVisual(X_Dpy, sc->which);
+	unsigned int		 i;
+	XftColor		 xc;
+	Colormap		 colormap = DefaultColormap(X_Dpy, sc->which);
+	Visual			*visual = DefaultVisual(X_Dpy, sc->which);
+	struct config_group	*cgrp = gc->config_group;
 
-	sc->gap = Conf.gap;
-	sc->snapdist = Conf.snapdist;
-
-	sc->xftfont = XftFontOpenXlfd(X_Dpy, sc->which, Conf.font);
-	if (sc->xftfont == NULL) {
-		sc->xftfont = XftFontOpenName(X_Dpy, sc->which, Conf.font);
-		if (sc->xftfont == NULL)
+	cgrp->xftfont = XftFontOpenXlfd(X_Dpy, sc->which, CONF_FONT);
+	if (cgrp->xftfont == NULL) {
+		cgrp->xftfont = XftFontOpenName(X_Dpy, sc->which, CONF_FONT);
+		if (cgrp->xftfont == NULL)
 			log_fatal("XftFontOpenName() failed");
 	}
 
-	for (i = 0; i < nitems(color_binds); i++) {
-		if (i == CWM_COLOR_MENU_FONT_SEL && *Conf.color[i] == '\0') {
-			xu_xorcolor(sc->xftcolor[CWM_COLOR_MENU_BG],
-			    sc->xftcolor[CWM_COLOR_MENU_FG], &xc);
-			xu_xorcolor(sc->xftcolor[CWM_COLOR_MENU_FONT], xc, &xc);
+	for (i = 0; i < nitems(cgrp->color); i++) {
+		if (i == CWM_COLOR_MENU_FONT_SEL && cgrp->color[i] == '\0') {
+			xu_xorcolor(cgrp->xftcolor[CWM_COLOR_MENU_BG],
+			    cgrp->xftcolor[CWM_COLOR_MENU_FG], &xc);
+			xu_xorcolor(cgrp->xftcolor[CWM_COLOR_MENU_FONT], xc, &xc);
 			if (!XftColorAllocValue(X_Dpy, visual, colormap,
-			    &xc.color, &sc->xftcolor[CWM_COLOR_MENU_FONT_SEL]))
-				log_debug("%s: %s", __func__, Conf.color[i]);
+			    &xc.color, &cgrp->xftcolor[CWM_COLOR_MENU_FONT_SEL]))
+				log_debug("%s: %s", __func__, cgrp->color[i]);
 			break;
 		}
 		if (XftColorAllocName(X_Dpy, visual, colormap,
-		    Conf.color[i], &xc)) {
-			sc->xftcolor[i] = xc;
+		    cgrp->color[i], &xc)) {
+			cgrp->xftcolor[i] = xc;
 			XftColorFree(X_Dpy, visual, colormap, &xc);
 		} else {
-			log_debug("%s: %s", __func__, Conf.color[i]);
+			log_debug("%s: %s", __func__, cgrp->color[i]);
 			XftColorAllocName(X_Dpy, visual, colormap,
-			    color_binds[i], &sc->xftcolor[i]);
+			    cgrp->color[i], &cgrp->xftcolor[i]);
 		}
 	}
 
-	sc->menuwin = XCreateSimpleWindow(X_Dpy, sc->rootwin, 0, 0, 1, 1,
-	    Conf.bwidth,
-	    sc->xftcolor[CWM_COLOR_MENU_FG].pixel,
-	    sc->xftcolor[CWM_COLOR_MENU_BG].pixel);
+	if (sc->menuwin <= 0) {
+		sc->menuwin = XCreateSimpleWindow(X_Dpy, sc->rootwin, 0, 0, 1, 1,
+		    cgrp->bwidth,
+		    cgrp->xftcolor[CWM_COLOR_MENU_FG].pixel,
+		    cgrp->xftcolor[CWM_COLOR_MENU_BG].pixel);
+	}
 
-	sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
-	if (sc->xftdraw == NULL)
-		log_fatal("XftDrawCreate() failed");
+	if (sc->xftdraw == NULL) {
+		sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
+		if (sc->xftdraw == NULL)
+			log_fatal("XftDrawCreate() failed");
 
-	conf_grab_kbd(sc->rootwin);
+		conf_cursor(sc);
+		conf_grab_kbd(sc->rootwin);
+	}
 }
 
-static const struct {
-	const char	*key;
-	const char	*func;
-} kbd_binds[] = {
-	{ "CM-Return",	"terminal" },
-	{ "CM-Delete",	"lock" },
-	{ "M-question",	"exec" },
-	{ "CM-w",	"exec_wm" },
-	{ "M-period",	"ssh" },
-	{ "M-Return",	"hide" },
-	{ "M-Down",	"lower" },
-	{ "M-Up",	"raise" },
-	{ "M-slash",	"search" },
-	{ "C-slash",	"menusearch" },
-	{ "M-Tab",	"cycle" },
-	{ "MS-Tab",	"rcycle" },
-	{ "CM-n",	"label" },
-	{ "CM-x",	"delete" },
-	{ "CM-0",	"group0" },
-	{ "CM-1",	"group1" },
-	{ "CM-2",	"group2" },
-	{ "CM-3",	"group3" },
-	{ "CM-4",	"group4" },
-	{ "CM-5",	"group5" },
-	{ "CM-6",	"group6" },
-	{ "CM-7",	"group7" },
-	{ "CM-8",	"group8" },
-	{ "CM-9",	"group9" },
-	{ "M-Right",	"cyclegroup" },
-	{ "M-Left",	"rcyclegroup" },
-	{ "CM-g",	"grouptoggle" },
-	{ "CM-f",	"fullscreen" },
-	{ "CM-m",	"maximize" },
-	{ "CM-s",	"sticky" },
-	{ "CM-equal",	"vmaximize" },
-	{ "CMS-equal",	"hmaximize" },
-	{ "CMS-f",	"freeze" },
-	{ "CMS-r",	"restart" },
-	{ "CMS-q",	"quit" },
-	{ "M-h",	"moveleft" },
-	{ "M-j",	"movedown" },
-	{ "M-k",	"moveup" },
-	{ "M-l",	"moveright" },
-	{ "M-H",	"bigmoveleft" },
-	{ "M-J",	"bigmovedown" },
-	{ "M-K",	"bigmoveup" },
-	{ "M-L",	"bigmoveright" },
-	{ "CM-a",	"nogroup" },
-	{ "CM-h",	"resizeleft" },
-	{ "CM-j",	"resizedown" },
-	{ "CM-k",	"resizeup" },
-	{ "CM-l",	"resizeright" },
-	{ "CM-H",	"bigresizeleft" },
-	{ "CM-J",	"bigresizedown" },
-	{ "CM-K",	"bigresizeup" },
-	{ "CM-L",	"bigresizeright" },
-	{ "C-Left",	"ptrmoveleft" },
-	{ "C-Down",	"ptrmovedown" },
-	{ "C-Up",	"ptrmoveup" },
-	{ "C-Right",	"ptrmoveright" },
-	{ "CS-Left",	"bigptrmoveleft" },
-	{ "CS-Down",	"bigptrmovedown" },
-	{ "CS-Up",	"bigptrmoveup" },
-	{ "CS-Right",	"bigptrmoveright" },
-	{ "4S-Up",	"snapup" },
-	{ "4S-Down",	"snapdown" },
-	{ "4S-Left",	"snapleft" },
-	{ "4S-Right",	"snapright" },
-	{ "CM-B",	"toggle_border" },
-},
-mouse_binds[] = {
-	{ "1",		"menu_unhide" },
-	{ "2",		"menu_group" },
-	{ "3",		"menu_cmd" },
-	{ "M-1",	"window_move" },
-	{ "CM-1",	"window_grouptoggle" },
-	{ "M-2",	"window_resize" },
-	{ "M-3",	"window_lower" },
-	{ "CMS-3",	"window_hide" },
-};
-
 void
-conf_init(struct conf *c)
+conf_init(void)
 {
-	unsigned int	i;
-
-	c->bwidth = CONF_BWIDTH;
-	c->mamount = CONF_MAMOUNT;
-	c->snapdist = CONF_SNAPDIST;
-
-	TAILQ_INIT(&c->ignoreq);
-	TAILQ_INIT(&c->cmdq);
-	TAILQ_INIT(&c->keybindingq);
-	TAILQ_INIT(&c->autogroupq);
-	TAILQ_INIT(&c->mousebindingq);
-
-	for (i = 0; i < nitems(kbd_binds); i++)
-		conf_bind_kbd(c, kbd_binds[i].key, kbd_binds[i].func);
-
-	for (i = 0; i < nitems(mouse_binds); i++)
-		conf_bind_mouse(c, mouse_binds[i].key, mouse_binds[i].func);
-
-	for (i = 0; i < nitems(color_binds); i++)
-		c->color[i] = xstrdup(color_binds[i]);
-
-	conf_cmd_add(c, "lock", "xlock");
-	conf_cmd_add(c, "term", "xterm");
-
-	(void)snprintf(c->known_hosts, sizeof(c->known_hosts), "%s/%s",
-	    homedir, ".ssh/known_hosts");
-
-	c->font = xstrdup(CONF_FONT);
+	return;
 }
 
 void
-conf_clear(struct conf *c)
+conf_clear(void)
 {
 	struct autogroupwin	*aw;
 	struct binding		*kb, *mb;
 	struct winname		*wn;
 	struct cmd		*cmd;
-	int			 i;
 
-	while ((cmd = TAILQ_FIRST(&c->cmdq)) != NULL) {
-		TAILQ_REMOVE(&c->cmdq, cmd, entry);
+	while ((cmd = TAILQ_FIRST(&cmdq)) != NULL) {
+		TAILQ_REMOVE(&cmdq, cmd, entry);
 		free(cmd->name);
 		free(cmd);
 	}
 
-	while ((kb = TAILQ_FIRST(&c->keybindingq)) != NULL) {
-		TAILQ_REMOVE(&c->keybindingq, kb, entry);
+	while ((kb = TAILQ_FIRST(&keybindingq)) != NULL) {
+		TAILQ_REMOVE(&keybindingq, kb, entry);
 		free(kb);
 	}
 
-	while ((aw = TAILQ_FIRST(&c->autogroupq)) != NULL) {
-		TAILQ_REMOVE(&c->autogroupq, aw, entry);
+	while ((aw = TAILQ_FIRST(&autogroupq)) != NULL) {
+		TAILQ_REMOVE(&autogroupq, aw, entry);
 		free(aw->class);
 		free(aw->name);
 		free(aw);
 	}
 
-	while ((wn = TAILQ_FIRST(&c->ignoreq)) != NULL) {
-		TAILQ_REMOVE(&c->ignoreq, wn, entry);
+	while ((wn = TAILQ_FIRST(&ignoreq)) != NULL) {
+		TAILQ_REMOVE(&ignoreq, wn, entry);
 		free(wn->name);
 		free(wn);
 	}
 
-	while ((mb = TAILQ_FIRST(&c->mousebindingq)) != NULL) {
-		TAILQ_REMOVE(&c->mousebindingq, mb, entry);
+	while ((mb = TAILQ_FIRST(&mousebindingq)) != NULL) {
+		TAILQ_REMOVE(&mousebindingq, mb, entry);
 		free(mb);
 	}
 
-	for (i = 0; i < CWM_COLOR_NITEMS; i++)
-		free(c->color[i]);
-
-	free(c->font);
+	/* FIXME: free() colors here. */
 }
 
 void
 conf_client(struct client_ctx *cc)
 {
-	struct winname	*wn;
-	int		 ignore = 0;
+	struct winname		*wn;
+	struct config_group	*cgrp = cc->group->config_group;
+	int			 ignore = 0;
 
-	TAILQ_FOREACH(wn, &Conf.ignoreq, entry) {
+	TAILQ_FOREACH(wn, &ignoreq, entry) {
 		if (strncasecmp(wn->name, cc->name, strlen(wn->name)) == 0) {
 			ignore = 1;
 			break;
 		}
 	}
 
-	cc->bwidth = ignore ? 0 : Conf.bwidth;
+	cc->bwidth = ignore ? 0 : cgrp->bwidth;
 	cc->flags |= ignore ? CLIENT_IGNORE : 0;
 }
 
@@ -511,7 +391,7 @@ conf_bind_getmask(const char *name, unsigned int *mask)
 }
 
 int
-conf_bind_kbd(struct conf *c, const char *bind, const char *cmd)
+conf_bind_kbd(const char *bind, const char *cmd)
 {
 	struct binding	*kb;
 	const char	*key;
@@ -528,7 +408,7 @@ conf_bind_kbd(struct conf *c, const char *bind, const char *cmd)
 	}
 
 	/* We now have the correct binding, remove duplicates. */
-	conf_unbind_kbd(c, kb);
+	conf_unbind_kbd(kb);
 
 	if (strcmp("unmap", cmd) == 0) {
 		free(kb);
@@ -542,28 +422,28 @@ conf_bind_kbd(struct conf *c, const char *bind, const char *cmd)
 		kb->callback = name_to_func[i].handler;
 		kb->flags = name_to_func[i].flags;
 		kb->argument = name_to_func[i].argument;
-		TAILQ_INSERT_TAIL(&c->keybindingq, kb, entry);
+		TAILQ_INSERT_TAIL(&keybindingq, kb, entry);
 		return(1);
 	}
 
 	kb->callback = kbfunc_cmdexec;
 	kb->flags = CWM_CMD;
 	kb->argument.c = xstrdup(cmd);
-	TAILQ_INSERT_TAIL(&c->keybindingq, kb, entry);
+	TAILQ_INSERT_TAIL(&keybindingq, kb, entry);
 	return(1);
 }
 
 static void
-conf_unbind_kbd(struct conf *c, struct binding *unbind)
+conf_unbind_kbd(struct binding *unbind)
 {
 	struct binding	*key = NULL, *keynxt;
 
-	TAILQ_FOREACH_SAFE(key, &c->keybindingq, entry, keynxt) {
+	TAILQ_FOREACH_SAFE(key, &keybindingq, entry, keynxt) {
 		if (key->modmask != unbind->modmask)
 			continue;
 
 		if (key->press.keysym == unbind->press.keysym) {
-			TAILQ_REMOVE(&c->keybindingq, key, entry);
+			TAILQ_REMOVE(&keybindingq, key, entry);
 			if (key->flags & CWM_CMD)
 				free(key->argument.c);
 			free(key);
@@ -572,7 +452,7 @@ conf_unbind_kbd(struct conf *c, struct binding *unbind)
 }
 
 int
-conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
+conf_bind_mouse(const char *bind, const char *cmd)
 {
 	struct binding	*mb;
 	const char	*button, *errstr;
@@ -589,7 +469,7 @@ conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
 	}
 
 	/* We now have the correct binding, remove duplicates. */
-	conf_unbind_mouse(c, mb);
+	conf_unbind_mouse(mb);
 
 	if (strcmp("unmap", cmd) == 0) {
 		free(mb);
@@ -603,7 +483,7 @@ conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
 		mb->callback = name_to_func[i].handler;
 		mb->flags = name_to_func[i].flags;
 		mb->argument = name_to_func[i].argument;
-		TAILQ_INSERT_TAIL(&c->mousebindingq, mb, entry);
+		TAILQ_INSERT_TAIL(&mousebindingq, mb, entry);
 		return(1);
 	}
 
@@ -611,16 +491,16 @@ conf_bind_mouse(struct conf *c, const char *bind, const char *cmd)
 }
 
 static void
-conf_unbind_mouse(struct conf *c, struct binding *unbind)
+conf_unbind_mouse(struct binding *unbind)
 {
 	struct binding		*mb = NULL, *mbnxt;
 
-	TAILQ_FOREACH_SAFE(mb, &c->mousebindingq, entry, mbnxt) {
+	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, mbnxt) {
 		if (mb->modmask != unbind->modmask)
 			continue;
 
 		if (mb->press.button == unbind->press.button) {
-			TAILQ_REMOVE(&c->mousebindingq, mb, entry);
+			TAILQ_REMOVE(&mousebindingq, mb, entry);
 			free(mb);
 		}
 	}
@@ -635,12 +515,13 @@ static int cursor_binds[] = {
 };
 
 void
-conf_cursor(struct conf *c)
+conf_cursor(struct screen_ctx *sc)
 {
-	unsigned int	 i;
+	struct config_screen	*cscr = sc->config_screen;
+	unsigned int		 i;
 
 	for (i = 0; i < nitems(cursor_binds); i++)
-		c->cursor[i] = XCreateFontCursor(X_Dpy, cursor_binds[i]);
+		cscr->cursor[i] = XCreateFontCursor(X_Dpy, cursor_binds[i]);
 }
 
 void
@@ -650,7 +531,7 @@ conf_grab_mouse(Window win)
 
 	xu_btn_ungrab(win);
 
-	TAILQ_FOREACH(mb, &Conf.mousebindingq, entry) {
+	TAILQ_FOREACH(mb, &mousebindingq, entry) {
 		if (mb->flags & CWM_WIN)
 			xu_btn_grab(win, mb->modmask, mb->press.button);
 	}
@@ -663,7 +544,7 @@ conf_grab_kbd(Window win)
 
 	xu_key_ungrab(win);
 
-	TAILQ_FOREACH(kb, &Conf.keybindingq, entry)
+	TAILQ_FOREACH(kb, &keybindingq, entry)
 		xu_key_grab(win, kb->modmask, kb->press.keysym);
 }
 

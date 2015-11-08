@@ -56,6 +56,7 @@ void
 kbfunc_client_moveresize(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
+	struct config_screen	*cscr = sc->config_screen;
 	struct geom		 xine;
 	int			 x, y, flags, amt;
 	unsigned int		 mx, my;
@@ -66,7 +67,7 @@ kbfunc_client_moveresize(struct client_ctx *cc, union arg *arg)
 	mx = my = 0;
 
 	flags = arg->i;
-	amt = Conf.mamount;
+	amt = CONF_MAMOUNT;
 
 	if (flags & CWM_BIGMOVE) {
 		flags -= CWM_BIGMOVE;
@@ -105,10 +106,10 @@ kbfunc_client_moveresize(struct client_ctx *cc, union arg *arg)
 		    cc->geom.y + cc->geom.h / 2, CWM_GAP);
 		cc->geom.x += client_snapcalc(cc->geom.x,
 		    cc->geom.x + cc->geom.w + (cc->bwidth * 2),
-		    xine.x, xine.x + xine.w, sc->snapdist);
+		    xine.x, xine.x + xine.w, cscr->snapdist);
 		cc->geom.y += client_snapcalc(cc->geom.y,
 		    cc->geom.y + cc->geom.h + (cc->bwidth * 2),
-		    xine.y, xine.y + xine.h, sc->snapdist);
+		    xine.y, xine.y + xine.h, cscr->snapdist);
 
 		client_move(cc);
 		xu_ptr_getpos(cc->win, &x, &y);
@@ -186,7 +187,7 @@ kbfunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 	struct menu_q		 menuq;
 
 	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry)
+	TAILQ_FOREACH(cmd, &cmdq, entry)
 		menuq_add(&menuq, cmd, "%s", cmd->name);
 
 	if ((mi = menu_filter(sc, &menuq, "application", NULL, 0,
@@ -248,7 +249,7 @@ kbfunc_term(struct client_ctx *cc, union arg *arg)
 {
 	struct cmd *cmd;
 
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry) {
+	TAILQ_FOREACH(cmd, &cmdq, entry) {
 		if (strcmp(cmd->name, "term") == 0)
 			u_spawn(cmd->path);
 	}
@@ -259,7 +260,7 @@ kbfunc_lock(struct client_ctx *cc, union arg *arg)
 {
 	struct cmd *cmd;
 
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry) {
+	TAILQ_FOREACH(cmd, &cmdq, entry) {
 		if (strcmp(cmd->name, "lock") == 0)
 			u_spawn(cmd->path);
 	}
@@ -371,7 +372,7 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 		return;
 	}
 
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry) {
+	TAILQ_FOREACH(cmd, &cmdq, entry) {
 		if (strcmp(cmd->name, "term") == 0)
 			break;
 	}
