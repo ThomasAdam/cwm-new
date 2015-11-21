@@ -24,6 +24,12 @@ exit unless @pipes;
 
 my %scr_map;
 
+# Constants for colours.
+use constant COLOUR_EXTRA_MSG_BG		=> 'D7C72F';
+use constant COLOUR_EXTRA_URGENT_BG		=> 'red';
+use constant COLOUR_CURRENT_GROUP_BG	=> '39C488';
+use constant COLOUR_URGENT_GROUP_BG		=> 'red';
+
 sub query_xrandr
 {
 	my $opts = {
@@ -75,21 +81,21 @@ sub query_xrandr
 sub format_output
 {
 	my ($data) = @_;
-        my $skip_all_but_global = 0;
+    my $skip_all_but_global = 0;
 
-        if (exists $data->{'screens'}->{'global_monitor'} and
-            (exists $scr_map{'global_monitor'} and scalar keys %scr_map >=2)) {
+	if (exists $data->{'screens'}->{'global_monitor'} and
+		(exists $scr_map{'global_monitor'} and scalar keys %scr_map >=2)) {
 
-            # FIXME: Bug in CWM's RandR detection means it hasn't picked up a
-            # legitimate output, yet xrandr(1) will have found it.  In this
-            # case, CWM will be falling back to using the builtin
-            # 'global_monitor' which we must therefore use.
-            $skip_all_but_global = 1;
-            $scr_map{'global_monitor'}->{'screen'} = 0;
-        }
+		# FIXME: Bug in CWM's RandR detection means it hasn't picked up a
+		# legitimate output, yet xrandr(1) will have found it.  In this
+		# case, CWM will be falling back to using the builtin
+		# 'global_monitor' which we must therefore use.
+		$skip_all_but_global = 1;
+		$scr_map{'global_monitor'}->{'screen'} = 0;
+	}
 
 	foreach my $screen  (keys %{ $data->{'screens'} }) {
-                next if $skip_all_but_global and $screen ne 'global_monitor';
+		next if $skip_all_but_global and $screen ne 'global_monitor';
 		my $extra_msg = '';
 		my $extra_urgent = '';
 		my $msg = "%{S$scr_map{$screen}->{'screen'}}";
@@ -114,7 +120,11 @@ sub format_output
 			if ($is_current) {
 					$msg .= "|%{B#39c488} $sym_name %{B-}";
 
-					$extra_msg .= "%{B#D7C72F}[Scr:$screen][A:$desk_count]%{B-}";
+					if ($screen ne 'global_monitor') {
+						$extra_msg .= "%{B#D7C72F}[Scr:$screen]%{B-}";
+					}
+					$extra_msg .= "%{B#D7C72F}[A:$desk_count]%{B-}";
+
 					# Gather any other bits of information for the _CURRENT_
 					# group we might want.
 					if ($is_urgent) {
