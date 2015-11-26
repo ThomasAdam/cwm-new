@@ -6,6 +6,8 @@ matrix:
           env: CFLAGS="-g -O2"
 addons:
     apt:
+        sources:
+            - debian-sid
         packages:
             - bison
             - build-essential
