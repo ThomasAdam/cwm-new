@@ -169,7 +169,6 @@ client_init(Window win, int skip_map_check)
 	TAILQ_INIT(&cc->nameq);
 	client_setname(cc);
 
-	conf_client(cc);
 	XGetClassHint(X_Dpy, cc->win, &cc->ch);
 	client_wm_hints(cc);
 	client_wm_protocols(cc);
@@ -187,11 +186,10 @@ client_init(Window win, int skip_map_check)
 	cc->geom.w = wattr.width;
 	cc->geom.h = wattr.height;
 	cc->colormap = wattr.colormap;
+	cc->bwidth = wattr.border_width;
 
 	if (wattr.map_state != IsViewable) {
 		client_placecalc(cc);
-		cc->extended_data = 1;
-		client_move(cc);
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
 	}
@@ -202,12 +200,10 @@ client_init(Window win, int skip_map_check)
 		 * the window would be n pixels out.  Reposition the window
 		 * accordingly.
 		 */
-		XMoveWindow(X_Dpy, cc->win, cc->geom.x + Conf.bwidth,
-				cc->geom.y + Conf.bwidth);
-		cc->extended_data = 0;
-		client_move(cc);
+		XMoveWindow(X_Dpy, cc->win, cc->geom.x + cc->bwidth,
+				cc->geom.y + cc->bwidth);
 	}
-
+	conf_client(cc);
 
 	sc = screen_find_screen(cc->geom.x, cc->geom.y);
 	log_debug("client: (0x%x) to screen '%s'", (int)cc->win, sc->name);
