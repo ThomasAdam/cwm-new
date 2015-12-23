@@ -193,16 +193,6 @@ client_init(Window win, int skip_map_check)
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
 	}
-
-	{
-		/*
-		 * The client is mapped; in applying borders to the window,
-		 * the window would be n pixels out.  Reposition the window
-		 * accordingly.
-		 */
-		XMoveWindow(X_Dpy, cc->win, cc->geom.x + cc->bwidth,
-				cc->geom.y + cc->bwidth);
-	}
 	conf_client(cc);
 
 	sc = screen_find_screen(cc->geom.x, cc->geom.y);
