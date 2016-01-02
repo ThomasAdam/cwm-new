@@ -206,10 +206,7 @@ screen_init_contents(void)
 		for (i = 0; i < CALMWM_NGROUPS; i++)
 			group_init(sc, i);
 	}
-
-	/* Scan for any existing windows (recapturing from a restart, for
-	 * example).
-	 */
+	screen_apply_ewmh();
 	config_parse();
 	client_scan_for_windows();
 }

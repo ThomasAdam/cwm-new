@@ -111,14 +111,16 @@ main(int argc, char **argv)
 	else
 		conf_path = xstrdup(conf_file);
 
-	if (new_config == NULL && access(conf_path, R_OK) != 0) {
-		if (conf_file != NULL)
-			log_debug("%s", conf_file);
+	if (access(conf_path, R_OK) != 0) {
 		free(conf_path);
 		conf_path = NULL;
 	}
 
 	log_debug("%s starting...", __progname);
+	if (conf_path != NULL)
+		log_debug("Using config: %s", conf_path);
+
+	config_bindings();
 
 	x_init(display_name);
 	cwm_status = CWM_RUNNING;

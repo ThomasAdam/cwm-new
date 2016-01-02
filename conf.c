@@ -140,7 +140,6 @@ conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
 			cgrp->xftcolor[i] = xc;
 			XftColorFree(X_Dpy, visual, colormap, &xc);
 		} else {
-			log_debug("%s: %s", __func__, cgrp->color[i]);
 			XftColorAllocName(X_Dpy, visual, colormap,
 			    cgrp->color[i], &cgrp->xftcolor[i]);
 		}
@@ -157,10 +156,9 @@ conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
 		sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
 		if (sc->xftdraw == NULL)
 			log_fatal("XftDrawCreate() failed");
-
-		conf_cursor(sc);
-		conf_grab_kbd(sc->rootwin);
 	}
+	conf_cursor(sc);
+	conf_grab_kbd(sc->rootwin);
 }
 
 void
@@ -387,7 +385,7 @@ conf_bind_getmask(const char *name, unsigned int *mask)
 	}
 
 	/* Skip past modifiers. */
-	return(dash + 1);
+	return (dash + 1);
 }
 
 int
@@ -397,8 +395,10 @@ conf_bind_kbd(const char *bind, const char *cmd)
 	const char	*key;
 	unsigned int	 i;
 
-	kb = xmalloc(sizeof(*kb));
+	kb = xcalloc(1, sizeof(*kb));
 	key = conf_bind_getmask(bind, &kb->modmask);
+
+	log_debug("%s: key %s, bind: %s, cmd: %s", __func__, key, bind, cmd);
 
 	kb->press.keysym = XStringToKeysym(key);
 	if (kb->press.keysym == NoSymbol) {
@@ -406,6 +406,8 @@ conf_bind_kbd(const char *bind, const char *cmd)
 		free(kb);
 		return(0);
 	}
+
+	log_debug("%s: KeySym: %d", __func__, kb->press.keysym);
 
 	/* We now have the correct binding, remove duplicates. */
 	conf_unbind_kbd(kb);

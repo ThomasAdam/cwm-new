@@ -67,7 +67,7 @@
 #define nitems(_a) (sizeof((_a)) / sizeof((_a)[0]))
 #endif
 
-#define	CONFFILE	".cwmrc"
+#define	CONFFILE	".cwm-newrc"
 #define	WMNAME	 	"CWM"
 
 #define BUTTONMASK	(ButtonPressMask|ButtonReleaseMask)
@@ -392,6 +392,7 @@ extern struct screen_ctx_q		 Screenq;
 extern struct conf			 Conf;
 extern const char			*homedir;
 extern int				 Randr_ev;
+extern const char			*conf_file;
 
 enum {
 	WM_STATE,
@@ -613,6 +614,7 @@ void			 conf_ignore(const char *);
 void			 conf_screen(struct screen_ctx *, struct group_ctx *);
 
 void			 config_parse(void);
+void			 config_bindings(void);
 
 void			 xev_process(void);
 

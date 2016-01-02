@@ -29,6 +29,7 @@ static void	 config_default(cfg_t *, bool);
 static void	 config_internalise(struct screen_ctx *, cfg_t *);
 static void	 config_intern_group(struct config_group *, cfg_t *);
 static void	 config_intern_screen(struct config_screen *, cfg_t *);
+static void	 config_intern_bindings(cfg_t *);
 
 cfg_opt_t	 color_opts[] = {
 	CFG_STR("activeborder", "#CCCCCC", CFGF_NONE),
@@ -156,10 +157,16 @@ cfg_opt_t	 all_cfg_opts[] = {
 	CFG_END()
 };
 
+#define DEFAULT_CONFIG_BINDINGS \
+	({ char str[8192]; \
+	snprintf(str, sizeof(str), \
+	"bindings {" \
+		"%s" \
+	"}", (DEFAULT_BINDINGS)); str; })
+
 #define DEFAULT_CONFIG_SCR(s) \
 	({ char str[8192]; \
 	snprintf(str, sizeof(str), \
-	"bindings { %s }" \
 	"screen %s {" \
 		"groups {" \
 			"group 0 {}" \
@@ -173,7 +180,7 @@ cfg_opt_t	 all_cfg_opts[] = {
 			"group 8 {}" \
 			"group 9 {}" \
 		"}" \
-	"}", (DEFAULT_BINDINGS), (s)); str; })
+	"}", (s)); str; })
 
 static void
 config_apply(void)
@@ -181,9 +188,9 @@ config_apply(void)
 	struct screen_ctx	*sc;
 	struct group_ctx	*gc;
 
-	screen_apply_ewmh();
-
 	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
 		screen_update_geometry(sc);
 
 		TAILQ_FOREACH(gc, &sc->groupq, entry) {
@@ -193,28 +200,11 @@ config_apply(void)
 }
 
 static void
-config_default(cfg_t *cfg, bool include_default_config)
+config_intern_bindings(cfg_t *cfg)
 {
-	struct screen_ctx	*sc;
 	cfg_t			*bind_sec, *key_mouse_sec;
 	const char		*key, *cmd;
 	size_t			 i, j;
-
-
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
-
-		if (include_default_config)
-			cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
-
-		if (cfg == NULL)
-			log_fatal("Unable to load DEFAULT_CONFIG");
-
-		cfg_print(cfg, stdout);
-
-		config_internalise(sc, cfg);
-	}
 
 	/* Parse mouse/key bindings. */
 	for (i = 0; i < cfg_size(cfg, "bindings"); i++) {
@@ -234,6 +224,25 @@ config_default(cfg_t *cfg, bool include_default_config)
 			conf_bind_mouse(key, cmd);
 		}
 
+	}
+}
+
+static void
+config_default(cfg_t *cfg, bool include_default_config)
+{
+	struct screen_ctx	*sc;
+
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
+
+		if (include_default_config) {
+			cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
+			if (cfg == NULL)
+				log_fatal("Unable to load DEFAULT_CONFIG");
+		}
+
+		config_internalise(sc, cfg);
 	}
 }
 
@@ -323,12 +332,36 @@ config_intern_screen(struct config_screen *cs, cfg_t *cfg)
 }
 
 void
-config_parse(void)
+config_bindings(void)
 {
-	cfg_t			*cfg_default, *cfg;
+	cfg_t	*cfg_default, *cfg;
 
 	TAILQ_INIT(&keybindingq);
 	TAILQ_INIT(&mousebindingq);
+
+	if ((cfg_default = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
+		log_fatal("Couldn't parse default config options");
+
+	cfg_parse_buf(cfg_default, DEFAULT_CONFIG_BINDINGS);
+	if (cfg_default == NULL)
+		log_fatal("Couldn't parse default key bindings...");
+
+	config_intern_bindings(cfg_default);
+
+	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
+		log_fatal("Couldn't parse default config options");
+	if (cfg_parse(cfg, conf_file) == CFG_PARSE_ERROR)
+		log_fatal("Couldn't parse /tmp/newconfig");
+
+	if (cfg_size(cfg, "bindings") > 0)
+		config_intern_bindings(cfg);
+}
+
+void
+config_parse(void)
+{
+	cfg_t	*cfg_default, *cfg;
+
 	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&cmdq);
@@ -342,7 +375,7 @@ config_parse(void)
 
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't parse default config options");
-	if (cfg_parse(cfg, "/tmp/newconfig") == CFG_PARSE_ERROR)
+	if (cfg_parse(cfg, conf_file) == CFG_PARSE_ERROR)
 		log_fatal("Couldn't parse /tmp/newconfig");
 
 	if (cfg_size(cfg, "screen") > 0)
