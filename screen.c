@@ -40,7 +40,8 @@ static void	 screen_init_contents(void);
 bool
 screen_should_ignore_global(struct screen_ctx *sc)
 {
-	if (no_of_screens > 1 && strcmp(sc->name, GLOBAL_SCREEN_NAME) == 0)
+	if (no_of_screens > 1 && sc->name != NULL &&
+	    strcmp(sc->name, GLOBAL_SCREEN_NAME) == 0)
 		return (true);
 	return (false);
 }
