@@ -340,7 +340,7 @@ config_bindings(void)
 	TAILQ_INIT(&mousebindingq);
 
 	if ((cfg_default = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
-		log_fatal("Couldn't parse default config options");
+		log_fatal("Couldn't init config options");
 
 	cfg_parse_buf(cfg_default, DEFAULT_CONFIG_BINDINGS);
 	if (cfg_default == NULL)
@@ -352,9 +352,7 @@ config_bindings(void)
 		return;
 
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
-		log_fatal("Couldn't parse default config options");
-	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR)
-		log_fatal("Couldn't parse /tmp/newconfig");
+		log_fatal("Couldn't init config options");
 
 	if (cfg_size(cfg, "bindings") > 0)
 		config_intern_bindings(cfg);
@@ -372,7 +370,7 @@ config_parse(void)
 	/* FIXME: known_hosts for SSH menu. */
 
 	if ((cfg_default = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
-		log_fatal("Couldn't parse default config options");
+		log_fatal("Couldn't init  config options");
 
 	config_default(cfg_default, true);
 
@@ -382,9 +380,10 @@ config_parse(void)
 	}
 
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
-		log_fatal("Couldn't parse default config options");
-	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR)
-		log_fatal("Couldn't parse /tmp/newconfig");
+		log_fatal("Couldn't init config options");
+	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR) {
+		log_debug("Couldn't parse '%s'", conf_path);
+	}
 
 	if (cfg_size(cfg, "screen") > 0)
 		config_default(cfg, false);
