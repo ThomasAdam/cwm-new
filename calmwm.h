@@ -392,7 +392,7 @@ extern struct screen_ctx_q		 Screenq;
 extern struct conf			 Conf;
 extern const char			*homedir;
 extern int				 Randr_ev;
-extern const char			*conf_file;
+char					*conf_path;
 
 enum {
 	WM_STATE,

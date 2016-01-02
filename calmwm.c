@@ -58,7 +58,7 @@ int
 main(int argc, char **argv)
 {
 	extern char	*__progname;
-	const char	*conf_file = NULL;
+	char		*conf_file;
 	char		*conf_path, *display_name = NULL;
 	char		**cwm_argv;
 	int		 ch;

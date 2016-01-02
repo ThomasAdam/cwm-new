@@ -348,9 +348,12 @@ config_bindings(void)
 
 	config_intern_bindings(cfg_default);
 
+	if (conf_path == NULL)
+		return;
+
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't parse default config options");
-	if (cfg_parse(cfg, conf_file) == CFG_PARSE_ERROR)
+	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR)
 		log_fatal("Couldn't parse /tmp/newconfig");
 
 	if (cfg_size(cfg, "bindings") > 0)
@@ -373,13 +376,19 @@ config_parse(void)
 
 	config_default(cfg_default, true);
 
+	if (conf_path == NULL) {
+		log_debug("No user-supplied config file present.");
+		goto apply;
+	}
+
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't parse default config options");
-	if (cfg_parse(cfg, conf_file) == CFG_PARSE_ERROR)
+	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR)
 		log_fatal("Couldn't parse /tmp/newconfig");
 
 	if (cfg_size(cfg, "screen") > 0)
 		config_default(cfg, false);
 
+apply:
 	config_apply();
 }
