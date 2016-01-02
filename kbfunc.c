@@ -367,8 +367,8 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 	int			 l;
 	size_t			 len;
 
-	if ((fp = fopen(Conf.known_hosts, "r")) == NULL) {
-		log_debug("%s: %s", __func__, Conf.known_hosts);
+	if ((fp = fopen(known_hosts, "r")) == NULL) {
+		log_debug("%s: %s", __func__, known_hosts);
 		return;
 	}
 

@@ -367,7 +367,11 @@ config_parse(void)
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&cmdq);
 
-	/* FIXME: known_hosts for SSH menu. */
+	conf_cmd_add("lock", "xlock");
+	conf_cmd_add("term", "xterm");
+
+	(void)snprintf(known_hosts, sizeof(known_hosts), "%s/%s",
+	    homedir, ".ssh/known_hosts");
 
 	if ((cfg_default = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't init  config options");
