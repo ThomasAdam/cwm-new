@@ -392,6 +392,9 @@ config_parse(void)
 	if (cfg_size(cfg, "screen") > 0)
 		config_default(cfg, false);
 
+
 apply:
 	config_apply();
+	cfg_free(cfg_default);
+	cfg_free(cfg);
 }
