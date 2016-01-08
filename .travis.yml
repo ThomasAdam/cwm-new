@@ -6,8 +6,6 @@ matrix:
           env: CFLAGS="-g -O2"
 addons:
     apt:
-        sources:
-            - lucid
         packages:
             - bison
             - build-essential
