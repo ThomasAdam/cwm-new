@@ -10,7 +10,7 @@ addons:
             - bison
             - build-essential
             - libx11-dev
-            - libxcb-ewmh-dev
+            - libxcb-ewmh1-dev
             - libxcb-icccm4-dev
             - libxcb-keysyms1-dev
             - libxcb-randr0-dev
