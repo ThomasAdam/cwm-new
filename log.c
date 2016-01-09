@@ -91,7 +91,7 @@ log_fatal(const char *msg, ...)
 	if (asprintf(&fmt, "fatal: %s: %s", msg, strerror(errno)) == -1)
 		exit(1);
 	log_vwrite(fmt, ap);
-	exit(1);
+	abort();
 }
 
 /* Log a critical error and die. */

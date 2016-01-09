@@ -5,25 +5,22 @@ PROG=		cwm-new
 
 PREFIX?=	/usr/local
 
-SRCS=		$(wildcard compat/*.c *.c) y.tab.c
+SRCS=		$(wildcard compat/*.c *.c)
 
 OBJS=		$(patsubst %.c,%.o,$(SRCS))
 
-CPPFLAGS+=	$(shell pkg-config --cflags fontconfig x11 xft xrandr)
+CPPFLAGS+=	$(shell pkg-config --cflags fontconfig x11 xft xrandr libconfuse)
 
-CFLAGS+=	-Wall -O2 -g -D_GNU_SOURCE
+CFLAGS+=	-Wall -O0 -ggdb -D_GNU_SOURCE
 
-LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xrandr)
+LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xrandr libconfuse)
 
 MANPREFIX?=	${PREFIX}/share/man
 
 all: ${PROG}
 
 clean:
-	rm -f *.o compat/*.o core* ${PROG} y.tab.c
-
-y.tab.c: parse.y
-	yacc parse.y
+	rm -f *.o compat/*.o core* ${PROG}
 
 ${PROG}: ${OBJS}
 	${CC} ${OBJS} ${CPPFLAGS} ${LDFLAGS} -o ${PROG}

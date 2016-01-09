@@ -50,17 +50,18 @@ static void
 mousefunc_sweep_draw(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
+	struct config_group	*cgrp = sc->group_current->config_group;
 	char			 s[14]; /* fits " nnnn x nnnn \0" */
 
 	(void)snprintf(s, sizeof(s), " %4d x %-4d ", cc->dim.w, cc->dim.h);
 
 	XReparentWindow(X_Dpy, sc->menuwin, cc->win, 0, 0);
 	XMoveResizeWindow(X_Dpy, sc->menuwin, 0, 0,
-	    xu_xft_width(sc->xftfont, s, strlen(s)), sc->xftfont->height);
+	    xu_xft_width(cgrp->xftfont, s, strlen(s)), cgrp->xftfont->height);
 	XMapWindow(X_Dpy, sc->menuwin);
 	XClearWindow(X_Dpy, sc->menuwin);
 
-	xu_xft_draw(sc, s, CWM_COLOR_MENU_FONT, 0, sc->xftfont->ascent + 1);
+	xu_xft_draw(sc, s, CWM_COLOR_MENU_FONT, 0, cgrp->xftfont->ascent + 1);
 }
 
 void
@@ -69,6 +70,7 @@ mousefunc_client_resize(struct client_ctx *cc, union arg *arg)
 	XEvent			 ev;
 	Time			 ltime = 0;
 	struct screen_ctx	*sc = cc->sc;
+	struct config_screen	*cscr = sc->config_screen;
 	int			 x = cc->geom.x, y = cc->geom.y;
 
 	if (cc->flags & CLIENT_FREEZE)
@@ -85,7 +87,7 @@ mousefunc_client_resize(struct client_ctx *cc, union arg *arg)
 	client_raise(cc);
 	client_ptrsave(cc);
 
-	if (xu_ptr_grab(cc->win, MOUSEMASK, Conf.cursor[CF_RESIZE]) < 0)
+	if (xu_ptr_grab(cc->win, MOUSEMASK, cscr->cursor[CF_RESIZE]) < 0)
 		return;
 
 	xu_ptr_setpos(cc->win, cc->geom.w, cc->geom.h);
@@ -137,6 +139,7 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 	XEvent			 ev;
 	Time			 ltime = 0;
 	struct screen_ctx	*sc = cc->sc;
+	struct config_screen	*cscr = sc->config_screen;
 	struct geom		 xine;
 	int			 px, py;
 
@@ -145,7 +148,7 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 	if (cc->flags & CLIENT_FREEZE)
 		return;
 
-	if (xu_ptr_grab(cc->win, MOUSEMASK, Conf.cursor[CF_MOVE]) < 0)
+	if (xu_ptr_grab(cc->win, MOUSEMASK, cscr->cursor[CF_MOVE]) < 0)
 		return;
 
 	xu_ptr_getpos(cc->win, &px, &py);
@@ -167,10 +170,10 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 			    CWM_GAP);
 			cc->geom.x += client_snapcalc(cc->geom.x,
 			    cc->geom.x + cc->geom.w + (cc->bwidth * 2),
-			    xine.x, xine.x + xine.w, sc->snapdist);
+			    xine.x, xine.x + xine.w, cscr->snapdist);
 			cc->geom.y += client_snapcalc(cc->geom.y,
 			    cc->geom.y + cc->geom.h + (cc->bwidth * 2),
-			    xine.y, xine.y + xine.h, sc->snapdist);
+			    xine.y, xine.y + xine.h, cscr->snapdist);
 
 			client_move(cc);
 			break;
@@ -247,7 +250,7 @@ mousefunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 	struct menu_q		 menuq;
 
 	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cmd, &Conf.cmdq, entry)
+	TAILQ_FOREACH(cmd, &cmdq, entry)
 		menuq_add(&menuq, cmd, "%s", cmd->name);
 
 	if ((mi = menu_filter(sc, &menuq, NULL, NULL, CWM_MENU_LIST,

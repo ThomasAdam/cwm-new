@@ -58,6 +58,8 @@ group_assign(struct group_ctx *gc, struct client_ctx *cc)
 
 	log_debug("client: (0x%x) assigned to group '%d' screen '%s'",
 		(int)cc->win, cc->group->num, cc->sc->name);
+
+	client_draw_border(cc);
 }
 
 void
@@ -130,6 +132,7 @@ group_init(struct screen_ctx *sc, int num)
 	struct group_ctx	*gc;
 
 	gc = xmalloc(sizeof(*gc));
+	gc->config_group = xcalloc(1, sizeof(*gc->config_group));
 	gc->sc = sc;
 	gc->name = xstrdup(num_to_name[num]);
 	gc->num = num;
@@ -348,7 +351,7 @@ group_autogroup(struct client_ctx *cc)
 			num = CALMWM_NGROUPS - 1;
 		XFree(grpnum);
 	} else {
-		TAILQ_FOREACH(aw, &Conf.autogroupq, entry) {
+		TAILQ_FOREACH(aw, &autogroupq, entry) {
 			if (strcmp(aw->class, cc->ch.res_class) == 0) {
 				if ((aw->name != NULL) &&
 				    (strcmp(aw->name, cc->ch.res_name) == 0)) {
@@ -372,13 +375,23 @@ group_autogroup(struct client_ctx *cc)
 		}
 	}
 
-	if (Conf.flags & CONF_STICKY_GROUPS)
-		group_assign(sc->group_current, cc);
-	else
-		group_assign(NULL, cc);
+	group_assign(sc->group_current, cc);
 
 	log_debug("%s: client (0x%x): added to group '%d', screen '%s'",
 		__func__, (int)cc->win, sc->group_current->num, cc->sc->name);
 
 	u_put_status();
+}
+
+struct group_ctx *
+group_find_by_num(struct screen_ctx *sc, int num)
+{
+	struct group_ctx	*gc = NULL;
+
+	TAILQ_FOREACH(gc, &sc->groupq, entry) {
+		if (gc->num == num)
+			return (gc);
+	}
+
+	log_fatal("%s: group '%d' doesn't exist", __func__, num);
 }

@@ -27,14 +27,16 @@ Current Format
 ## Current Commands
 
 ```
+activeborder
 autogroup
 bind
 borderwidth
 color
 command
-fontname
 gap
+groupborder
 ignore
+inaciveborder
 mousebind
 moveamount
 snapdist
@@ -46,12 +48,12 @@ Proposed Format
 
 ```
 screen $SCREEN {
-	group {
-		1 {
+	groups {
+		group 1 {
 			borderwidth
 			color
 		}
-		2 {
+		group 2 {
 			borderwidth
 			color
 		}
@@ -87,12 +89,30 @@ mousebind {
 ### Clients
 
 ```
-client {
-	class/resource/title {
+clients {
+	client class/resource/title {
 		autogroup 1,2,3
 		color ...
 	}
 }
+```
+
+### Grouping of commands
+
+The following commands are accepted either globally or per-group.
+
+*Global only*:
+```
+gap
+font
+selfont
+snapdist
+```
+
+*Global, but can also be overriden in groups*:
+```
+color
+borderwidth
 ```
 
 Differences / Deprecations

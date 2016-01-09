@@ -58,8 +58,7 @@ int
 main(int argc, char **argv)
 {
 	extern char	*__progname;
-	const char	*conf_file = NULL;
-	char		*conf_path, *display_name = NULL;
+	char		*conf_file, *display_name = NULL;
 	char		**cwm_argv;
 	int		 ch;
 	struct passwd	*pw;
@@ -112,18 +111,15 @@ main(int argc, char **argv)
 		conf_path = xstrdup(conf_file);
 
 	if (access(conf_path, R_OK) != 0) {
-		if (conf_file != NULL)
-			log_debug("%s", conf_file);
 		free(conf_path);
 		conf_path = NULL;
 	}
 
-	conf_init(&Conf);
-	if (conf_path && (parse_config(conf_path, &Conf) == -1))
-		log_debug("config file %s has errors", conf_path);
-	free(conf_path);
-
 	log_debug("%s starting...", __progname);
+	if (conf_path != NULL)
+		log_debug("Using config: %s", conf_path);
+
+	config_bindings();
 
 	x_init(display_name);
 	cwm_status = CWM_RUNNING;
@@ -149,7 +145,6 @@ x_init(const char *dpyname)
 	XSetErrorHandler(x_errorhandler);
 
 	conf_atoms();
-	conf_cursor(&Conf);
 	u_init_pipe();
 	screen_maybe_init_randr();
 }
@@ -164,28 +159,42 @@ x_restart(char **args)
 static void
 x_teardown(void)
 {
-	struct screen_ctx	*sc = TAILQ_FIRST(&Screenq);
+	struct screen_ctx	*sc;
+	struct group_ctx	*gc;
+	struct config_screen	*cscr;
+	struct config_group	*cgrp;
 	unsigned int		 i;
 
-	conf_clear(&Conf);
+	conf_clear();
 
-	for (i = 0; i < CWM_COLOR_NITEMS; i++)
-		XftColorFree(X_Dpy, DefaultVisual(X_Dpy, sc->which),
-		    DefaultColormap(X_Dpy, sc->which),
-		    &sc->xftcolor[i]);
-	XftDrawDestroy(sc->xftdraw);
-	XftFontClose(X_Dpy, sc->xftfont);
-	XUnmapWindow(X_Dpy, sc->menuwin);
-	XDestroyWindow(X_Dpy, sc->menuwin);
-	XUngrabKey(X_Dpy, AnyKey, AnyModifier, sc->rootwin);
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		cscr = sc->config_screen;
+		cgrp = sc->group_current->config_group;
 
+		XftDrawDestroy(sc->xftdraw);
+		TAILQ_FOREACH(gc, &sc->groupq, entry) {
+			cgrp = gc->config_group;
+
+			for (i = 0; i < CWM_COLOR_NITEMS; i++) {
+				XftColorFree(X_Dpy, DefaultVisual(X_Dpy,
+				    sc->which),
+				    DefaultColormap(X_Dpy, sc->which),
+				    &cgrp->xftcolor[i]);
+
+				XftFontClose(X_Dpy, cgrp->xftfont);
+			}
+
+			for (i = 0; i < CF_NITEMS; i++)
+				XFreeCursor(X_Dpy, cscr->cursor[i]);
+		}
+		XUnmapWindow(X_Dpy, sc->menuwin);
+		XDestroyWindow(X_Dpy, sc->menuwin);
+		XUngrabKey(X_Dpy, AnyKey, AnyModifier, sc->rootwin);
+	}
 	XUngrabPointer(X_Dpy, CurrentTime);
 	XUngrabKeyboard(X_Dpy, CurrentTime);
-	for (i = 0; i < CF_NITEMS; i++)
-		XFreeCursor(X_Dpy, Conf.cursor[i]);
 	XSync(X_Dpy, False);
 	XSetInputFocus(X_Dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
-	XCloseDisplay(X_Dpy);
 }
 
 static int

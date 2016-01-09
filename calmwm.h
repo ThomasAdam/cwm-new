@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/param.h>
+#include <confuse.h>
 #if defined(__linux__)
 #	include "compat/queue.h"
 #	include "compat/tree.h"
@@ -66,7 +67,7 @@
 #define nitems(_a) (sizeof((_a)) / sizeof((_a)[0]))
 #endif
 
-#define	CONFFILE	".cwmrc"
+#define	CONFFILE	".cwm-newrc"
 #define	WMNAME	 	"CWM"
 
 #define BUTTONMASK	(ButtonPressMask|ButtonReleaseMask)
@@ -244,9 +245,11 @@ struct client_ctx {
 };
 TAILQ_HEAD(client_ctx_q, client_ctx);
 
+struct config_group;
 struct group_ctx {
 	TAILQ_ENTRY(group_ctx)	 entry;
 	struct screen_ctx	*sc;
+	struct config_group	*config_group;
 	char			*name;
 	int			 num;
 #define GROUP_ACTIVE		 0x0001
@@ -265,6 +268,7 @@ struct autogroupwin {
 TAILQ_HEAD(autogroupwin_q, autogroupwin);
 
 #define GLOBAL_SCREEN_NAME "global_monitor"
+struct config_screen;
 struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
 	const char		*name;
@@ -273,17 +277,14 @@ struct screen_ctx {
 	Window			 menuwin;
 	int			 cycling;
 	int			 hideall;
-	int			 snapdist;
+	struct config_screen	*config_screen;
 	struct geom		 view; /* viewable area */
 	struct geom		 work; /* workable area, gap-applied */
-	struct gap		 gap;
 	struct client_ctx_q	 clientq;
 #define CALMWM_NGROUPS		 10
 	struct group_ctx_q	 groupq;
 	struct group_ctx	*group_current;
-	XftColor		 xftcolor[CWM_COLOR_NITEMS];
 	XftDraw			*xftdraw;
-	XftFont			*xftfont;
 };
 TAILQ_HEAD(screen_ctx_q, screen_ctx);
 
@@ -333,10 +334,27 @@ struct conf {
 	int			 snapdist;
 	struct gap		 gap;
 	char			*color[CWM_COLOR_NITEMS];
-	char			 known_hosts[PATH_MAX];
 #define	CONF_FONT			"sans-serif:pixelsize=14:bold"
 	char			*font;
-	Cursor			 cursor[CF_NITEMS];
+};
+
+struct keybinding_q	 keybindingq;
+struct mousebinding_q	 mousebindingq;
+struct autogroupwin_q	 autogroupq;
+struct ignore_q		 ignoreq;
+struct cmd_q		 cmdq;
+
+struct config_group {
+	int	 bwidth;
+	char	*color[CWM_COLOR_NITEMS];
+	XftColor xftcolor[CWM_COLOR_NITEMS];
+	XftFont	*xftfont;
+};
+
+struct config_screen {
+	Cursor		 cursor[CF_NITEMS];
+	struct gap	 gap;
+	int		 snapdist;
 };
 
 /* MWM hints */
@@ -373,6 +391,8 @@ extern struct screen_ctx_q		 Screenq;
 extern struct conf			 Conf;
 extern const char			*homedir;
 extern int				 Randr_ev;
+char					*conf_path;
+char					 known_hosts[PATH_MAX];
 
 enum {
 	WM_STATE,
@@ -482,6 +502,7 @@ void			 group_setactive(struct group_ctx *);
 void			 group_toggle_membership_enter(struct client_ctx *);
 void			 group_toggle_membership_leave(struct client_ctx *);
 void			 group_update_names(struct screen_ctx *);
+struct group_ctx	*group_find_by_num(struct screen_ctx *, int);
 
 void			 search_match_client(struct menu_q *, struct menu_q *,
 			     char *);
@@ -504,6 +525,7 @@ void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);
 bool			 screen_should_ignore_global(struct screen_ctx *);
 struct screen_ctx	*screen_find_by_name(const char *);
+void			 screen_apply_ewmh(void);
 
 
 void			 kbfunc_client_cycle(struct client_ctx *, union arg *);
@@ -579,22 +601,21 @@ void			 menuq_clear(struct menu_q *);
 int			 parse_config(const char *, struct conf *);
 
 void			 conf_atoms(void);
-void			 conf_autogroup(struct conf *, int, const char *,
-			     const char *);
-int			 conf_bind_kbd(struct conf *, const char *,
-    			     const char *);
-int			 conf_bind_mouse(struct conf *, const char *,
-    			     const char *);
-void			 conf_clear(struct conf *);
+void			 conf_autogroup(int, const char *, const char *);
+int			 conf_bind_kbd(const char *, const char *);
+int			 conf_bind_mouse(const char *, const char *);
+void			 conf_clear(void);
 void			 conf_client(struct client_ctx *);
-int			 conf_cmd_add(struct conf *, const char *,
-			     const char *);
-void			 conf_cursor(struct conf *);
+int			 conf_cmd_add(const char *, const char *);
+void			 conf_cursor(struct screen_ctx *);
 void			 conf_grab_kbd(Window);
 void			 conf_grab_mouse(Window);
-void			 conf_init(struct conf *);
-void			 conf_ignore(struct conf *, const char *);
-void			 conf_screen(struct screen_ctx *);
+void			 conf_init(void);
+void			 conf_ignore(const char *);
+void			 conf_screen(struct screen_ctx *, struct group_ctx *);
+
+void			 config_parse(void);
+void			 config_bindings(void);
 
 void			 xev_process(void);
 

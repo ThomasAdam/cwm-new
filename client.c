@@ -193,11 +193,12 @@ client_init(Window win, int skip_map_check)
 		if ((cc->wmh) && (cc->wmh->flags & StateHint))
 			client_set_wm_state(cc, cc->wmh->initial_state);
 	}
-	conf_client(cc);
 
 	sc = screen_find_screen(cc->geom.x, cc->geom.y);
 	log_debug("client: (0x%x) to screen '%s'", (int)cc->win, sc->name);
 	cc->sc = sc;
+	group_autogroup(cc);
+	conf_client(cc);
 
 	XSelectInput(X_Dpy, cc->win, ColormapChangeMask | EnterWindowMask |
 	    PropertyChangeMask | KeyReleaseMask);
@@ -220,7 +221,7 @@ client_init(Window win, int skip_map_check)
 	if (!mapped)
 		log_debug("client not mapped!");
 
-	group_autogroup(cc);
+	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
 
 	XSync(X_Dpy, False);
 	XUngrabServer(X_Dpy);
@@ -476,12 +477,14 @@ client_toggle_sticky(struct client_ctx *cc)
 void
 client_toggle_border(struct client_ctx *cc)
 {
+	struct config_group	*cgrp = cc->group->config_group;
+
 	if (cc->flags & CLIENT_BORDER) {
 		cc->flags &= ~CLIENT_BORDER;
 		cc->bwidth = 0;
 	} else {
 		cc->flags |= CLIENT_BORDER;
-		cc->bwidth = Conf.bwidth;
+		cc->bwidth = cgrp->bwidth;
 	}
 
 	client_config(cc);
@@ -491,6 +494,7 @@ client_toggle_border(struct client_ctx *cc)
 void
 client_toggle_fullscreen(struct client_ctx *cc)
 {
+	struct config_group	*cgrp = cc->group->config_group;
 	struct geom		 xine;
 
 	if ((cc->flags & CLIENT_FREEZE) &&
@@ -499,7 +503,7 @@ client_toggle_fullscreen(struct client_ctx *cc)
 
 	if (cc->flags & CLIENT_FULLSCREEN) {
 		if (cc->flags & CLIENT_BORDER)
-			cc->bwidth = Conf.bwidth;
+			cc->bwidth = cgrp->bwidth;
 		cc->geom = cc->fullgeom;
 		cc->flags &= ~(CLIENT_FULLSCREEN | CLIENT_FREEZE);
 		goto resize;
@@ -625,7 +629,8 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 void
 client_expand(struct client_ctx *cc)
 {
-	struct geom	 new_geom;
+	struct config_group	*cgrp = cc->group->config_group;
+	struct geom		 new_geom;
 
 	log_debug("%s: Expanding client on screen '%s'", __func__, cc->sc->name);
 
@@ -635,13 +640,13 @@ client_expand(struct client_ctx *cc)
 	if (cc->flags & CLIENT_EXPANDED) {
 		cc->flags &= ~CLIENT_EXPANDED;
 		cc->geom = cc->savegeom;
-		cc->bwidth = Conf.bwidth;
+		cc->bwidth = cgrp->bwidth;
 
 		/* Don't allow to overrun boundaries. */
 		{
 			struct geom	 scedge = cc->sc->work;
-			scedge.w += scedge.x - Conf.bwidth * 2;
-			scedge.h += scedge.y - Conf.bwidth * 2;
+			scedge.w += scedge.x - cgrp->bwidth * 2;
+			scedge.h += scedge.y - cgrp->bwidth * 2;
 
 			if (cc->geom.x + cc->geom.y >= scedge.w)
 				cc->geom.x = scedge.w - cc->geom.w;
@@ -931,28 +936,28 @@ client_urgency(struct client_ctx *cc)
 void
 client_draw_border(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc = cc->sc;
+	struct config_group	*cgrp = cc->group->config_group;
 	unsigned long		 pixel;
 
 	if (cc->flags & CLIENT_ACTIVE)
 		switch (cc->flags & CLIENT_HIGHLIGHT) {
 		case CLIENT_GROUP:
-			pixel = sc->xftcolor[CWM_COLOR_BORDER_GROUP].pixel;
+			pixel = cgrp->xftcolor[CWM_COLOR_BORDER_GROUP].pixel;
 			break;
 		case CLIENT_UNGROUP:
-			pixel = sc->xftcolor[CWM_COLOR_BORDER_UNGROUP].pixel;
+			pixel = cgrp->xftcolor[CWM_COLOR_BORDER_UNGROUP].pixel;
 			break;
 		default:
-			pixel = sc->xftcolor[CWM_COLOR_BORDER_ACTIVE].pixel;
+			pixel = cgrp->xftcolor[CWM_COLOR_BORDER_ACTIVE].pixel;
 			break;
 		}
 	else
-		pixel = sc->xftcolor[CWM_COLOR_BORDER_INACTIVE].pixel;
+		pixel = cgrp->xftcolor[CWM_COLOR_BORDER_INACTIVE].pixel;
 
 	if (cc->flags & CLIENT_URGENCY)
-		pixel = sc->xftcolor[CWM_COLOR_BORDER_URGENCY].pixel;
+		pixel = cgrp->xftcolor[CWM_COLOR_BORDER_URGENCY].pixel;
 
-	XSetWindowBorderWidth(X_Dpy, cc->win, cc->bwidth);
+	XSetWindowBorderWidth(X_Dpy, cc->win, cgrp->bwidth);
 	XSetWindowBorder(X_Dpy, cc->win, pixel);
 }
 
@@ -1361,6 +1366,7 @@ client_htile(struct client_ctx *cc)
 {
 	struct client_ctx	*ci;
 	struct group_ctx 	*gc = cc->group;
+	struct config_group	*cgrp = gc->config_group;
 	struct geom 		 xine;
 	int 			 i, n, mh, x, h, w;
 
@@ -1400,7 +1406,7 @@ client_htile(struct client_ctx *cc)
 		if (ci->flags & CLIENT_HIDDEN ||
 		    ci->flags & CLIENT_IGNORE || (ci == cc))
 			continue;
-		ci->bwidth = Conf.bwidth;
+		ci->bwidth = cgrp->bwidth;
 		ci->geom.y = xine.y + mh;
 		ci->geom.x = x;
 		ci->geom.h = h - (ci->bwidth * 2);
@@ -1419,6 +1425,7 @@ client_vtile(struct client_ctx *cc)
 {
 	struct client_ctx	*ci;
 	struct group_ctx 	*gc = cc->group;
+	struct config_group	*cgrp = gc->config_group;
 	struct geom 		 xine;
 	int 			 i, n, mw, y, h, w;
 
@@ -1458,7 +1465,7 @@ client_vtile(struct client_ctx *cc)
 		if (ci->flags & CLIENT_HIDDEN ||
 		    ci->flags & CLIENT_IGNORE || (ci == cc))
 			continue;
-		ci->bwidth = Conf.bwidth;
+		ci->bwidth = cgrp->bwidth;
 		ci->geom.y = y;
 		ci->geom.x = xine.x + mw;
 		ci->geom.h = h - (ci->bwidth * 2);

@@ -83,14 +83,27 @@ menu_filter(struct screen_ctx *sc, struct menu_q *menuq, const char *prompt,
 	struct menu_ctx		 mc;
 	struct menu_q		 resultq;
 	struct menu		*mi = NULL;
+	struct config_screen	*cscr = sc->config_screen;
+	struct config_group	*cgrp = sc->group_current->config_group;
 	XEvent			 e;
 	Window			 focuswin;
+	Colormap		 colormap = DefaultColormap(X_Dpy, sc->which);
+	Visual			*visual = DefaultVisual(X_Dpy, sc->which);
 	int			 evmask, focusrevert;
 	int			 xsave, ysave, xcur, ycur;
 
 	TAILQ_INIT(&resultq);
 
 	(void)memset(&mc, 0, sizeof(mc));
+
+	sc->menuwin = XCreateSimpleWindow(X_Dpy, sc->rootwin, 0, 0, 1, 1,
+	    cgrp->bwidth,
+	    cgrp->xftcolor[CWM_COLOR_MENU_FG].pixel,
+	    cgrp->xftcolor[CWM_COLOR_MENU_BG].pixel);
+
+	sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
+	if (sc->xftdraw == NULL)
+		log_fatal("XftDrawCreate() failed");
 
 	xu_ptr_getpos(sc->rootwin, &xsave, &ysave);
 
@@ -121,7 +134,7 @@ menu_filter(struct screen_ctx *sc, struct menu_q *menuq, const char *prompt,
 	XMapRaised(X_Dpy, sc->menuwin);
 
 	if (xu_ptr_grab(sc->menuwin, MENUGRABMASK,
-	    Conf.cursor[CF_QUESTION]) < 0) {
+	    cscr->cursor[CF_QUESTION]) < 0) {
 		XUnmapWindow(X_Dpy, sc->menuwin);
 		return(NULL);
 	}
@@ -329,6 +342,7 @@ static void
 menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 {
 	struct screen_ctx	*sc = mc->sc;
+	struct config_group	*cgrp = sc->group_current->config_group;
 	struct menu		*mi;
 	struct geom		 xine;
 	int			 n, xsave, ysave;
@@ -350,9 +364,9 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 	if (mc->hasprompt) {
 		(void)snprintf(mc->dispstr, sizeof(mc->dispstr), "%s%s%s%s",
 		    mc->promptstr, PROMPT_SCHAR, mc->searchstr, PROMPT_ECHAR);
-		mc->geom.w = xu_xft_width(sc->xftfont, mc->dispstr,
+		mc->geom.w = xu_xft_width(cgrp->xftfont, mc->dispstr,
 		    strlen(mc->dispstr));
-		mc->geom.h = sc->xftfont->height + 1;
+		mc->geom.h = cgrp->xftfont->height + 1;
 		mc->num = 1;
 	}
 
@@ -367,15 +381,15 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 			text = mi->text;
 		}
 
-		mc->geom.w = MAX(mc->geom.w, xu_xft_width(sc->xftfont, text,
+		mc->geom.w = MAX(mc->geom.w, xu_xft_width(cgrp->xftfont, text,
 		    MIN(strlen(text), MENU_MAXENTRY)));
-		mc->geom.h += sc->xftfont->height + 1;
+		mc->geom.h += cgrp->xftfont->height + 1;
 		mc->num++;
 	}
 
 	xine = screen_find_xinerama(mc->geom.x, mc->geom.y, CWM_GAP);
-	xine.w += xine.x - Conf.bwidth * 2;
-	xine.h += xine.y - Conf.bwidth * 2;
+	xine.w += xine.x - cgrp->bwidth * 2;
+	xine.h += xine.y - cgrp->bwidth * 2;
 
 	xsave = mc->geom.x;
 	ysave = mc->geom.y;
@@ -403,7 +417,7 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 
 	if (mc->hasprompt) {
 		xu_xft_draw(sc, mc->dispstr, CWM_COLOR_MENU_FONT,
-		    0, sc->xftfont->ascent);
+		    0, cgrp->xftfont->ascent);
 		n = 1;
 	} else
 		n = 0;
@@ -411,7 +425,7 @@ menu_draw(struct menu_ctx *mc, struct menu_q *menuq, struct menu_q *resultq)
 	TAILQ_FOREACH(mi, resultq, resultentry) {
 		char *text = mi->print[0] != '\0' ?
 		    mi->print : mi->text;
-		int y = n * (sc->xftfont->height + 1) + sc->xftfont->ascent + 1;
+		int y = n * (cgrp->xftfont->height + 1) + cgrp->xftfont->ascent + 1;
 
 		/* Stop drawing when menu doesn't fit inside the screen. */
 		if (mc->geom.y + y > xine.h)
@@ -429,6 +443,7 @@ menu_draw_entry(struct menu_ctx *mc, struct menu_q *resultq,
     int entry, int active)
 {
 	struct screen_ctx	*sc = mc->sc;
+	struct config_group	*cgrp = sc->group_current->config_group;
 	struct menu		*mi;
 	char 			*text;
 	int			 color, i = 0;
@@ -444,17 +459,19 @@ menu_draw_entry(struct menu_ctx *mc, struct menu_q *resultq,
 
 	color = active ? CWM_COLOR_MENU_FG : CWM_COLOR_MENU_BG;
 	text = mi->print[0] != '\0' ? mi->print : mi->text;
-	XftDrawRect(sc->xftdraw, &sc->xftcolor[color], 0,
-	    (sc->xftfont->height + 1) * entry, mc->geom.w,
-	    (sc->xftfont->height + 1) + sc->xftfont->descent);
+	XftDrawRect(sc->xftdraw, &cgrp->xftcolor[color], 0,
+	    (cgrp->xftfont->height + 1) * entry, mc->geom.w,
+	    (cgrp->xftfont->height + 1) + cgrp->xftfont->descent);
 	color = active ? CWM_COLOR_MENU_FONT_SEL : CWM_COLOR_MENU_FONT;
 	xu_xft_draw(sc, text, color,
-	    0, (sc->xftfont->height + 1) * entry + sc->xftfont->ascent + 1);
+	    0, (cgrp->xftfont->height + 1) * entry + cgrp->xftfont->ascent + 1);
 }
 
 static void
 menu_handle_move(XEvent *e, struct menu_ctx *mc, struct menu_q *resultq)
 {
+	struct screen_ctx	*sc = mc->sc;
+	struct config_screen	*cscr = sc->config_screen;
 	mc->prev = mc->entry;
 	mc->entry = menu_calc_entry(mc, e->xbutton.x, e->xbutton.y);
 
@@ -464,10 +481,10 @@ menu_handle_move(XEvent *e, struct menu_ctx *mc, struct menu_q *resultq)
 	if (mc->prev != -1)
 		menu_draw_entry(mc, resultq, mc->prev, 0);
 	if (mc->entry != -1) {
-		(void)xu_ptr_regrab(MENUGRABMASK, Conf.cursor[CF_NORMAL]);
+		(void)xu_ptr_regrab(MENUGRABMASK, cscr->cursor[CF_NORMAL]);
 		menu_draw_entry(mc, resultq, mc->entry, 1);
 	} else
-		(void)xu_ptr_regrab(MENUGRABMASK, Conf.cursor[CF_DEFAULT]);
+		(void)xu_ptr_regrab(MENUGRABMASK, cscr->cursor[CF_DEFAULT]);
 }
 
 static struct menu *
@@ -496,13 +513,14 @@ static int
 menu_calc_entry(struct menu_ctx *mc, int x, int y)
 {
 	struct screen_ctx	*sc = mc->sc;
+	struct config_group	*cgrp = sc->group_current->config_group;
 	int			 entry;
 
-	entry = y / (sc->xftfont->height + 1);
+	entry = y / (cgrp->xftfont->height + 1);
 
 	/* in bounds? */
 	if (x < 0 || x > mc->geom.w || y < 0 ||
-	    y > (sc->xftfont->height + 1) * mc->num ||
+	    y > (cgrp->xftfont->height + 1) * mc->num ||
 	    entry < 0 || entry >= mc->num)
 		entry = -1;
 

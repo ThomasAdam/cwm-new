@@ -40,7 +40,8 @@ static void	 screen_init_contents(void);
 bool
 screen_should_ignore_global(struct screen_ctx *sc)
 {
-	if (no_of_screens > 1 && strcmp(sc->name, GLOBAL_SCREEN_NAME) == 0)
+	if (no_of_screens > 1 && sc->name != NULL &&
+	    strcmp(sc->name, GLOBAL_SCREEN_NAME) == 0)
 		return (true);
 	return (false);
 }
@@ -73,6 +74,7 @@ screen_maybe_init_randr(void)
 
 	if (!XRRQueryExtension(X_Dpy, &Randr_ev, &i)) {
 		/* No RandR present.  Single screen only. */
+		log_debug("No RandR present; using single screen...");
 		goto single_screen;
 	}
 
@@ -144,31 +146,10 @@ screen_create_randr_region(struct screen_ctx *sc, const char *name,
 }
 
 void
-screen_init_contents(void)
+screen_apply_ewmh(void)
 {
-	XSetWindowAttributes	 rootattr;
 	struct screen_ctx	*sc;
-	unsigned int		 i;
-
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
-
-		TAILQ_INIT(&sc->clientq);
-		TAILQ_INIT(&sc->groupq);
-
-		sc->which = DefaultScreen(X_Dpy);
-		sc->rootwin = RootWindow(X_Dpy, sc->which);
-		sc->cycling = 0;
-		sc->hideall = 0;
-
-		conf_screen(sc);
-		screen_update_geometry(sc);
-
-		log_debug("%s: Adding groups...", __func__);
-		for (i = 0; i < CALMWM_NGROUPS; i++)
-			group_init(sc, i);
-	}
+	XSetWindowAttributes	 rootattr;
 
 	/*
 	 * Setting up hints only requires one of the outputs to do this on,
@@ -188,7 +169,7 @@ screen_init_contents(void)
 		xu_ewmh_net_showing_desktop(sc);
 		xu_ewmh_net_virtual_roots(sc);
 
-		rootattr.cursor = Conf.cursor[CF_NORMAL];
+		rootattr.cursor = sc->config_screen->cursor[CF_NORMAL];
 		rootattr.event_mask = SubstructureRedirectMask|
 			SubstructureNotifyMask|PropertyChangeMask|
 			EnterWindowMask|LeaveWindowMask|
@@ -199,10 +180,35 @@ screen_init_contents(void)
 
 		XSync(X_Dpy, False);
 	}
+}
 
-	/* Scan for any existing windows (recapturing from a restart, for
-	 * example).
-	 */
+void
+screen_init_contents(void)
+{
+	struct screen_ctx	*sc;
+	unsigned int		 i;
+
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (screen_should_ignore_global(sc))
+			continue;
+
+		TAILQ_INIT(&sc->clientq);
+		TAILQ_INIT(&sc->groupq);
+
+		sc->which = DefaultScreen(X_Dpy);
+		sc->rootwin = RootWindow(X_Dpy, sc->which);
+		sc->cycling = 0;
+		sc->hideall = 0;
+		sc->menuwin = 0;
+		sc->xftdraw = NULL;
+		sc->config_screen = xmalloc(sizeof(sc->config_screen));
+
+		log_debug("%s: Adding groups...", __func__);
+		for (i = 0; i < CALMWM_NGROUPS; i++)
+			group_init(sc, i);
+	}
+	screen_apply_ewmh();
+	config_parse();
 	client_scan_for_windows();
 }
 
@@ -270,17 +276,15 @@ screen_find_screen(int x, int y)
 struct geom
 screen_find_xinerama(int x, int y, int flags)
 {
-	struct screen_ctx	*sc;
-	struct geom		 g;
-
-	sc = screen_find_screen(x, y);
-	g = sc->view;
+	struct screen_ctx	*sc = screen_find_screen(x, y);
+	struct config_screen	*cscr = sc->config_screen;
+	struct geom		 g = sc->view;
 
 	if (flags & CWM_GAP) {
-		g.x += sc->gap.left;
-		g.y += sc->gap.top;
-		g.w -= (sc->gap.left + sc->gap.right);
-		g.h -= (sc->gap.top + sc->gap.bottom);
+		g.x += cscr->gap.left;
+		g.y += cscr->gap.top;
+		g.w -= (cscr->gap.left + cscr->gap.right);
+		g.h -= (cscr->gap.top + cscr->gap.bottom);
 	}
 	return(g);
 }
@@ -288,10 +292,12 @@ screen_find_xinerama(int x, int y, int flags)
 void
 screen_update_geometry(struct screen_ctx *sc)
 {
-	sc->work.x = sc->view.x + sc->gap.left;
-	sc->work.y = sc->view.y + sc->gap.top;
-	sc->work.w = sc->view.w - (sc->gap.left + sc->gap.right);
-	sc->work.h = sc->view.h - (sc->gap.top + sc->gap.bottom);
+	struct config_screen	*cscr = sc->config_screen;
+
+	sc->work.x = sc->view.x + cscr->gap.left;
+	sc->work.y = sc->view.y + cscr->gap.top;
+	sc->work.w = sc->view.w - (cscr->gap.left + cscr->gap.right);
+	sc->work.h = sc->view.h - (cscr->gap.top + cscr->gap.bottom);
 
 	xu_ewmh_net_desktop_geometry(sc);
 	xu_ewmh_net_workarea(sc);

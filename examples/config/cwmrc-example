@@ -1,0 +1,73 @@
+bindings {
+	key M-bracketleft {
+		command = "rcyclegroup"
+	}
+	key M-bracketright {
+		command = "cyclegroup"
+	}
+}
+
+menu {
+	item firefox {
+		command = "firefox"
+	}
+	item urxvt {
+		command = "urxvt"
+	}
+}
+
+screen "*" {
+	groups {
+		group "*" {
+			color {
+				activeborder = "darkgreen"
+				inactiveborder = "grey"
+				menubg = "#66BA66"
+				menufg = "white"
+			}
+		}
+		group "0" {
+			color {
+				activeborder = "#940000"
+				inactiveborder = "#672C2C"
+			}
+		}
+		group "1"{
+			color {
+				activeborder = "#FFA500"
+				inactiveborder = "#B28E4C"
+				menubg = "blue"
+			}
+		}
+		group "2" {
+			color {
+				activeborder = "#FFFF00"
+				inactiveborder = "#B2B24C"
+			}
+		}
+		group "3" {
+			color {
+				activeborder = "#00FF00"
+				inactiveborder = "#4CB24C"
+			}
+		}
+		group "4"{
+			color {
+				activeborder = "#0000FF"
+				inactiveborder = "#4C4CB2"
+			}
+		}
+		group "5" {
+			color {
+				activeborder = "#4B0082"
+				inactiveborder = "#44275A"
+			}
+		}
+		group "6" {
+			color {
+				activeborder = "#551A8B"
+				inactiveborder = "#524B59"
+			}
+		}
+	}
+}

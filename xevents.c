@@ -226,7 +226,7 @@ xev_handle_buttonpress(XEvent *ee)
 
 	e->state &= ~IGNOREMODMASK;
 
-	TAILQ_FOREACH(mb, &Conf.mousebindingq, entry) {
+	TAILQ_FOREACH(mb, &mousebindingq, entry) {
 		if (e->button == mb->press.button && e->state == mb->modmask)
 			break;
 	}
@@ -271,7 +271,7 @@ xev_handle_keypress(XEvent *ee)
 
 	e->state &= ~IGNOREMODMASK;
 
-	TAILQ_FOREACH(kb, &Conf.keybindingq, entry) {
+	TAILQ_FOREACH(kb, &keybindingq, entry) {
 		if (keysym != kb->press.keysym && skeysym == kb->press.keysym)
 			modshift = ShiftMask;
 		else
