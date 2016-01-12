@@ -523,7 +523,6 @@ struct screen_ctx	*screen_find_screen(int, int);
 void			 screen_maybe_init_randr(void);
 void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);
-bool			 screen_should_ignore_global(struct screen_ctx *);
 struct screen_ctx	*screen_find_by_name(const char *);
 void			 screen_apply_ewmh(void);
 

@@ -37,27 +37,23 @@ static void			 screen_create_randr_region(struct screen_ctx *,
     const char *, struct geom *);
 static void	 screen_init_contents(void);
 
-bool
-screen_should_ignore_global(struct screen_ctx *sc)
-{
-	if (no_of_screens > 1 && sc->name != NULL &&
-	    strcmp(sc->name, GLOBAL_SCREEN_NAME) == 0)
-		return (true);
-	return (false);
-}
-
 struct screen_ctx *
 screen_find_by_name(const char *name)
 {
-	struct screen_ctx	*sc;
+	struct screen_ctx	*sc, *sc_ret = NULL;
 
 	if (name == NULL)
 		log_fatal("%s: name was NULL", __func__);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (strcmp(sc->name, name) == 0)
-			return (sc);
+		if (strcmp(sc->name, name) == 0) {
+			sc_ret = sc;
+			break;
+		}
 	}
+
+	if (sc_ret != NULL)
+		return (sc_ret);
 
 	log_fatal("%s: couldn't find monitor '%s'", __func__, name);
 }
@@ -117,6 +113,9 @@ screen_maybe_init_randr(void)
         XRRFreeScreenResources(screen_res);
 
 single_screen:
+	if (no_of_screens > 1)
+		goto out;
+
 	sc = xmalloc(sizeof(*sc));
 	sc->which = DefaultScreen(X_Dpy);
 	size.x = 0;
@@ -125,6 +124,7 @@ single_screen:
 	size.h = DisplayHeight(X_Dpy, sc->which);
 
 	screen_create_randr_region(sc, GLOBAL_SCREEN_NAME, &size);
+out:
 	screen_init_contents();
 }
 
@@ -189,9 +189,6 @@ screen_init_contents(void)
 	unsigned int		 i;
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
-
 		TAILQ_INIT(&sc->clientq);
 		TAILQ_INIT(&sc->groupq);
 
@@ -218,8 +215,6 @@ screen_find(Window win)
 	struct screen_ctx	*sc;
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
 		if (sc->rootwin == win)
 			return(sc);
 	}
@@ -255,8 +250,6 @@ screen_find_screen(int x, int y)
 	int			 x1 = abs(x), y1 = abs(y);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
 		if (x1 >= sc->view.x && x1 < sc->view.x + sc->view.w &&
 		    y1 >= sc->view.y && y1 < sc->view.y + sc->view.h) {
 			sc_ret = sc;

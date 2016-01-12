@@ -159,7 +159,6 @@ conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
 	}
 
 	conf_cursor(sc);
-	conf_grab_kbd(sc->rootwin);
 }
 
 void

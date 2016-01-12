@@ -119,9 +119,9 @@ main(int argc, char **argv)
 	if (conf_path != NULL)
 		log_debug("Using config: %s", conf_path);
 
+	x_init(display_name);
 	config_bindings();
 
-	x_init(display_name);
 	cwm_status = CWM_RUNNING;
 	while (cwm_status == CWM_RUNNING)
 		xev_process();

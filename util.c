@@ -126,9 +126,6 @@ u_put_status(void)
 	 * back information about the state of both.
 	 */
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
-
 		snprintf(scr_key, sizeof scr_key, "screens.%s", sc->name);
 
 		if (cc != NULL && cc->sc != NULL && cc->sc == sc) {

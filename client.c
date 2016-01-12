@@ -109,8 +109,6 @@ client_scan_for_windows(void)
 	 * way to know when all clients have been managed.
 	 */
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
 		screen_updatestackingorder(sc);
 	}
 }
@@ -122,8 +120,6 @@ client_find(Window win)
 	struct client_ctx	*cc;
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
 		TAILQ_FOREACH(cc, &sc->clientq, entry) {
 			if (cc->win == win)
 				return(cc);

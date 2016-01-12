@@ -203,8 +203,6 @@ config_apply(void)
 	struct group_ctx	*gc;
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
 		screen_update_geometry(sc);
 
 		TAILQ_FOREACH(gc, &sc->groupq, entry) {
@@ -277,9 +275,6 @@ config_default(cfg_t *cfg, bool include_default_config)
 	}
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (screen_should_ignore_global(sc))
-			continue;
-
 			cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
 			if (cfg == NULL)
 				log_fatal("Unable to load DEFAULT_CONFIG");
@@ -352,8 +347,6 @@ config_internalise(cfg_t *cfg)
 			if (strcmp(sc_sec_title, "*") == 0) {
 				/* Applies to all screens. */
 				TAILQ_FOREACH(sc, &Screenq, entry) {
-					if (screen_should_ignore_global(sc))
-						continue;
 					config_intern_screen(sc->config_screen,
 					    sc_sec);
 					config_internalise_groups(sc, sc_sec);
@@ -457,6 +450,8 @@ config_bindings(void)
 
 	if (cfg_size(cfg, "bindings") > 0)
 		config_intern_bindings(cfg);
+
+	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 void

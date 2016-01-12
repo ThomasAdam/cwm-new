@@ -153,8 +153,6 @@ kbfunc_client_search(struct client_ctx *cc, union arg *arg)
 
 	TAILQ_INIT(&menuq);
 	TAILQ_FOREACH(all_sc, &Screenq, entry) {
-		if (screen_should_ignore_global(all_sc))
-			continue;
 		TAILQ_FOREACH(cc, &all_sc->clientq, entry)
 			menuq_add(&menuq, cc, NULL);
 	}
