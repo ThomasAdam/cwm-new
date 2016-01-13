@@ -451,6 +451,8 @@ config_bindings(void)
 
 	if (cfg_size(cfg, "bindings") > 0)
 		config_intern_bindings(cfg);
+
+	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 void
