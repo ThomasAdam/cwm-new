@@ -208,6 +208,7 @@ config_apply(void)
 		TAILQ_FOREACH(gc, &sc->groupq, entry) {
 			conf_screen(sc, gc);
 		}
+		conf_grab_kbd(sc->rootwin);
 	}
 }
 
@@ -275,9 +276,9 @@ config_default(cfg_t *cfg, bool include_default_config)
 	}
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
-			cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
-			if (cfg == NULL)
-				log_fatal("Unable to load DEFAULT_CONFIG");
+		cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
+		if (cfg == NULL)
+			log_fatal("Unable to load DEFAULT_CONFIG");
 
 		config_internalise(cfg);
 	}
@@ -450,8 +451,6 @@ config_bindings(void)
 
 	if (cfg_size(cfg, "bindings") > 0)
 		config_intern_bindings(cfg);
-
-	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 void

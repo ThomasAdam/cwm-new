@@ -120,7 +120,6 @@ main(int argc, char **argv)
 		log_debug("Using config: %s", conf_path);
 
 	x_init(display_name);
-	config_bindings();
 
 	cwm_status = CWM_RUNNING;
 	while (cwm_status == CWM_RUNNING)
@@ -189,8 +188,9 @@ x_teardown(void)
 		}
 		XUnmapWindow(X_Dpy, sc->menuwin);
 		XDestroyWindow(X_Dpy, sc->menuwin);
-		XUngrabKey(X_Dpy, AnyKey, AnyModifier, sc->rootwin);
 	}
+	XUngrabKey(X_Dpy, AnyKey, AnyModifier,
+		RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 	XUngrabPointer(X_Dpy, CurrentTime);
 	XUngrabKeyboard(X_Dpy, CurrentTime);
 	XSync(X_Dpy, False);

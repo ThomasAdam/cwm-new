@@ -205,6 +205,7 @@ screen_init_contents(void)
 			group_init(sc, i);
 	}
 	screen_apply_ewmh();
+	config_bindings();
 	config_parse();
 	client_scan_for_windows();
 }
