@@ -614,7 +614,6 @@ void			 conf_ignore(const char *);
 void			 conf_screen(struct screen_ctx *, struct group_ctx *);
 
 void			 config_parse(void);
-void			 config_bindings(void);
 
 void			 xev_process(void);
 

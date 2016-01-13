@@ -116,7 +116,7 @@ single_screen:
 	if (no_of_screens > 1)
 		goto out;
 
-	sc = xmalloc(sizeof(*sc));
+	sc = xcalloc(1, sizeof(*sc));
 	sc->which = DefaultScreen(X_Dpy);
 	size.x = 0;
 	size.y = 0;
@@ -205,7 +205,6 @@ screen_init_contents(void)
 			group_init(sc, i);
 	}
 	screen_apply_ewmh();
-	config_bindings();
 	config_parse();
 	client_scan_for_windows();
 }

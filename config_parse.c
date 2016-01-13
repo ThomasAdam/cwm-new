@@ -171,16 +171,12 @@ cfg_opt_t	 all_cfg_opts[] = {
 	CFG_END()
 };
 
-#define DEFAULT_CONFIG_BINDINGS \
+#define DEFAULT_CONFIG_SCR(s) \
 	({ char str[8192]; \
 	snprintf(str, sizeof(str), \
 	"bindings {" \
 		"%s" \
-	"}", (DEFAULT_BINDINGS)); str; })
-
-#define DEFAULT_CONFIG_SCR(s) \
-	({ char str[8192]; \
-	snprintf(str, sizeof(str), \
+	"}" \
 	"screen %s {" \
 		"groups {" \
 			"group 0 {}" \
@@ -194,7 +190,7 @@ cfg_opt_t	 all_cfg_opts[] = {
 			"group 8 {}" \
 			"group 9 {}" \
 		"}" \
-	"}", (s)); str; })
+	"}", (DEFAULT_BINDINGS), (s)); str; })
 
 static void
 config_apply(void)
@@ -269,10 +265,11 @@ config_default(cfg_t *cfg, bool include_default_config)
 		 * can then also process other things after it, once the
 		 * config has been read.
 		 */
+		config_intern_bindings(cfg);
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 
-		return;
+		goto grab_kbd;
 	}
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
@@ -280,8 +277,12 @@ config_default(cfg_t *cfg, bool include_default_config)
 		if (cfg == NULL)
 			log_fatal("Unable to load DEFAULT_CONFIG");
 
+		config_intern_bindings(cfg);
 		config_internalise(cfg);
 	}
+
+grab_kbd:
+	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 static void
@@ -343,6 +344,8 @@ config_internalise(cfg_t *cfg)
 	for (i = 0; i < cfg_size(cfg, "screen"); i++) {
 		sc_sec = cfg_getnsec(cfg, "screen", i);
 		sc_sec_title = cfg_title(sc_sec);
+
+		fprintf(stderr, "TITLE: %s\n", sc_sec_title);
 
 		if (sc_sec_title != NULL) {
 			if (strcmp(sc_sec_title, "*") == 0) {
@@ -421,45 +424,12 @@ config_intern_screen(struct config_screen *cs, cfg_t *cfg)
 }
 
 void
-config_bindings(void)
+config_parse(void)
 {
 	cfg_t	*cfg_default, *cfg;
 
 	TAILQ_INIT(&keybindingq);
 	TAILQ_INIT(&mousebindingq);
-
-	if ((cfg_default = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
-		log_fatal("Couldn't init config options");
-
-	cfg_parse_buf(cfg_default, DEFAULT_CONFIG_BINDINGS);
-	if (cfg_default == NULL)
-		log_fatal("Couldn't parse default key bindings...");
-
-	config_intern_bindings(cfg_default);
-
-	if (conf_path == NULL)
-		return;
-
-	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
-		log_fatal("Couldn't init config options");
-
-	cfg_parse(cfg, conf_path);
-	if (cfg == NULL) {
-		log_debug("Couldn't parse '%s'", conf_path);
-		return;
-	}
-
-	if (cfg_size(cfg, "bindings") > 0)
-		config_intern_bindings(cfg);
-
-	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
-}
-
-void
-config_parse(void)
-{
-	cfg_t	*cfg_default, *cfg;
-
 	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&cmdq);
