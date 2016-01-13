@@ -170,36 +170,36 @@ conf_init(void)
 void
 conf_clear(void)
 {
-	struct autogroupwin	*aw;
-	struct binding		*kb, *mb;
-	struct winname		*wn;
-	struct cmd		*cmd;
+	struct autogroupwin	*aw, *aw_tmp;
+	struct binding		*kb, *mb, *bind_tmp;
+	struct winname		*wn, *wn_tmp;
+	struct cmd		*cmd, *cmd_tmp;
 
-	while ((cmd = TAILQ_FIRST(&cmdq)) != NULL) {
-		TAILQ_REMOVE(&cmdq, cmd, entry);
+	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmd_tmp) {
 		free(cmd->name);
+		TAILQ_REMOVE(&cmdq, cmd, entry);
 		free(cmd);
 	}
 
-	while ((kb = TAILQ_FIRST(&keybindingq)) != NULL) {
+	TAILQ_FOREACH_SAFE(kb, &keybindingq, entry, bind_tmp) {
 		TAILQ_REMOVE(&keybindingq, kb, entry);
 		free(kb);
 	}
 
-	while ((aw = TAILQ_FIRST(&autogroupq)) != NULL) {
-		TAILQ_REMOVE(&autogroupq, aw, entry);
+	TAILQ_FOREACH_SAFE(aw, &autogroupq, entry, aw_tmp) {
 		free(aw->class);
 		free(aw->name);
+		TAILQ_REMOVE(&autogroupq, aw, entry);
 		free(aw);
 	}
 
-	while ((wn = TAILQ_FIRST(&ignoreq)) != NULL) {
-		TAILQ_REMOVE(&ignoreq, wn, entry);
+	TAILQ_FOREACH_SAFE(wn, &ignoreq, entry, wn_tmp) {
 		free(wn->name);
+		TAILQ_REMOVE(&ignoreq, wn, entry);
 		free(wn);
 	}
 
-	while ((mb = TAILQ_FIRST(&mousebindingq)) != NULL) {
+	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, bind_tmp) {
 		TAILQ_REMOVE(&mousebindingq, mb, entry);
 		free(mb);
 	}
