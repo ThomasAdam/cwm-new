@@ -174,6 +174,14 @@ cfg_opt_t	 all_cfg_opts[] = {
 #define DEFAULT_CONFIG_SCR(s) \
 	({ char str[8192]; \
 	snprintf(str, sizeof(str), \
+	"menu {" \
+		"item term {" \
+			"command = \"xterm\"" \
+		"}" \
+		"item lock {" \
+			"command = \"lock\"" \
+		"}" \
+	"}" \
 	"bindings {" \
 		"%s" \
 	"}" \
@@ -253,6 +261,7 @@ config_intern_bindings(cfg_t *cfg)
 		}
 
 	}
+	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 static void
@@ -269,7 +278,7 @@ config_default(cfg_t *cfg, bool include_default_config)
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 
-		goto grab_kbd;
+		goto grab;
 	}
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
@@ -279,9 +288,9 @@ config_default(cfg_t *cfg, bool include_default_config)
 
 		config_intern_bindings(cfg);
 		config_internalise(cfg);
+		config_intern_menu(cfg);
 	}
-
-grab_kbd:
+grab:
 	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
@@ -433,9 +442,6 @@ config_parse(void)
 	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&cmdq);
-
-	conf_cmd_add("lock", "xlock");
-	conf_cmd_add("term", "xterm");
 
 	(void)snprintf(known_hosts, sizeof(known_hosts), "%s/%s",
 	    homedir, ".ssh/known_hosts");

@@ -41,7 +41,7 @@ conf_cmd_add(const char *name, const char *path)
 {
 	struct cmd	*cmd;
 
-	cmd = xmalloc(sizeof(*cmd));
+	cmd = xcalloc(1, sizeof *cmd);
 
 	cmd->name = xstrdup(name);
 	if (strlcpy(cmd->path, path, sizeof(cmd->path)) >= sizeof(cmd->path)) {
@@ -544,10 +544,12 @@ conf_grab_kbd(Window win)
 {
 	struct binding	*kb;
 
+	XGrabServer(X_Dpy);
 	xu_key_ungrab(win);
 
 	TAILQ_FOREACH(kb, &keybindingq, entry)
 		xu_key_grab(win, kb->modmask, kb->press.keysym);
+	XUngrabServer(X_Dpy);
 }
 
 static char *cwmhints[] = {
