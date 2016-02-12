@@ -19,7 +19,6 @@
 
 use strict;
 use warnings;
-use Data::Dumper;
 
 sub usage
 {
