@@ -43,77 +43,54 @@ snapdist
 sticky
 ```
 
-Proposed Format
-===============
+# Format
+## Screen
+
+The following section applies to screens.
 
 ```
 screen $SCREEN {
-	groups {
-		group 1 {
-			borderwidth
-			color
-		}
-		group 2 {
-			borderwidth
-			color
-		}
-	}
-	gap
+	gap {0,0,0,0}
+	snapdist 0	
 }
 ```
 
-Settings which should be global, are given priority and put inside a
-`global` block.  These apply across all screens by default, and can be
-overwritten by specific screen blocks, as shown above.
+Where `$SCREEN` can be the specific name of an output (from `xrandr(1)`, or
+the literal `*` to indicate any/all screens, regardless of name.  Given the
+way `cwm-new` parses the configuration file, the generic `*` screen **must**
+come before any specific screen sections.
 
-```
-global {
-	...
-}
-```
+### Gap
+Describes how many pixels from the `top/bottom/left/right` (respectively)
+the screen is "shrunk" such that windows won't overlap over this area.
+
+### Snapdist
+Describes in pixels, how many pixels from the gap a window should be before
+it is moved to it.  This only applies during window movement.
+
+## Groups
 
 ### Bindings
 
+These have a section to themselves, and are global to the window manager
+(that is, they do not apply to individual screens, or groups).
+
+The syntax is as follows:
+
 ```
-bind {
-	C-m maximize
+bindings {
+	key		C-m { command = maximize }
+	mouse	4	{ command = hide }
 }
 ```
 
-```
-mousebind {
-	1 menu_unhide
-}
-```
+There are two sections allowed: `key` and `mouse`.  Each section has a
+title which denotes the modifier and key (or mouse button, if the section is
+`mouse`), and then a body containing the `command`.
 
 ### Clients
 
-```
-clients {
-	client class/resource/title {
-		autogroup 1,2,3
-		color ...
-	}
-}
-```
-
-### Grouping of commands
-
-The following commands are accepted either globally or per-group.
-
-*Global only*:
-```
-gap
-font
-selfont
-snapdist
-```
-
-*Global, but can also be overriden in groups*:
-```
-color
-borderwidth
-```
+Code and documentation TBD.
 
 Differences / Deprecations
 ==========================
