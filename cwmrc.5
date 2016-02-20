@@ -1,6 +1,7 @@
 .\"	$OpenBSD$
 .\"
 .\" Copyright (c) 2004,2005 Marius Aamodt Eriksen <marius@monkey.org>
+.\" Copyright (c) 2016 Thomas Adam <thomas@xteddy.org>
 .\"
 .\" Permission to use, copy, modify, and distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -25,16 +26,24 @@ This manual page describes the
 .Xr cwm 1
 configuration file.
 .Pp
+The format of the configuration file uses libconfuse.
+All formatting rules which libconfuse allows for is valid.
+.Pp
 The current line can be extended over multiple lines using a backslash
 .Pq Sq \e .
 Comments can be put anywhere in the file using a hash mark
 .Pq Sq # ,
-and extend to the end of the current line.
-Care should be taken when commenting out multi-line text:
-the comment is effective until the end of the entire block.
+or using C-style comments
+.Pq Sq /* */
+or
+.Pq Sq //
 .Pp
 Arguments containing whitespace should be surrounded by double quotes
 .Pq \&" .
+.Pp
+There are three main configuration sections which can be present in
+.Nm
+Bindings, screen, menu.
 .Pp
 The following options are accepted:
 .Pp
@@ -459,52 +468,8 @@ Default
 .Xr cwm 1
 configuration file.
 .El
-.Sh EXAMPLES
-.Bd -literal
-# Set default Xft(3) font
-fontname "sans-serif:pixelsize=14:bold"
-
-# Turn on sticky-group mode
-sticky yes
-
-# Any entry here is shown in the application menu
-command firefox		firefox
-command xmms		xmms
-command top		"xterm -e top"
-
-# Autogroup definitions
-autogroup 3 "aterm,XTerm"
-autogroup 3 "xterm,XTerm"
-
-# Ignore programs by that name by not drawing borders around them.
-ignore XMMS
-ignore xwi
-ignore xapm
-ignore xclock
-
-# Key bindings
-bind CM-r	label
-bind CS-Return	"xterm -e top"
-bind 4-o	unmap
-bind CM-equal	unmap
-bind CMS-equal	unmap
-bind C4-equal	vmaximize
-bind C4S-equal	hmaximize
-bind M-1	grouponly1
-bind M-2	grouponly2
-bind M-3	grouponly3
-bind MS-1	movetogroup1
-bind MS-2	movetogroup2
-bind MS-3	movetogroup3
-
-# Mouse bindings
-mousebind M-2	window_lower
-mousebind M-3	window_resize
-.Ed
+.Sh EXAMPLE
+See
+.Em examples/config/cwmrc-example
 .Sh SEE ALSO
 .Xr cwm 1
-.Sh HISTORY
-The
-.Nm
-file format first appeared in
-.Ox 4.4 .
