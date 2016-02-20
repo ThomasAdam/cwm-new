@@ -43,38 +43,19 @@ Arguments containing whitespace should be surrounded by double quotes
 .Pp
 There are three main configuration sections which can be present in
 .Nm
-Bindings, screen, menu.
 .Pp
-The following options are accepted:
-.Pp
-.Bl -tag -width Ds -compact
-.It Ic autogroup Ar group windowclass
-.It Ic autogroup Ar group windowname,windowclass
-Automatically add new windows to
-.Ar group
-if their class property matches
-.Ar windowclass ,
-or if their name and class properties match
-.Ar windowname
+.Ss Bindings
+This section can contain both
+.Em key
 and
-.Ar windowclass ,
-respectively.
-The more specific last match wins.
-.Ar group
-is a number between 0 and 9.
-If
-.Ar group
-is 0, matching windows will not be added to any group; this may be
-used to override
-.Dq sticky group mode .
-.Pp
-The name and class values, respectively, for existing windows
-are both set in the WM_CLASS property and may be obtained using
-.Xr xprop 1 .
-.Pp
-.It Ic bind Ar keys command
-Cause the creation of a key binding, or replacement of a default
-key binding.
+.Em mouse
+sections.
+Each section has a title, which refers either to the modifier (if
+.Em key
+is used)
+or the mouse button (if
+.Em mouse
+is used)
 The modifier keys come first, followed by a
 .Sq - .
 .Pp
@@ -95,6 +76,23 @@ The
 .Sq -
 should be followed by a keysym name, taken from
 .Pa /usr/X11R6/include/X11/keysymdef.h .
+Or, if
+.Em mouse
+is used:
+.Pp
+.Bl -tag -width Ds -offset indent -compact
+.It Ic 1
+Left mouse button.
+.It Ic 2
+Middle mouse button.
+.It Ic 3
+Right mouse button.
+.It Ic 4
+Scroll up mouse button.
+.It Ic 5
+Scroll down mouse button.
+.El
+.Pp
 The
 .Ar command
 may either be one from the
@@ -108,6 +106,40 @@ keyword
 can be used to remove the named key binding.
 This can be used to remove a binding which conflicts with an
 application.
+.Pp
+Each section then has the command to run.
+For a list of commands which are valid, see the section on
+.Sx BIND COMMAND LIST .
+Or
+.Sx MOUSEBIND COMMAND LIST .
+If using a mouse binding.
+.Pp
+Example:
+.Bd -literal -offset -indent
+bindings {
+	key CM-s { command = maximize }
+	mouse 1 { command = unmap }
+}
+.Ed
+.Pp
+.Bl -tag -width Ds -compact
+.It Ic autogroup Ar group windowclass
+.It Ic autogroup Ar group windowname,windowclass
+Automatically add new windows to
+.Ar group
+if their class property matches
+.Ar windowclass ,
+or if their name and class properties match
+.Ar windowname
+and
+.Ar windowclass ,
+respectively.
+The more specific last match wins.
+.Ar group
+is a number between 0 and 9.
+The name and class values, respectively, for existing windows
+are both set in the WM_CLASS property and may be obtained using
+.Xr xprop 1 .
 .Pp
 .It Ic borderwidth Ar pixels
 Set the window border width to
@@ -185,48 +217,6 @@ where the user may wish to remain visible.
 Ignore, and do not warp to, windows with the name
 .Ar windowname
 when drawing borders and cycling through windows.
-.Pp
-.It Ic mousebind Ar buttons command
-Cause the creation of a mouse binding, or replacement of a default
-mouse binding.
-The modifier keys come first, followed by a
-.Sq - .
-.Pp
-The following modifiers are recognised:
-.Pp
-.Bl -tag -width Ds -offset indent -compact
-.It Ic C
-Control key.
-.It Ic M
-Meta key.
-.It Ic S
-Shift key.
-.It Ic 4
-Mod4 (windows) key.
-.El
-.Pp
-The
-.Sq -
-should be followed by number:
-.Pp
-.Bl -tag -width Ds -offset indent -compact
-.It Ic 1
-Left mouse button.
-.It Ic 2
-Middle mouse button.
-.It Ic 3
-Right mouse button.
-.It Ic 4
-Scroll up mouse button.
-.It Ic 5
-Scroll down mouse button.
-.El
-.Pp
-The
-.Ar command
-may be taken from the
-.Sx MOUSEBIND COMMAND LIST
-(see below).
 .Pp
 .It Ic moveamount Ar pixels
 Set a default size for the keyboard movement bindings,
