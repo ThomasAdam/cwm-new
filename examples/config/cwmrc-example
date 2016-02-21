@@ -16,6 +16,12 @@ menu {
 	}
 }
 
+clients {
+	client "XTerm-allmine" {
+		autogroup = 3
+	}
+}
+
 screen "*" {
 	groups {
 		group "*" {

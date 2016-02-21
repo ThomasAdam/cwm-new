@@ -181,10 +181,12 @@ struct winname {
 TAILQ_HEAD(winname_q, winname);
 TAILQ_HEAD(ignore_q, winname);
 
+struct config_client;
 struct client_ctx {
 	TAILQ_ENTRY(client_ctx)	 entry;
 	TAILQ_ENTRY(client_ctx)	 group_entry;
 	struct screen_ctx	*sc;
+	struct config_client	*c_cfg;
 	Window			 win;
 	Colormap		 colormap;
 	unsigned int		 bwidth; /* border width */
@@ -355,6 +357,11 @@ struct config_screen {
 	Cursor		 cursor[CF_NITEMS];
 	struct gap	 gap;
 	int		 snapdist;
+};
+
+struct config_client {
+	struct autogroupwin_q	*autogroupq;
+	struct ignore_q		*ignoreq;
 };
 
 /* MWM hints */

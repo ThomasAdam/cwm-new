@@ -28,6 +28,7 @@ static void	 config_apply(void);
 static void	 config_default(cfg_t *, bool);
 static void	 config_internalise(cfg_t *);
 static void	 config_internalise_groups(struct screen_ctx *, cfg_t *);
+static void	 config_intern_clients(cfg_t *);
 static void	 config_intern_group(struct config_group *, cfg_t *);
 static void	 config_intern_screen(struct config_screen *, cfg_t *);
 static void	 config_intern_bindings(cfg_t *);
@@ -78,6 +79,18 @@ cfg_opt_t	 menu_item_opts[] = {
 
 cfg_opt_t	 menu_opts[] = {
 	CFG_SEC("item", menu_item_opts,
+		CFGF_TITLE | CFGF_NO_TITLE_DUPES | CFGF_MULTI),
+	CFG_END()
+};
+
+cfg_opt_t	 client_item_opts[] = {
+	CFG_BOOL("ignore", cfg_false, CFGF_NONE),
+	CFG_STR("autogroup", NULL, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t	 client_opts[] = {
+	CFG_SEC("client", client_item_opts,
 		CFGF_TITLE | CFGF_NO_TITLE_DUPES | CFGF_MULTI),
 	CFG_END()
 };
@@ -164,6 +177,7 @@ cfg_opt_t	 screen_opts[] = {
 };
 
 cfg_opt_t	 all_cfg_opts[] = {
+	CFG_SEC("clients", client_opts, CFGF_NO_TITLE_DUPES | CFGF_MULTI),
 	CFG_SEC("bindings", bind_opts, CFGF_NO_TITLE_DUPES | CFGF_MULTI),
 	CFG_SEC("menu", menu_opts, CFGF_MULTI),
 	CFG_SEC("screen", screen_opts,
@@ -274,6 +288,7 @@ config_default(cfg_t *cfg, bool include_default_config)
 		 * can then also process other things after it, once the
 		 * config has been read.
 		 */
+		config_intern_clients(cfg);
 		config_intern_bindings(cfg);
 		config_internalise(cfg);
 		config_intern_menu(cfg);
@@ -286,12 +301,65 @@ config_default(cfg_t *cfg, bool include_default_config)
 		if (cfg == NULL)
 			log_fatal("Unable to load DEFAULT_CONFIG");
 
+		config_intern_clients(cfg);
 		config_intern_bindings(cfg);
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 	}
 grab:
 	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
+}
+
+static void
+config_intern_clients(cfg_t *cfg)
+{
+	cfg_t		*clients_sec, *c_sec;
+	const char	*client_title, *errstr;
+	char		*client_res[1], *tmp, *ctitle;
+	char		*grp;
+	int		 t_grp;
+	size_t		 i, j;
+
+	for (i = 0; i < cfg_size(cfg, "clients"); i++) {
+		clients_sec = cfg_getnsec(cfg, "clients", i);
+
+		for (j = 0; j < cfg_size(clients_sec, "client"); j++) {
+			c_sec = cfg_getnsec(clients_sec, "client", i);
+
+			client_title = cfg_title(c_sec);
+			ctitle = (char *)client_title;
+
+			if (strchr(client_title, ',') != NULL) {
+				/* This contains both the class and the
+				 * resource.
+				 */
+				tmp = strtok(ctitle, ",");
+				client_res[0] = tmp;
+
+				tmp = strtok(NULL, ",");
+				client_res[1] = tmp;
+			} else {
+				/* Just the class. */
+				client_res[0] = NULL;
+				client_res[1] = ctitle;
+			}
+
+			if (cfg_getstr(c_sec, "autogroup") != NULL) {
+				grp = cfg_getstr(c_sec, "autogroup");
+
+				t_grp = strtonum(grp, 0, 9, &errstr);
+				if (errstr != NULL) {
+					log_debug("Group '%s' not valid; %s",
+					    grp, errstr);
+				}
+				conf_autogroup(t_grp, client_res[0],
+				    client_res[1]);
+			}
+
+			if (cfg_getbool(c_sec, "ignore"))
+				conf_ignore(client_res[1]);
+		}
+	}
 }
 
 static void
@@ -439,8 +507,8 @@ config_parse(void)
 
 	TAILQ_INIT(&keybindingq);
 	TAILQ_INIT(&mousebindingq);
-	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&ignoreq);
+	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&cmdq);
 
 	(void)snprintf(known_hosts, sizeof(known_hosts), "%s/%s",

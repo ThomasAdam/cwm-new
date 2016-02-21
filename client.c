@@ -157,6 +157,12 @@ client_init(Window win, int skip_map_check)
 
 	cc = xcalloc(1, sizeof(*cc));
 
+	/* XXX - Until such time that client options really are per-client,
+	 * this will have to wait:
+	 *
+	 *	cc->c_cfg = xcalloc(1, sizeof(cc->c_cfg));
+	 */
+
 	XGrabServer(X_Dpy);
 
 	cc->win = win;
