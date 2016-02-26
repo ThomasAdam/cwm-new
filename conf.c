@@ -170,9 +170,6 @@ conf_init(void)
 void
 conf_clear(void)
 {
-	struct screen_ctx	*sc;
-	struct client_ctx	*cc;
-	struct config_client	*cfg;
 	struct autogroupwin	*aw, *aw_tmp;
 	struct binding		*kb, *mb, *bind_tmp;
 	struct winname		*wn, *wn_tmp;
@@ -189,22 +186,17 @@ conf_clear(void)
 		free(kb);
 	}
 
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		TAILQ_FOREACH(cc, &sc->clientq, entry) {
-			cfg = cc->c_cfg;
-			TAILQ_FOREACH_SAFE(aw, cfg->autogroupq, entry, aw_tmp) {
-				free(aw->class);
-				free(aw->name);
-				TAILQ_REMOVE(cfg->autogroupq, aw, entry);
-				free(aw);
-			}
+	TAILQ_FOREACH_SAFE(aw, &autogroupq, entry, aw_tmp) {
+		free(aw->class);
+		free(aw->name);
+		TAILQ_REMOVE(&autogroupq, aw, entry);
+		free(aw);
+	}
 
-			TAILQ_FOREACH_SAFE(wn, cfg->ignoreq, entry, wn_tmp) {
-				free(wn->name);
-				TAILQ_REMOVE(cfg->ignoreq, wn, entry);
-				free(wn);
-			}
-		}
+	TAILQ_FOREACH_SAFE(wn, &ignoreq, entry, wn_tmp) {
+		free(wn->name);
+		TAILQ_REMOVE(&ignoreq, wn, entry);
+		free(wn);
 	}
 
 	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, bind_tmp) {
