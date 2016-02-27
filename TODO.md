@@ -23,6 +23,9 @@ Rough ideas for CWM
   as well as proper window layers.
 * New command `info` which pops up a little window (same as when resizing)
   which lists information about the window.  Think FvwmIdent from FVWM.
+* Groups could be "global" across monitors, and switching to a group on a
+  differnet monitor switches it to that monitor.  Much like how XMonad or
+  herbstluftwm works.
 
 Documentation
 -------------
