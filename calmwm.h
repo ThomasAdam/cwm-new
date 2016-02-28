@@ -320,26 +320,9 @@ struct menu {
 };
 TAILQ_HEAD(menu_q, menu);
 
-struct conf {
-	struct keybinding_q	 keybindingq;
-	struct mousebinding_q	 mousebindingq;
-	struct autogroupwin_q	 autogroupq;
-	struct ignore_q		 ignoreq;
-	struct cmd_q		 cmdq;
-#define	CONF_STICKY_GROUPS		0x0001
-	int			 flags;
-#define CONF_BWIDTH			1
-	int			 bwidth;
-#define	CONF_MAMOUNT			1
-	int			 mamount;
-#define	CONF_SNAPDIST			0
-	int			 snapdist;
-	struct gap		 gap;
-	char			*color[CWM_COLOR_NITEMS];
-#define	CONF_FONT			"sans-serif:pixelsize=14:bold"
-	char			*font;
-};
-
+#define CONF_FONT	"sans-serif:pixelsize=14:bold"
+#define CONF_MAMOUNT	1
+#define CONF_SNAPDIST	0
 struct keybinding_q	 keybindingq;
 struct mousebinding_q	 mousebindingq;
 struct autogroupwin_q	 autogroupq;
@@ -395,7 +378,6 @@ struct mwm_hints {
 extern Display				*X_Dpy;
 extern Time				 Last_Event_Time;
 extern struct screen_ctx_q		 Screenq;
-extern struct conf			 Conf;
 extern const char			*homedir;
 extern int				 Randr_ev;
 char					*conf_path;
@@ -603,8 +585,6 @@ struct menu  		*menu_filter(struct screen_ctx *, struct menu_q *,
 			     void (*)(struct menu *, int));
 void			 menuq_add(struct menu_q *, void *, const char *, ...);
 void			 menuq_clear(struct menu_q *);
-
-int			 parse_config(const char *, struct conf *);
 
 void			 conf_atoms(void);
 void			 conf_autogroup(int, const char *, const char *);

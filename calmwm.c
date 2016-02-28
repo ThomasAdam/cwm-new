@@ -43,7 +43,6 @@ Atom				 ewmh[EWMH_NITEMS];
 struct screen_ctx_q		 Screenq = TAILQ_HEAD_INITIALIZER(Screenq);
 
 int				 HasRandr, Randr_ev;
-struct conf			 Conf;
 const char			*homedir;
 volatile sig_atomic_t		 cwm_status;
 
