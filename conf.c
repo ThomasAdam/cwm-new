@@ -211,18 +211,23 @@ void
 conf_client(struct client_ctx *cc)
 {
 	struct winname		*wn;
-	struct config_group	*cgrp = cc->group->config_group;
-	int			 ignore = 0;
+	bool			 ignore = false;
+
+	cc->bwidth = cc->group->config_group->bwidth;
 
 	TAILQ_FOREACH(wn, &ignoreq, entry) {
 		if (strncasecmp(wn->name, cc->name, strlen(wn->name)) == 0) {
-			ignore = 1;
+			ignore = true;
 			break;
 		}
 	}
 
-	cc->bwidth = ignore ? 0 : cgrp->bwidth;
-	cc->flags |= ignore ? CLIENT_IGNORE : 0;
+	if (ignore) {
+		cc->bwidth = 0;
+		cc->flags |= ignore ? CLIENT_IGNORE : 0;
+	}
+	client_config(cc);
+	client_draw_border(cc);
 }
 
 static const struct {
