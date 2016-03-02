@@ -40,21 +40,16 @@ static void	 screen_init_contents(void);
 struct screen_ctx *
 screen_find_by_name(const char *name)
 {
-	struct screen_ctx	*sc, *sc_ret = NULL;
+	struct screen_ctx	*sc;
 
 	if (name == NULL)
 		log_fatal("%s: name was NULL", __func__);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		if (strcmp(sc->name, name) == 0) {
-			sc_ret = sc;
-			break;
+			return (sc);
 		}
 	}
-
-	if (sc_ret != NULL)
-		return (sc_ret);
-
 	log_fatal("%s: couldn't find monitor '%s'", __func__, name);
 }
 
