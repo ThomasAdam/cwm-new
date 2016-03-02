@@ -39,10 +39,6 @@ output on the right.
 
 See the [TODO](TODO.md) file.
 
-# New Config Format
-
-See the [CONFIG](CONFIG.md) file for ideas for a new config file structure.
-
 # Contact
 
 You can reach me via the following:
