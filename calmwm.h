@@ -181,10 +181,20 @@ struct winname {
 TAILQ_HEAD(winname_q, winname);
 TAILQ_HEAD(ignore_q, winname);
 
+struct geom_record {
+	struct screen_ctx		*sc;
+	struct geom	 		 geom;
+	int		 		 group;
+
+	TAILQ_ENTRY(geom_record)	 entry;
+};
+TAILQ_HEAD(geom_recordq, geom_record);
+
 struct config_client;
 struct client_ctx {
 	TAILQ_ENTRY(client_ctx)	 entry;
 	TAILQ_ENTRY(client_ctx)	 group_entry;
+	struct geom_recordq	 geom_recordq;
 	struct screen_ctx	*sc;
 	struct config_client	*c_cfg;
 	Window			 win;
@@ -440,6 +450,8 @@ void			 client_draw_border(struct client_ctx *);
 void			 client_data_extend(struct client_ctx *);
 void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
+void			 client_record_geom(struct client_ctx *);
+void			 client_restore_geom(struct client_ctx *, int);
 long			 client_get_wm_state(struct client_ctx *);
 void			 client_getsizehints(struct client_ctx *);
 void			 client_hide(struct client_ctx *);

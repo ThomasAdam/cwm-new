@@ -46,6 +46,7 @@ static void			 client_expand_horiz(struct client_ctx *,
 					struct geom *);
 static void			 client_expand_vert(struct client_ctx *,
 					struct geom *);
+static void			 client_remove_geom(struct client_ctx *);
 
 struct client_ctx	*curcc = NULL;
 
@@ -163,6 +164,8 @@ client_init(Window win, int skip_map_check)
 	 *	cc->c_cfg = xcalloc(1, sizeof(cc->c_cfg));
 	 */
 
+	TAILQ_INIT(&cc->geom_recordq);
+
 	XGrabServer(X_Dpy);
 
 	cc->win = win;
@@ -201,6 +204,7 @@ client_init(Window win, int skip_map_check)
 	cc->sc = sc;
 	group_autogroup(cc);
 	conf_client(cc);
+	client_record_geom(cc);
 
 	XSelectInput(X_Dpy, cc->win, ColormapChangeMask | EnterWindowMask |
 	    PropertyChangeMask | KeyReleaseMask);
@@ -234,6 +238,17 @@ client_init(Window win, int skip_map_check)
 }
 
 void
+client_remove_geom(struct client_ctx *cc)
+{
+	struct geom_record	*gr, *gr1;
+
+	TAILQ_FOREACH_SAFE(gr, &cc->geom_recordq, entry, gr1) {
+		TAILQ_REMOVE(&cc->geom_recordq, gr, entry);
+		free(gr);
+	}
+}
+
+void
 client_delete(struct client_ctx *cc)
 {
 	struct screen_ctx	*sc = cc->sc;
@@ -255,6 +270,8 @@ client_delete(struct client_ctx *cc)
 		free(wn->name);
 		free(wn);
 	}
+
+	client_remove_geom(cc);
 
 	if (cc->ch.res_class)
 		XFree(cc->ch.res_class);
@@ -470,6 +487,7 @@ client_toggle_sticky(struct client_ctx *cc)
 		 * form of moving a window from one group to the next.
 		 */
 		group_assign(cc->sc->group_current, cc);
+		client_remove_geom(cc);
 	} else
 		cc->flags |= CLIENT_STICKY;
 
@@ -889,6 +907,56 @@ client_ptrsave(struct client_ctx *cc)
 	} else {
 		cc->ptr.x = -1;
 		cc->ptr.y = -1;
+	}
+}
+
+void
+client_record_geom(struct client_ctx *cc)
+{
+	struct geom_record	*gr;
+	int			 curgrp = cc->sc->group_current->num;
+
+	if (!(cc->flags & CLIENT_STICKY))
+		return;
+
+	TAILQ_FOREACH(gr, &cc->geom_recordq, entry) {
+		if (gr->group == curgrp && cc->sc == gr->sc) {
+			memcpy(&gr->geom, &cc->geom, sizeof(cc->geom));
+			log_debug("%s: updating: client '%p', grp: %d\n",
+				__func__, cc, curgrp);
+			return;
+		}
+	}
+
+	gr = xcalloc(1, sizeof(*gr));
+	gr->group = curgrp;
+	gr->sc = cc->sc;
+	memcpy(&gr->geom, &cc->geom, sizeof(cc->geom));
+
+	TAILQ_INSERT_TAIL(&cc->geom_recordq, gr, entry);
+
+	log_debug("%s: adding: client '%p', grp: %d", __func__, cc, curgrp);
+}
+
+void
+client_restore_geom(struct client_ctx *cc, int group)
+{
+	struct geom_record	*gr;
+
+	if (!(cc->flags & CLIENT_STICKY))
+		return;
+
+	TAILQ_FOREACH(gr, &cc->geom_recordq, entry) {
+		if (gr->group != group)
+			continue;
+
+		if (gr->sc != cc->sc)
+			continue;
+
+		log_debug("%s: restoring: client '%p', grp: %d\n", __func__,
+		    cc, group);
+		memcpy(&cc->geom, &gr->geom, sizeof(cc->geom));
+		client_resize(cc, 0);
 	}
 }
 

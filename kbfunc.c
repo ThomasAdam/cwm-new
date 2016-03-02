@@ -139,6 +139,7 @@ kbfunc_client_moveresize(struct client_ctx *cc, union arg *arg)
 	default:
 		warnx("invalid flags passed to kbfunc_client_moveresize");
 	}
+	client_record_geom(cc);
 }
 
 void

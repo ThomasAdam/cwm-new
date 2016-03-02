@@ -82,11 +82,22 @@ group_show(struct group_ctx *gc)
 {
 	struct client_ctx	*cc;
 
-	TAILQ_FOREACH(cc, &gc->clientq, group_entry)
+	TAILQ_FOREACH(cc, &gc->clientq, group_entry) {
 		client_unhide(cc);
+		client_restore_geom(cc, gc->num);
+	}
 
 	group_restack(gc);
 	gc->flags |= GROUP_ACTIVE;
+
+	TAILQ_FOREACH(cc, &gc->sc->clientq, entry) {
+		if (cc->flags & CLIENT_STICKY) {
+			group_assign(gc, cc);
+			client_draw_border(cc);
+			client_restore_geom(cc, gc->num);
+		}
+	}
+
 
 	u_put_status();
 }
@@ -275,8 +286,8 @@ group_only(struct screen_ctx *sc, int idx)
 
 	TAILQ_FOREACH(gc, &sc->groupq, entry) {
 		if (gc->num == idx) {
-			group_show(gc);
 			group_setactive(gc);
+			group_show(gc);
 		} else
 			group_hide(gc);
 	}

@@ -126,6 +126,7 @@ mousefunc_client_resize(struct client_ctx *cc, union arg *arg)
 			 */
 			cc->extended_data = 0;
 			client_data_extend(cc);
+			client_record_geom(cc);
 
 			return;
 		}
@@ -179,6 +180,7 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 			break;
 		case ButtonRelease:
 			client_move(cc);
+			client_record_geom(cc);
 			xu_ptr_ungrab();
 			return;
 		}
