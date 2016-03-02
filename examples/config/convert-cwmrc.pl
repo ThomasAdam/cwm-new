@@ -62,9 +62,14 @@ sub scan_file
 			push @{ $orig_data{'menu'}->{"item $1"} }, "command = $2";
 		} elsif ($line =~ /^\s*borderwidth\s+(.*?)$/i) {
 			push @{ $orig_data{"screen \"*\""}->{"groups"}->{"group \"*\""}->{''} }, "borderwidth = $1";
+		} elsif ($line =~ /^\s*ignore\s+(.*?)$/i) {
+			push @{ $orig_data{clients}->{"client $1"} }, "ignore = true";
+		} elsif ($line =~ /^\s*autogroup\s+(.*?)\s+(.*?)$/) {
+			push @{ $orig_data{clients}->{"client $2"} }, "autogroup = $1";
 		}
 	}
 	close($in_fh);
+
 	check_bindings();
 	write_file();
 }
@@ -93,6 +98,49 @@ sub check_bindings
 	}
 }
 
+# Recursively walk the data structure, converting the hashes to top-level
+# sections, and the arrays as values therein.
+my $indent = -1;
+sub walk_data
+{
+	my ($fh, $h) = @_;
+	my $tabs;
+
+	if (ref $h eq 'HASH') {
+		$indent++;
+		$tabs = $indent > 0 ? "\t" x $indent : "";
+		foreach my $k (sort keys %$h) {
+			if ($k eq '') {
+				# Special key to denote top-level options for
+				# the block, but where there's no surrounding
+				# block to put them in.  In such cases, we
+				# just want the values from the array
+				# verbatim.
+
+				$indent--;
+				walk_data($fh, $h->{$k});
+				$indent++;
+			} else {
+				print $fh "$tabs$k {\n";
+				walk_data($fh, $h->{$k});
+
+				$tabs = $indent > 0 ? "\t" x $indent : "";
+				print $fh $tabs . "}\n", "\n";
+			}
+		}
+		$indent--;
+	}
+
+	if (ref $h eq 'ARRAY') {
+		$indent++;
+		$tabs = "\t" x $indent;
+		foreach my $l (@$h) {
+			print $fh $tabs . $l, "\n";
+		}
+		$indent--;
+	}
+};
+
 sub write_file
 {
 	open my $out_fh, ">", $out_file or die $!;
@@ -101,34 +149,7 @@ sub write_file
 
 EOF
 
-	foreach my $k (keys %orig_data) {
-		print $out_fh "$k {\n";
-		foreach my $l (sort keys %{ $orig_data{$k} }) {
-			print $out_fh "\t$l {\n\t" unless $l eq '';
-			if (ref $orig_data{$k}->{$l} eq 'ARRAY') {
-				print $out_fh "\t" . join "\t", "$_\n"
-					foreach @{ $orig_data{$k}->{$l} };
-				print $out_fh "\t}\n" unless $l eq '';
-			} else {
-				foreach my $m (sort keys %{ $orig_data{$k}->{$l} }) {
-					print $out_fh "\t\t$m {\n";
-
-					foreach my $n (sort keys %{ $orig_data{$k}->{$l}->{$m} }) {
-						print $out_fh "\t\t\t$n {\n" unless $n eq '';
-						if (ref $orig_data{$k}->{$l}->{$m}->{$n} eq 'ARRAY') {
-							print $out_fh "\t\t\t\t" . join "\n", "$_\n"
-								foreach @{ $orig_data{$k}->{$l}->{$m}->{$n} };
-							print $out_fh "\t\t\t}\n" unless $n eq '';
-						}
-					}
-					print $out_fh "\t\t}\n";
-				}
-				print $out_fh "\t}\n";
-			}
-		}
-		print $out_fh "}\n";
-	}
-
+	walk_data($out_fh, \%orig_data);
 	close($out_fh);
 }
 
