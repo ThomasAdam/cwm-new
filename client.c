@@ -1205,9 +1205,9 @@ client_prev(struct client_ctx *cc)
 static void
 client_placecalc(struct client_ctx *cc)
 {
-	struct screen_ctx	*sc;
 	Window			 root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
 	int			 xslack, yslack;
+	int			 view_h, view_w;
 
 	if (cc->hint.flags & (USPosition|PPosition)) {
 		/*
@@ -1218,9 +1218,10 @@ client_placecalc(struct client_ctx *cc)
 		 * currently there.
 		 */
 		fprintf(stderr, "positioning via hints\n");
-		sc = screen_find_by_name(GLOBAL_SCREEN_NAME);
-		xslack = sc->view.w - cc->geom.w - cc->bwidth * 2;
-		yslack = sc->view.h - cc->geom.h - cc->bwidth * 2;
+		view_w = DisplayWidth(X_Dpy, DefaultScreen(X_Dpy));
+		view_h = DisplayHeight(X_Dpy, DefaultScreen(X_Dpy));
+		xslack = view_w - cc->geom.w - cc->bwidth * 2;
+		yslack = view_h - cc->geom.h - cc->bwidth * 2;
 		cc->geom.x = MIN(cc->geom.x, xslack);
 		cc->geom.y = MIN(cc->geom.y, yslack);
 	} else {
