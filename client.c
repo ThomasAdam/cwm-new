@@ -219,6 +219,8 @@ client_init(Window win, int skip_map_check)
 	xu_ewmh_net_client_list_stacking(sc);
 	xu_ewmh_restore_net_wm_state(cc);
 
+	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
+
 	if (client_get_wm_state(cc) == IconicState)
 		client_hide(cc);
 	else
@@ -226,8 +228,6 @@ client_init(Window win, int skip_map_check)
 
 	if (!mapped)
 		log_debug("client not mapped!");
-
-	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
 
 	XSync(X_Dpy, False);
 	XUngrabServer(X_Dpy);
