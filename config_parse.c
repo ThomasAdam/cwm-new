@@ -315,7 +315,7 @@ config_intern_clients(cfg_t *cfg)
 {
 	cfg_t		*clients_sec, *c_sec;
 	const char	*client_title, *errstr;
-	char		*client_res[1], *tmp, *ctitle;
+	char		*client_res[2], *tmp, *ctitle;
 	char		*grp;
 	int		 t_grp;
 	size_t		 i, j;
