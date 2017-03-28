@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use JSON;
+use IO::Select;
 
 $| = 1;
 
@@ -156,12 +157,27 @@ sub process_line
 	my $msg;
 
 	open (my $pipe_fh, '<', $fifo) or die "Cannot open $fifo: $!";
-	while (my $line = <$pipe_fh>) {
-		chomp $line;
-		if ($line =~ /^clock:/) {
-			print $line, "\n";
-		} else {
-			format_output(from_json($line));
+
+	my $fifo_local = \*$pipe_fh;
+	my $select = IO::Select->new($fifo_local);
+
+	while (my @ready = $select->can_read()) {
+		foreach my $fd (@ready) {
+			while (my $line = <$pipe_fh>) {
+				if ($line =~ /^clock:/) {
+					print $line, "\n";
+				} else {
+					my $json;
+					eval {
+						$json = from_json($line);
+					};
+					if ($@) {
+						warn "Couldn't parse: <<$line>>\n";
+						next;
+					}
+					format_output(from_json($line));
+				}
+			}
 		}
 	}
 }

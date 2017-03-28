@@ -3,22 +3,31 @@
 use strict;
 use warnings;
 
+use IO::Select;
+
 $| = 1;
 
 my %screen_map;
-my ($screen, $clock);
+my ($screen, $clock) = ('', '');
 
-while (<>) {
-	chomp;
-	if (/^clock:/) {
-		s/^clock://;
-		$clock = "%{r}%{B-}%{Ucyan}%{+u}%{+o}$_%{-u}%{-o}%";
-	} else {
-		($screen) = ($_ =~ /^\%\{(\S\d+)\}/);
-		$screen_map{$screen} = $_;
-	}
+my $in = \*STDIN;
+my $select = IO::Select->new($in);
 
-	foreach my $k (keys %screen_map) {
-		print "$screen_map{$k}$clock", "\n";
+while (my $sel = $select->can_read()) {
+	while (my $line = <$in>) {
+		$_ = $line;
+		chomp;
+		next if $_ eq '';
+		if (/^clock:/) {
+			s/^clock://;
+			$clock = "%{r}%{B-}%{U#00FFFF}%{+u}%{+o}$_%{-u}%{-o}%";
+		} else {
+			($screen) = ($_ =~ /^\%\{(\S\d+)\}/);
+			$screen_map{$screen} = $_;
+		}
+
+		foreach my $k (keys %screen_map) {
+			print "$screen_map{$k}$clock", "\n";
+		}
 	}
 }

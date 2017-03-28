@@ -102,7 +102,7 @@ u_init_pipe(void)
 		return;
 	}
 
-	if ((status_fd = open(pipe_name, O_RDWR|O_NONBLOCK)) == -1)
+	if ((status_fd = open(pipe_name, O_RDWR)) == -1)
 		log_debug("Couldn't open pipe '%s': %s", pipe_name,
 			strerror(errno));
 
@@ -125,6 +125,7 @@ u_put_status(void)
 	/* Go through all groups, and all clients on those groups, and report
 	 * back information about the state of both.
 	 */
+
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		snprintf(scr_key, sizeof scr_key, "screens.%s", sc->name);
 
