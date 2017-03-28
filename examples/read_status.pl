@@ -29,7 +29,7 @@ sub query_xrandr
 	my $opts = {
 		'-p'	=> '',
 		'-d'	=> '',
-		'-B'	=> 'blue',
+		'-B'	=> '#0000FF',
 		'-u'	=> 2,
 	};
 
@@ -118,7 +118,7 @@ sub format_output
 					# Gather any other bits of information for the _CURRENT_
 					# group we might want.
 					if ($is_urgent) {
-						$extra_urgent = "%{Bred}[U]%{B-}";
+						$extra_urgent = "%{B#FF0000}[U]%{B-}";
 					}
 			} else {
 				if ($is_urgent) {
@@ -143,7 +143,7 @@ sub format_output
 
 		if (defined $scr_h->{'current_client'}) {
 			my $cc = $scr_h->{'current_client'};
-			$msg .= "%{c}%{Ugreen}%{+u}%{+o}%{B#AC59FF}%{F-}" .
+			$msg .= "%{c}%{U#00FF00}%{+u}%{+o}%{B#AC59FF}%{F-}" .
 				"        " . $cc . "        " .  "%{-u}%{-o}%{B-}";
 		}
 		print $msg, "\n";

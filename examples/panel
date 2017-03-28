@@ -12,4 +12,4 @@ do
 	conky > "$pipe" &
 done
 
-./read_status.pl | ./barpanel | lemonbar -g x16 -p -d -Bblue -u2
+./read_status.pl | ./barpanel | lemonbar -g x16 -p -d -B'#0000FF' -u2
