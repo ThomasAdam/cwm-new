@@ -280,6 +280,8 @@ client_delete(struct client_ctx *cc)
 	if (cc->wmh)
 		XFree(cc->wmh);
 
+	u_put_status();
+
 	free(cc);
 }
 

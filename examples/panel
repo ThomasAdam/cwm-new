@@ -9,7 +9,7 @@ trap 'trap - TERM; kill 0' INT TERM EXIT QUIT
 
 for pipe in /tmp/cwm-[0-9]*.fifo
 do
-	conky > "$pipe" &
+	conky -c ${PWD}/.conkyrc > "$pipe" &
 done
 
 ./read_status.pl | ./barpanel | lemonbar -g x16 -p -d -B'#0000FF' -u2

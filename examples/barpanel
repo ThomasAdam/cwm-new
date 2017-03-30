@@ -20,14 +20,14 @@ while (my $sel = $select->can_read()) {
 		next if $_ eq '';
 		if (/^clock:/) {
 			s/^clock://;
-			$clock = "%{r}%{B-}%{U#00FFFF}%{+u}%{+o}$_%{-u}%{-o}%";
+			$clock = "%{r}%{B-}%{U#00FFFF}%{+u}%{+o}$_%{-u}%{-o}";
 		} else {
 			($screen) = ($_ =~ /^\%\{(\S\d+)\}/);
 			$screen_map{$screen} = $_;
 		}
 
 		foreach my $k (keys %screen_map) {
-			print "$screen_map{$k}$clock", "\n";
+			print "$screen_map{$k}$clock\n";
 		}
 	}
 }
