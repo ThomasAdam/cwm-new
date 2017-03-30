@@ -19,6 +19,8 @@
  */
 
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include <fcntl.h>
 #include <err.h>
@@ -33,8 +35,10 @@
 #include "parson.h"
 
 #define MAXARGLEN 20
+#define SOCKNAME "/tmp/cwm.sock"
 
-static FILE	*status_fp;
+static int	 		 cwm_socket;
+static struct sockaddr_un	 sock_un;
 
 void
 u_spawn(char *argstr)
@@ -85,28 +89,31 @@ u_exec(char *argstr)
 }
 
 void
-u_init_pipe(void)
+u_init_socket(void)
 {
-	char			 pipe_name[PATH_MAX];
-	int			 status_fd = -1;
+	size_t			 size;
 
-	snprintf(pipe_name, sizeof(pipe_name),
-		"/tmp/cwm-%ld.fifo", (long)getpid());
-
-	fprintf(stderr, "Using pipe: %s\n", pipe_name);
-
-	unlink(pipe_name);
-
-	if ((mkfifo(pipe_name, 0666) == -1)) {
-		log_debug("mkfifo: %s", strerror(errno));
+	unlink(SOCKNAME);
+	if ((cwm_socket = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+		log_debug("Couldn't create socket: %s", strerror(errno));
 		return;
 	}
 
-	if ((status_fd = open(pipe_name, O_RDWR|O_NONBLOCK)) == -1)
-		log_debug("Couldn't open pipe '%s': %s", pipe_name,
-			strerror(errno));
+	sock_un.sun_family = AF_LOCAL;
+	strncpy(sock_un.sun_path, SOCKNAME, sizeof (sock_un.sun_path));
 
-	status_fp = fdopen(status_fd, "w");
+	size = (offsetof(struct sockaddr_un, sun_path) + strlen(sock_un.sun_path));
+
+	if (bind(cwm_socket, (struct sockaddr *)&sock_un, size) < 0)
+	{
+		log_debug("bind failed: %s", strerror(errno));
+		return;
+	}
+
+	if (listen(cwm_socket, 10) < 0) {
+		log_debug("listen failed: %s", strerror(errno));
+		return;
+	}
 }
 
 void
@@ -170,6 +177,14 @@ u_put_status(void)
 
 	}
 	json_out_str = json_serialize_to_string(json_root);
-	fprintf(status_fp, "%s\n", json_out_str);
-	fflush(status_fp);
+
+	/* Send the data down the socket. */
+	if (write(cwm_socket, json_out_str, strlen(json_out_str) + 1) < 0) {
+		log_debug("write failed: %s", strerror(errno));
+	}
+
+	if (sendto(cwm_socket, json_out_str, strlen(json_out_str) + 1, 0,
+	    (struct sockaddr *)&sock_un, sizeof(sock_un)) == -1) {
+		log_debug("Couldn't sendto() socket: %s", strerror(errno));
+	}
 }

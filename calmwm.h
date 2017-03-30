@@ -655,7 +655,7 @@ void 			 xu_ewmh_restore_net_wm_state(struct client_ctx *);
 
 void			 u_exec(char *);
 void			 u_spawn(char *);
-void			 u_init_pipe(void);
+void			 u_init_socket(void);
 void			 u_put_status(void);
 
 void			*xcalloc(size_t, size_t);

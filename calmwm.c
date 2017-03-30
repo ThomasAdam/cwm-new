@@ -143,7 +143,7 @@ x_init(const char *dpyname)
 	XSetErrorHandler(x_errorhandler);
 
 	conf_atoms();
-	u_init_pipe();
+	u_init_socket();
 	screen_maybe_init_randr();
 }
 
