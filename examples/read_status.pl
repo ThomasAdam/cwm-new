@@ -18,10 +18,10 @@ use IO::Select;
 
 $| = 1;
 
-my @pipes = glob("/tmp/cwm-[0-9]*.fifo");
+my $pipe = "/tmp/cwm.pipe";
 
 # If there are no pipes, that's OK.
-exit unless @pipes;
+exit unless -e $pipe;
 
 my %scr_map;
 
@@ -189,6 +189,4 @@ my %opts = %{ query_xrandr() };
 		screen => $opts{$_}->{'screen'},
 	} }keys (%opts);
 
-foreach (@pipes) {
-	process_line($_);
-}
+process_line($pipe);
