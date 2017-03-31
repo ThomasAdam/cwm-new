@@ -105,11 +105,12 @@ sub format_output
 				$scr_h->{'groups'}->{$b}->{'number'}
 			} keys %{$scr_h->{'groups'}})
 		{
-			my $sym_name   = $scr_h->{'groups'}->{$deskname}->{'number'};
-			my $is_current = $scr_h->{'groups'}->{$deskname}->{'is_current'};
-			my $desk_count = $scr_h->{'groups'}->{$deskname}->{'number_of_clients'};
-			my $is_urgent  = $scr_h->{'groups'}->{$deskname}->{'is_urgent'} ||= 0;
-			my $is_active  = $scr_h->{'groups'}->{$deskname}->{'is_active'} ||= 0;
+			my $desk_name  = $scr_h->{'groups'}->{$deskname};
+			my $sym_name   = $desk_name->{'number'};
+			my $is_current = $desk_name->{'is_current'};
+			my $desk_count = $desk_name->{'number_of_clients'};
+			my $is_urgent  = $desk_name->{'is_urgent'} ||= 0;
+			my $is_active  = $desk_name->{'is_active'} ||= 0;
 
 			# If the window is active, give it a differnet colour.
 			if ($is_current) {
