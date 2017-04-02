@@ -62,14 +62,14 @@ main(int argc, char **argv)
 	int		 ch;
 	struct passwd	*pw;
 	bool		 open_logfile = false;
-	char		*logfile_name;
+	char		*logfile_name, *pipe_name;
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		warnx("no locale support");
 	mbtowc(NULL, NULL, MB_CUR_MAX);
 
 	cwm_argv = argv;
-	while ((ch = getopt(argc, argv, "vc:d:")) != -1) {
+	while ((ch = getopt(argc, argv, "vc:d:p:")) != -1) {
 		switch (ch) {
 		case 'c':
 			conf_file = optarg;
@@ -77,6 +77,8 @@ main(int argc, char **argv)
 		case 'd':
 			display_name = optarg;
 			break;
+		case 'p':
+			pipe_name = optarg;
 		case 'v':
 			open_logfile = true;
 			break;
@@ -108,6 +110,11 @@ main(int argc, char **argv)
 		xasprintf(&conf_path, "%s/%s", homedir, CONFFILE);
 	else
 		conf_path = xstrdup(conf_file);
+
+	if (pipe_name == NULL)
+		cwm_pipe = xstrdup(CWMPIPE);
+	else
+		cwm_pipe = xstrdup(pipe_name);
 
 	if (access(conf_path, R_OK) != 0) {
 		free(conf_path);
@@ -243,7 +250,7 @@ usage(void)
 {
 	extern char	*__progname;
 
-	(void)fprintf(stderr, "usage: %s [-c file] [-d display] [-v]\n",
+	fprintf(stderr, "usage: %s [-c file] [-d display] [-p pipe] [-v]\n",
 	    __progname);
 	exit(1);
 }

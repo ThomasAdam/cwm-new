@@ -68,6 +68,7 @@
 #endif
 
 #define	CONFFILE	".cwm-newrc"
+#define CWMPIPE		"/tmp/cwm.pipe"
 #define	WMNAME	 	"CWM"
 
 #define BUTTONMASK	(ButtonPressMask|ButtonReleaseMask)
@@ -391,6 +392,7 @@ extern struct screen_ctx_q		 Screenq;
 extern const char			*homedir;
 extern int				 Randr_ev;
 char					*conf_path;
+char					*cwm_pipe;
 char					 known_hosts[PATH_MAX];
 
 enum {

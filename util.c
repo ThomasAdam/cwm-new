@@ -33,7 +33,6 @@
 #include "parson.h"
 
 #define MAXARGLEN 20
-#define CWM_PIPE_NAME "/tmp/cwm.pipe"
 
 static FILE	*status_fp;
 
@@ -90,15 +89,15 @@ u_init_pipe(void)
 {
 	int	 status_fd = -1;
 
-	unlink(CWM_PIPE_NAME);
+	unlink(cwm_pipe);
 
-	if ((mkfifo(CWM_PIPE_NAME, 0666) == -1)) {
+	if ((mkfifo(cwm_pipe, 0666) == -1)) {
 		log_debug("mkfifo: %s", strerror(errno));
 		return;
 	}
 
-	if ((status_fd = open(CWM_PIPE_NAME, O_RDWR)) == -1)
-		log_debug("Couldn't open pipe '%s': %s", CWM_PIPE_NAME,
+	if ((status_fd = open(cwm_pipe, O_RDWR)) == -1)
+		log_debug("Couldn't open pipe '%s': %s", cwm_pipe,
 			strerror(errno));
 
 	status_fp = fdopen(status_fd, "w");
