@@ -21,10 +21,13 @@ $| = 1;
 my $pipe = "/tmp/cwm.pipe";
 
 # If there are no pipes, that's OK.
-exit unless -e $pipe;
+unless (-e $pipe) {
+	warn "No pipe found ($pipe) - exiting.\n";
+	exit;
+}
 
 my %scr_map;
-my $last_clock_line;
+my $last_clock_line = '';
 my %reply_map;
 
 sub query_xrandr
@@ -139,7 +142,7 @@ sub process_line
 			while (my $line = <$pipe_fh>) {
 				chomp $line;
 				if ($line =~ s/^clock://) {
-					$last_clock_line = $line;
+					$last_clock_line = $line // '';
 				} else {
 					my $json;
 					eval {
