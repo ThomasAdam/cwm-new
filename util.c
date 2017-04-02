@@ -108,18 +108,35 @@ void
 u_put_status(void)
 {
 	struct screen_ctx	*sc;
-	struct client_ctx	*cc = client_current(), *ci;
+	struct client_ctx	*cc = client_current(), *ci, fakecc;
 	struct group_ctx	*gc;
 	JSON_Value		*json_root = json_value_init_object();
 	JSON_Object		*json_obj = json_object(json_root);
 	JSON_Array		*clients = NULL;
 	char			*json_out_str;
+	const char		*default_scr;
 	char			 key[1024], scr_key[1024];
+	int			 ptr_x, ptr_y;
+	Window			 root;
+
+	if (cc == NULL) {
+		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
+		xu_ptr_getpos(root, &ptr_x, &ptr_y);
+		cc = &fakecc;
+		cc->sc = screen_find_screen(ptr_x, ptr_y);
+
+		default_scr = cc->sc->name;
+		cc = NULL;
+	} else
+		default_scr = cc->sc->name;
 
 	json_object_set_number(json_obj, "version", 1);
 	/* Go through all groups, and all clients on those groups, and report
 	 * back information about the state of both.
 	 */
+
+	snprintf(key, sizeof key, "current_screen");
+	json_object_dotset_string(json_obj, key, default_scr);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		snprintf(scr_key, sizeof scr_key, "screens.%s", sc->name);
