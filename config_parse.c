@@ -422,8 +422,6 @@ config_internalise(cfg_t *cfg)
 		sc_sec = cfg_getnsec(cfg, "screen", i);
 		sc_sec_title = cfg_title(sc_sec);
 
-		fprintf(stderr, "TITLE: %s\n", sc_sec_title);
-
 		if (sc_sec_title != NULL) {
 			if (strcmp(sc_sec_title, "*") == 0) {
 				/* Applies to all screens. */
