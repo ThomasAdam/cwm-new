@@ -74,6 +74,13 @@ client_data_extend(struct client_ctx *cc)
 	cc->geom.w = w;
 	cc->geom.h = h;
 	cc->extended_data = 1;
+
+	client_getsizehints(cc);
+	client_applysizehints(cc);
+
+	log_debug("%s: %s (%p): x: %d, y: %d, w: %d, h: %d",
+		__func__, cc->name, cc, cc->geom.x, cc->geom.y, cc->geom.w,
+		cc->geom.h);
 }
 
 void
@@ -101,6 +108,7 @@ client_scan_for_windows(void)
 					client_setactive(cc);
 			}
 		}
+		client_data_extend(cc);
 
 		XFree(wins);
 	}
@@ -445,9 +453,14 @@ client_snap(struct client_ctx *cc, int dir)
 
 	cc->geom.x = x;
 	cc->geom.y = y;
+
 	client_move(cc);
 	client_record_geom(cc);
 	client_ptrwarp(cc);
+
+	log_debug("%s: %s (%p): x: %d, y: %d, w: %d, h: %d\n",
+		__func__, cc->name, cc, cc->geom.x, cc->geom.y, cc->geom.w,
+		cc->geom.h);
 }
 
 struct client_ctx *
@@ -552,7 +565,7 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 {
 	struct geom		 win_geom;
 	struct screen_ctx	*sc;
-	struct client_ctx	*ci;
+	struct client_ctx	*ci, *cc_use;
 	int			 cc_x, cc_y, cc_end_x, cc_end_y;
 	int			 ci_x, ci_y, ci_end_x, ci_end_y;
 	int			 new_x1, new_x2;
@@ -570,6 +583,9 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 		if (ci == cc)
 			continue;
+
+		client_getsizehints(ci);
+		client_applysizehints(ci);
 
 		win_geom = ci->geom;
 
@@ -595,10 +611,23 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 				 */
 				new_x2 = ci_x;
 			}
+			cc_use = ci;
 		}
 	}
 	new_geom->w = (new_x2 - new_x1) - cc->bwidth * 2;
 	new_geom->x = new_x1;
+
+	if (cc_use == NULL)
+		return;
+
+	if (OVERLAP(new_geom->w, new_geom->x, cc_use->geom.w, cc_use->geom.x)) {
+		new_geom->w += cc->bwidth * 2;
+		new_geom->x -= cc->bwidth * 2;
+	}
+	if (OVERLAP(new_geom->x, new_geom->w, cc_use->geom.x, cc_use->geom.w)) {
+		new_geom->w -= cc->bwidth * 2;
+		new_geom->x += cc->bwidth * 2;
+	}
 }
 
 static void
@@ -606,7 +635,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 {
 	struct geom		 win_geom;
 	struct screen_ctx	*sc;
-	struct client_ctx	*ci;
+	struct client_ctx	*ci, *cc_use;
 	int			 cc_x, cc_y, cc_end_x, cc_end_y;
 	int			 ci_x, ci_y, ci_end_x, ci_end_y;
 	int			 new_y1, new_y2;
@@ -626,6 +655,9 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 		if (ci == cc)
 			continue;
 
+		client_getsizehints(ci);
+		client_applysizehints(ci);
+
 		win_geom = ci->geom;
 
 		ci_x = win_geom.x;
@@ -643,10 +675,24 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 			{
 				new_y2 = ci_y;
 			}
+			cc_use = ci;
 		}
 	}
+
 	new_geom->h = (new_y2 - new_y1) - cc->bwidth * 2;
 	new_geom->y = new_y1;
+
+	if (cc_use == NULL)
+		return;
+
+	if (OVERLAP(new_geom->y, new_geom->h, cc_use->geom.y, cc_use->geom.h)) {
+		new_geom->h += cc->bwidth * 2;
+		new_geom->y -= cc->bwidth * 2;
+	}
+	if (OVERLAP(new_geom->h, new_geom->y, cc_use->geom.h, cc_use->geom.y)) {
+		new_geom->y += cc->bwidth * 2;
+		new_geom->h -= cc->bwidth * 2;
+	}
 }
 
 void
@@ -654,8 +700,6 @@ client_expand(struct client_ctx *cc)
 {
 	struct config_group	*cgrp = cc->group->config_group;
 	struct geom		 new_geom;
-
-	log_debug("%s: Expanding client on screen '%s'", __func__, cc->sc->name);
 
 	if (cc->flags & CLIENT_FREEZE)
 		return;
@@ -665,27 +709,9 @@ client_expand(struct client_ctx *cc)
 		cc->geom = cc->savegeom;
 		cc->bwidth = cgrp->bwidth;
 
-		/* Don't allow to overrun boundaries. */
-		{
-			struct geom	 scedge = cc->sc->work;
-			scedge.w += scedge.x - cgrp->bwidth * 2;
-			scedge.h += scedge.y - cgrp->bwidth * 2;
+		client_getsizehints(cc);
+		client_applysizehints(cc);
 
-			if (cc->geom.x + cc->geom.y >= scedge.w)
-				cc->geom.x = scedge.w - cc->geom.w;
-			if (cc->geom.x < scedge.x) {
-				cc->geom.x = scedge.x;
-				cc->geom.w = MIN(cc->geom.w,
-						(scedge.w - scedge.x));
-			}
-			if (cc->geom.y + cc->geom.h >= scedge.h)
-				cc->geom.y = scedge.h - cc->geom.h;
-			if (cc->geom.y < scedge.y) {
-				cc->geom.y = scedge.y;
-				cc->geom.h = MIN(cc->geom.h,
-						(scedge.h - scedge.y));
-			}
-		}
 		goto resize;
 	} else {
 		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
@@ -696,7 +722,7 @@ client_expand(struct client_ctx *cc)
 	client_expand_vert(cc, &new_geom);
 
 	memcpy(&cc->geom, &new_geom, sizeof(new_geom));
-	cc->extended_data = 0;
+
         cc->flags |= CLIENT_EXPANDED;
 
 resize:
