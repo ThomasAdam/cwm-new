@@ -59,6 +59,7 @@ screen_maybe_init_randr(void)
 	XRRScreenResources	*screen_res;
         XRROutputInfo		*oinfo;
         XRRCrtcInfo		*crtc_info;
+	RROutput		 rr_output;
 	struct screen_ctx	*sc;
 	struct geom		 size;
         int			 iscres, i;
@@ -73,25 +74,41 @@ screen_maybe_init_randr(void)
 
 	if (screen_res != NULL && screen_res->noutput == 0) {
 		/* Single screen only. */
+		log_debug("noutput: %d - trying to create single_screen",
+			screen_res->noutput);
 		XRRFreeScreenResources(screen_res);
 		goto single_screen;
 	}
 
-        for (iscres = screen_res->noutput; iscres > 0; iscres--) {
-            oinfo = XRRGetOutputInfo (X_Dpy, screen_res,
-		screen_res->outputs[iscres]);
+        for (iscres = 0; iscres < screen_res->ncrtc; iscres++) {
+	    crtc_info = XRRGetCrtcInfo(X_Dpy, screen_res,
+		screen_res->crtcs[iscres]);
 
-	    if (oinfo == NULL)
+	    if (crtc_info->noutput == 0) {
+		    log_debug("Screen '%s' found, but no crtc info present",
+			oinfo->name);
+		    XRRFreeCrtcInfo(crtc_info);
 		    continue;
+	    }
+
+	    rr_output = crtc_info->outputs[0];
+
+            oinfo = XRRGetOutputInfo (X_Dpy, screen_res, rr_output);
+
+	    if (oinfo == NULL) {
+		    log_debug("Tried to find monitor '%d' but no oinfo present",
+			iscres);
+		    continue;
+	    }
 
 	    /* If the display isn't registered then move on to the next. */
-	    if (oinfo->connection != RR_Connected)
+	    if (oinfo->connection != RR_Connected) {
+		    log_debug("Tried to create monitor '%s' but not connected",
+			oinfo->name);
+		    XRRFreeOutputInfo(oinfo);
+		    XRRFreeCrtcInfo(crtc_info);
 		    continue;
-
-	    crtc_info = XRRGetCrtcInfo(X_Dpy, screen_res, oinfo->crtc);
-
-	    if (crtc_info == NULL)
-		    continue;
+	    }
 
 	    sc = xcalloc(1, sizeof(*sc));
 	    size.x = crtc_info->x;
@@ -108,8 +125,10 @@ screen_maybe_init_randr(void)
         XRRFreeScreenResources(screen_res);
 
 single_screen:
-	if (no_of_screens > 1)
+	if (no_of_screens >= 1) {
+		log_debug("Request single_screen but > 1 screen.  Skipping...");
 		goto out;
+	}
 
 	sc = xcalloc(1, sizeof(*sc));
 	sc->which = DefaultScreen(X_Dpy);
