@@ -11,4 +11,4 @@ pipe="/tmp/cwm.pipe"
 
 conky -d -c ${PWD}/.conkyrc > "$pipe"
 
-./read_status.pl | ./barpanel | lemonbar -g x16 -p -d -B'#0000FF' -u2
+./read_status.pl | lemonbar -g x16 -p -d -B'#0000FF' -u2

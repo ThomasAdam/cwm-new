@@ -18,7 +18,7 @@ pad_percents 1
 #|^fg(\#00FFC8)MPD: ^fg(\#00B7FF)${mpd_smart 28}: ${mpd_bar} (${mpd_percent}%)^fg() | \
 #clock:%{B\#4ECC4E}[CPU: ${cpubar cpu0 11,12}]%{B-} \
 TEXT
-clock:%{B\#4ECC4E}[CPU: ${cpu cpu0 11,12}]%{B-} \
+clock:%{r}%{B-}%{U\#00FFFF}%{+u}%{+o}%{B\#4ECC4E}[CPU: ${cpu cpu0 11,12}]%{B-} \
 %{B\#66B2FF}[MEM:  ${mem}]%{B-} \
 %{B\#D68C5A}[AVG:  ${loadavg 1}]%{B-} \
-%{B\#BF4356}[${time %b %d %H:%M:%S}]%{B-}
+%{B\#BF4356}[${time %b %d %H:%M:%S}]%{B-}%{-u}%{-o}

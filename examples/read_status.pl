@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # A very crude example how to turn status output from CWM in to something
 # that can be interpreted by lemonbar.
@@ -24,16 +24,11 @@ my $pipe = "/tmp/cwm.pipe";
 exit unless -e $pipe;
 
 my %scr_map;
+my $last_clock_line;
+my %reply_map;
 
 sub query_xrandr
 {
-	my $opts = {
-		'-p'	=> '',
-		'-d'	=> '',
-		'-B'	=> '#0000FF',
-		'-u'	=> 2,
-	};
-
 	my %lb = (
 		'global_monitor' => {
 			screen => '',
@@ -42,29 +37,11 @@ sub query_xrandr
 	);
 
 	open(my $fh, '-|', 'xrandr -q') or die $!;
-	my $screen_num = -1;
 	while (my $line = <$fh>) {
 		if ($line =~ /(.*?)\s+connected\s*(.*?)\s+/) {
 			my $output = $1;
-			my $geom = $2;
-
-			$screen_num++;
-
-			# Taking the geometry string, rearrange it slightly so that it's
-			# the correct width for lemonbar.  The placement part (x,y) is
-			# more useful to us.
-			my ($w, $h, $x, $y) = ($geom =~ /(\d+)x(\d+)\+(\d+)\+(\d+)/);
-
-			$opts->{'-g'} = "${w}x16+${x}+${y}";
-
 			$lb{$output} = {
-				# "clone" this each time, so we have a separate copy when
-				# adding it to this has.
-				data	=> { %$opts },
-
-				# In parsing this output, we assume RandR is ordering these
-				# screens in a defined order!
-				screen	=> $screen_num,
+				screen  => $output,
 			}
 		}
 	}
@@ -79,21 +56,16 @@ sub format_output
         my $skip_all_but_global = 0;
 
         if (exists $data->{'screens'}->{'global_monitor'} and
-            (exists $scr_map{'global_monitor'} and scalar keys %scr_map >=2)) {
+            (exists $scr_map{'global_monitor'} and scalar keys %scr_map >= 1)) {
 
-            # FIXME: Bug in CWM's RandR detection means it hasn't picked up a
-            # legitimate output, yet xrandr(1) will have found it.  In this
-            # case, CWM will be falling back to using the builtin
-            # 'global_monitor' which we must therefore use.
-            $skip_all_but_global = 1;
+	    delete $data->{'screens'}->{'global_monitor'};
             $scr_map{'global_monitor'}->{'screen'} = 0;
         }
 
 	foreach my $screen  (keys %{ $data->{'screens'} }) {
-                next if $skip_all_but_global and $screen ne 'global_monitor';
 		my $extra_msg = '';
 		my $extra_urgent = '';
-		my $msg = "%{S$scr_map{$screen}->{'screen'}}";
+		my $msg = "%{Sn$screen}";
 
 		my $scr_h = $data->{'screens'}->{$screen};
 
@@ -148,7 +120,7 @@ sub format_output
 			$msg .= "%{c}%{U#00FF00}%{+u}%{+o}%{B#AC59FF}%{F-}" .
 				"        " . $cc . "        " .  "%{-u}%{-o}%{B-}";
 		}
-		print $msg, "\n";
+		$reply_map{$screen} = $msg;
 	}
 }
 
@@ -165,8 +137,9 @@ sub process_line
 	while (my @ready = $select->can_read()) {
 		foreach my $fd (@ready) {
 			while (my $line = <$pipe_fh>) {
-				if ($line =~ /^clock:/) {
-					print $line, "\n";
+				chomp $line;
+				if ($line =~ s/^clock://) {
+					$last_clock_line = $line;
 				} else {
 					my $json;
 					eval {
@@ -178,15 +151,13 @@ sub process_line
 					}
 					format_output(from_json($line));
 				}
+				foreach my $scr_key (keys %reply_map) {
+					print "$reply_map{$scr_key}$last_clock_line\n";
+				}
 			}
 		}
 	}
 }
 
-my %opts = %{ query_xrandr() };
-%scr_map = map {
-	$_ => {
-		screen => $opts{$_}->{'screen'},
-	} }keys (%opts);
-
+%scr_map = %{ query_xrandr() };
 process_line($pipe);
