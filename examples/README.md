@@ -20,5 +20,13 @@ In this directory are a few files:
 `./config`
 * Example config(s)
 
+In order to support RandR correctly, a forked version of Lemonbar is needed.
+The version lives on the `ta/keep-output-monitor` see:
+
+https://github.com/ThomasAdam/bar/tree/ta/keep-output-monitor
+
+Compiling this should replace any othe version of `lemonbar` which might be in
+use.
+
 **It is expected that `panel` should be changed to match the path of the
 other scripts.  Currently, $PWD (./) is assumed.**
