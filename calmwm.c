@@ -112,9 +112,9 @@ main(int argc, char **argv)
 		conf_path = xstrdup(conf_file);
 
 	if (pipe_name == NULL)
-		cwm_pipe = xstrdup(CWMPIPE);
-	else
 		cwm_pipe = xstrdup(pipe_name);
+	else
+		cwm_pipe = xstrdup(CWMPIPE);
 
 	if (access(conf_path, R_OK) != 0) {
 		free(conf_path);
