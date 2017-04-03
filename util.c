@@ -96,11 +96,18 @@ u_init_pipe(void)
 		return;
 	}
 
-	if ((status_fd = open(cwm_pipe, O_RDWR)) == -1)
+	if ((status_fd = open(cwm_pipe, O_RDWR|O_NONBLOCK)) == -1) {
 		log_debug("Couldn't open pipe '%s': %s", cwm_pipe,
 			strerror(errno));
+		return;
+	}
 
-	status_fp = fdopen(status_fd, "w");
+	if ((status_fp = fdopen(status_fd, "w")) == NULL) {
+		log_debug("Error opening pipe: %s", strerror(errno));
+		return;
+	}
+
+	log_debug("Pipe opened: %s (fd: %d)", cwm_pipe, fileno(status_fp));
 }
 
 void
