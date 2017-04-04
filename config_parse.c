@@ -100,6 +100,7 @@ cfg_opt_t	 client_opts[] = {
 	"key 4S-Left	{command = snapleft}"		\
 	"key 4S-Right	{command = snapright}"		\
 	"key 4S-Up	{command = snapup}"		\
+	"key C-Return   {command = expand}"		\
 	"key C-Down	{command = ptrmovedown}"	\
 	"key C-Left	{command = ptrmoveleft}"	\
 	"key C-Right	{command = ptrmoveright}"	\
