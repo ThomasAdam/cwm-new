@@ -191,4 +191,7 @@ u_put_status(void)
 	json_out_str = json_serialize_to_string(json_root);
 	fprintf(status_fp, "%s\n", json_out_str);
 	fflush(status_fp);
+
+	json_value_free(json_root);
+	json_free_serialized_string(json_out_str);
 }
