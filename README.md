@@ -24,7 +24,7 @@ Current features which differ from cwm are:
 * group0 is no longer special, it's just another group;
   * Toggling all groups is available as a command.
   * Groups are per RandR output, and are separate for each output;
-  * Status output sent to a named FIFO (/tmp/cwm-$PID_OF_CWM.fifo):
+  * Status output sent to a named FIFO (`/tmp/cwm.fifo`):
     * Can be parsed and used with dzen2/lemonbar, for instance, check the
 	  [read_status.pl](examples/read_status.pl) file for an example of this.
 

@@ -35,6 +35,8 @@
 
 #include "calmwm.h"
 
+#define LOGFILE_NAME "cwm-new.log"
+
 Display				*X_Dpy;
 Time				 Last_Event_Time = CurrentTime;
 Atom				 cwmh[CWMH_NITEMS];
@@ -62,7 +64,7 @@ main(int argc, char **argv)
 	int		 ch;
 	struct passwd	*pw;
 	bool		 open_logfile = false;
-	char		*logfile_name, *pipe_name;
+	char		*pipe_name;
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		warnx("no locale support");
@@ -93,9 +95,7 @@ main(int argc, char **argv)
 		err(1, "signal");
 
 	if (open_logfile) {
-		xasprintf(&logfile_name, "cwm-new-%ld.log", (long)getpid());
-		log_open(logfile_name);
-		free(logfile_name);
+		log_open(LOGFILE_NAME);
 	}
 
 	if ((homedir = getenv("HOME")) == NULL || *homedir == '\0') {

@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "calmwm.h"
 
@@ -34,6 +35,8 @@ static void	 log_vwrite(const char *, va_list);
 void
 log_open(const char *path)
 {
+	time_t	 now;
+
 	log_file = fopen(path, "w");
 	if (log_file == NULL)
 		return;
@@ -41,6 +44,9 @@ log_open(const char *path)
 	setvbuf(log_file, NULL, _IOLBF, 0);
 
 	tzset();
+
+	now = time(NULL);
+	log_debug("Log started: %s", ctime(&now));
 }
 
 /* Close logging. */
