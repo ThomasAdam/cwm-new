@@ -565,7 +565,7 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 {
 	struct geom		 win_geom;
 	struct screen_ctx	*sc;
-	struct client_ctx	*ci, *cc_use;
+	struct client_ctx	*ci;
 	int			 cc_x, cc_y, cc_end_x, cc_end_y;
 	int			 ci_x, ci_y, ci_end_x, ci_end_y;
 	int			 new_x1, new_x2;
@@ -573,7 +573,7 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 	sc = cc->sc;
 
 	new_x1 = sc->work.x;
-	new_x2 = new_x1 + sc->work.w;
+	new_x2 = new_x1 + sc->work.w - cc->bwidth * 2;
 
 	cc_x = new_geom->x;
 	cc_y = new_geom->y;
@@ -584,14 +584,11 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 		if (ci == cc)
 			continue;
 
-		client_getsizehints(ci);
-		client_applysizehints(ci);
-
 		win_geom = ci->geom;
 
-		ci_x = win_geom.x;
+		ci_x = win_geom.x + cc->bwidth * 2;
 		ci_y = win_geom.y;
-		ci_end_x = (ci_x + win_geom.w) + cc->bwidth * 2;
+		ci_end_x = ci_x + win_geom.w - cc->bwidth * 2;
 		ci_end_y = ci_y + win_geom.h;
 
 		/* Check to see if the client is the same Y axis. */
@@ -602,32 +599,19 @@ client_expand_horiz(struct client_ctx *cc, struct geom *new_geom)
 				/* Expand up to the window, including the
 				 * border's edge.
 				 */
-				new_x1 = ci_end_x;
+				new_x1 = ci_end_x + cc->bwidth * 2;
 			}
 			else if ((cc_end_x <= ci_x) && (new_x2 >= ci_x))
 			{
 				/* Shrink back to the top of the border,
 				 * outside of its width so we don't overlap.
 				 */
-				new_x2 = ci_x;
+				new_x2 = ci_x - cc->bwidth * 4;
 			}
-			cc_use = ci;
 		}
 	}
-	new_geom->w = (new_x2 - new_x1) - cc->bwidth * 2;
+	new_geom->w = new_x2 - new_x1;
 	new_geom->x = new_x1;
-
-	if (cc_use == NULL)
-		return;
-
-	if (OVERLAP(new_geom->w, new_geom->x, cc_use->geom.w, cc_use->geom.x)) {
-		new_geom->w += cc->bwidth * 2;
-		new_geom->x -= cc->bwidth * 2;
-	}
-	if (OVERLAP(new_geom->x, new_geom->w, cc_use->geom.x, cc_use->geom.w)) {
-		new_geom->w -= cc->bwidth * 2;
-		new_geom->x += cc->bwidth * 2;
-	}
 }
 
 static void
@@ -635,7 +619,7 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 {
 	struct geom		 win_geom;
 	struct screen_ctx	*sc;
-	struct client_ctx	*ci, *cc_use;
+	struct client_ctx	*ci;
 	int			 cc_x, cc_y, cc_end_x, cc_end_y;
 	int			 ci_x, ci_y, ci_end_x, ci_end_y;
 	int			 new_y1, new_y2;
@@ -644,26 +628,23 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 
 	cc_x = new_geom->x;
 	cc_y = new_geom->y;
-	cc_end_x = cc_x + new_geom->w + cc->bwidth * 2;
+	cc_end_x = cc_x + new_geom->w;
 	cc_end_y = cc_y + new_geom->h;
 
 	new_y1 = sc->work.y;
-	new_y2 = new_y1 + sc->work.h;
+	new_y2 = new_y1 + sc->work.h - cc->bwidth * 2;
 
 	/* Go through all clients and move up and down. */
 	TAILQ_FOREACH(ci, &cc->group->clientq, group_entry) {
 		if (ci == cc)
 			continue;
 
-		client_getsizehints(ci);
-		client_applysizehints(ci);
-
 		win_geom = ci->geom;
 
 		ci_x = win_geom.x;
-		ci_y = win_geom.y;
+		ci_y = win_geom.y + cc->bwidth * 2;
 		ci_end_x = ci_x + win_geom.w;
-		ci_end_y = ci_y + win_geom.h;
+		ci_end_y = ci_y + win_geom.h - cc->bwidth * 2;
 
 		if (!((ci_end_x <= cc_x) || (ci_x >= cc_end_x)))
 		{
@@ -675,24 +656,11 @@ client_expand_vert(struct client_ctx *cc, struct geom *new_geom)
 			{
 				new_y2 = ci_y;
 			}
-			cc_use = ci;
 		}
 	}
 
-	new_geom->h = (new_y2 - new_y1) - cc->bwidth * 2;
+	new_geom->h = new_y2 - new_y1;
 	new_geom->y = new_y1;
-
-	if (cc_use == NULL)
-		return;
-
-	if (OVERLAP(new_geom->y, new_geom->h, cc_use->geom.y, cc_use->geom.h)) {
-		new_geom->h += cc->bwidth * 2;
-		new_geom->y -= cc->bwidth * 2;
-	}
-	if (OVERLAP(new_geom->h, new_geom->y, cc_use->geom.h, cc_use->geom.y)) {
-		new_geom->y += cc->bwidth * 2;
-		new_geom->h -= cc->bwidth * 2;
-	}
 }
 
 void
