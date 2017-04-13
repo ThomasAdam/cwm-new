@@ -8,6 +8,9 @@ bindings {
 	key C-Return {
 		command = "expand"
 	}
+	mouse M-3 {
+		command = "window_resize"
+	}
 }
 
 menu {
