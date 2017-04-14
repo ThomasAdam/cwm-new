@@ -140,9 +140,9 @@ group_restack(struct group_ctx *gc)
 void
 group_init(struct screen_ctx *sc, int num)
 {
-	struct group_ctx	*gc;
+	struct group_ctx	*gc = NULL;
 
-	gc = xmalloc(sizeof(*gc));
+	gc = xmalloc(sizeof *gc);
 	gc->config_group = xcalloc(1, sizeof(*gc->config_group));
 	gc->sc = sc;
 	gc->name = xstrdup(num_to_name[num]);
@@ -156,6 +156,8 @@ group_init(struct screen_ctx *sc, int num)
 
 	if (num == 0)
 		group_setactive(gc);
+
+	u_put_status();
 }
 
 void

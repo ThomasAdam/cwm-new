@@ -1028,8 +1028,7 @@ client_urgency(struct client_ctx *cc)
 	if (!(cc->flags & CLIENT_ACTIVE))
 		cc->flags |= CLIENT_URGENCY;
 
-	if (cc->sc != NULL)
-		u_put_status();
+	u_put_status();
 }
 
 void
@@ -1150,8 +1149,7 @@ match:
 		free(wn);
 		cc->nameqlen--;
 	}
-	if (cc->sc != NULL)
-		u_put_status();
+	u_put_status();
 }
 
 void

@@ -192,6 +192,7 @@ u_put_status(void)
 	fprintf(status_fp, "%s\n", json_out_str);
 	fflush(status_fp);
 
-	json_value_free(json_root);
 	json_free_serialized_string(json_out_str);
+	json_object_clear(json_obj);
+	json_value_free(json_root);
 }
