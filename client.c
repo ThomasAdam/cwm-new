@@ -47,8 +47,41 @@ static void			 client_expand_horiz(struct client_ctx *,
 static void			 client_expand_vert(struct client_ctx *,
 					struct geom *);
 static void			 client_remove_geom(struct client_ctx *);
+static struct geom		 client_constrain(struct client_ctx *);
 
 struct client_ctx	*curcc = NULL;
+
+void
+client_log_debug(const char *f, struct client_ctx *cc)
+{
+	struct 	geom	 g = cc->geom;
+	char		 geom_str[1024];
+
+	snprintf(geom_str, sizeof geom_str,
+		"client %p:\n\t"
+		"screen: %s\n\t"
+		"group: %d (%s)\n\t"
+		"name: %s\n\t"
+		"label: %s\n\t"
+		"bwidth: %d\n\t"
+		"geom: {x: %d, y: %d, w: %d, h: %d}",
+		cc, cc->sc->name, cc->group->num, cc->group->name, cc->name,
+		cc->label ? cc->label : "\"\"", cc->bwidth, g.x, g.y, g.w, g.h);
+	log_debug("%s: %s", f, geom_str);
+}
+
+struct geom
+client_constrain(struct client_ctx *cc)
+{
+	struct geom	 g = cc->geom;
+
+	g.x -= cc->bwidth * 2;
+	g.y += cc->bwidth * 2;
+	g.w -= cc->bwidth * 2;
+	g.h += cc->bwidth * 2;
+
+	return (g);
+}
 
 void
 client_data_extend(struct client_ctx *cc)
@@ -77,10 +110,6 @@ client_data_extend(struct client_ctx *cc)
 
 	client_getsizehints(cc);
 	client_applysizehints(cc);
-
-	log_debug("%s: %s (%p): x: %d, y: %d, w: %d, h: %d",
-		__func__, cc->name, cc, cc->geom.x, cc->geom.y, cc->geom.w,
-		cc->geom.h);
 }
 
 void
@@ -684,6 +713,8 @@ client_expand(struct client_ctx *cc)
 	} else {
 		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
 		memcpy(&new_geom, &cc->geom, sizeof(cc->geom));
+
+		client_log_debug(__func__, cc);
 	}
 
 	client_expand_horiz(cc, &new_geom);

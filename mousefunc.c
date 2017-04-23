@@ -166,6 +166,7 @@ mousefunc_client_move(struct client_ctx *cc, union arg *arg)
 			break;
 		case ButtonRelease:
 			client_move(cc);
+			client_log_debug(__func__, cc);
 			client_record_geom(cc);
 			xu_ptr_ungrab();
 			return;

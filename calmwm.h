@@ -490,7 +490,7 @@ void 			 client_vtile(struct client_ctx *);
 void			 client_warp(struct client_ctx *);
 void			 client_wm_hints(struct client_ctx *);
 void			 client_toggle_border(struct client_ctx *);
-
+void			 client_log_debug(const char *, struct client_ctx *);
 void			 group_assign(struct group_ctx *, struct client_ctx *);
 void			 group_alltoggle(struct screen_ctx *);
 void			 group_autogroup(struct client_ctx *);
