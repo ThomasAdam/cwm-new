@@ -29,6 +29,7 @@ clients {
 }
 
 screen "*" {
+	gap = {16,0,0,0}
 	groups {
 		group "*" {
 			color {
