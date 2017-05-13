@@ -13,7 +13,7 @@
 use strict;
 use warnings;
 
-use JSON;
+use JSON::XS;
 use IO::Select;
 
 $| = 1;
@@ -146,13 +146,13 @@ sub process_line
 				} else {
 					my $json;
 					eval {
-						$json = from_json($line);
+						$json = decode_json($line);
 					};
 					if ($@) {
 						warn "Couldn't parse: <<$line>>\n";
 						next;
 					}
-					format_output(from_json($line));
+					format_output(decode_json($line));
 				}
 				foreach my $scr_key (keys %reply_map) {
 					print "$reply_map{$scr_key}$last_clock_line\n";
