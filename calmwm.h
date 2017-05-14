@@ -351,6 +351,7 @@ struct config_screen {
 	Cursor		 cursor[CF_NITEMS];
 	struct gap	 gap;
 	int		 snapdist;
+	char		*font;
 };
 
 struct config_client {

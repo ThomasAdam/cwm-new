@@ -174,6 +174,7 @@ cfg_opt_t	 screen_opts[] = {
 	CFG_SEC("groups", groups_opts, CFGF_NONE),
 	CFG_INT_LIST("gap", "{0,0,0,0}", CFGF_NONE),
 	CFG_INT("snapdist", 0, CFGF_NONE),
+	CFG_STR("font", CONF_FONT, CFGF_NONE),
 	CFG_END()
 };
 
@@ -497,6 +498,7 @@ config_intern_screen(struct config_screen *cs, cfg_t *cfg)
 
 	/* XXX - validation: < 0 > INT_MAX == bad */
 	cs->snapdist = cfg_getint(cfg, "snapdist");
+	cs->font = cfg_getstr(cfg, "font");
 }
 
 void

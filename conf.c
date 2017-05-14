@@ -117,10 +117,11 @@ conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
 	Colormap		 colormap = DefaultColormap(X_Dpy, sc->which);
 	Visual			*visual = DefaultVisual(X_Dpy, sc->which);
 	struct config_group	*cgrp = gc->config_group;
+	struct config_screen	*cscr = sc->config_screen;
 
-	cgrp->xftfont = XftFontOpenXlfd(X_Dpy, sc->which, CONF_FONT);
+	cgrp->xftfont = XftFontOpenXlfd(X_Dpy, sc->which, cscr->font);
 	if (cgrp->xftfont == NULL) {
-		cgrp->xftfont = XftFontOpenName(X_Dpy, sc->which, CONF_FONT);
+		cgrp->xftfont = XftFontOpenName(X_Dpy, sc->which, cscr->font);
 		if (cgrp->xftfont == NULL)
 			log_fatal("XftFontOpenName() failed");
 	}
