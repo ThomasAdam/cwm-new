@@ -28,6 +28,23 @@ Current features which differ from cwm are:
     * Can be parsed and used with dzen2/lemonbar, for instance, check the
 	  [read_status.pl](examples/read_status.pl) file for an example of this.
 
+# Status bar
+
+Although any bar can be used, there have been some improvements to `lemonbar`
+which mean that it's preferred over the official `lemonbar repository`.
+Changes include:
+
+* Xft support
+* Not clearing output on monitors
+* Support for per-screen (RandR) messages.
+
+The [example script](examples/read_status.pl) included with `cwm-new` makes
+use of these features which are not found in the official `lemonbar`
+repository.
+
+For the forked version containing these changes,
+[see this repository](https://github.com/ThomasAdam/bar/tree/ta/keep-output-monitor)
+
 # Screenshot
 
 Obligatory screenshot below!  The bar at the top is lemonbar, with conky
