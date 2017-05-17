@@ -282,7 +282,7 @@ xev_handle_keypress(XEvent *ee)
 			break;
 	}
 
-	if (kb == NULL)
+	if (kb == NULL || kb->callback == NULL)
 		return;
 	if (kb->flags & CWM_WIN) {
 		if (((cc = client_find(e->window)) == NULL) &&
@@ -302,7 +302,8 @@ xev_handle_keypress(XEvent *ee)
 	} else {
 		cc = &fakecc;
 		cc->sc = screen_find(e->window);
-		log_debug("%s: using fake client", __func__);
+		log_debug("%s: using fake client (scr: %s)",
+		    __func__, cc->sc->name);
 	}
 
 	(*kb->callback)(cc, &kb->argument);
