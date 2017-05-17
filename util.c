@@ -164,6 +164,11 @@ u_put_status(void)
 			clients = json_object_dotget_array(json_obj, key);
 
 			TAILQ_FOREACH(ci, &gc->clientq, group_entry) {
+				/* Sticky clients are in all groups, so don't
+				 * count it here.
+				 */
+				if (ci->flags & CLIENT_STICKY)
+					continue;
 				json_array_append_string(clients, ci->name);
 				snprintf(key, sizeof key, "%s.groups.%s.%s",
 						scr_key, gc->name, "is_urgent");
