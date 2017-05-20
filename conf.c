@@ -218,7 +218,7 @@ conf_client(struct client_ctx *cc)
 	cc->bwidth = cc->group->config_group->bwidth;
 
 	TAILQ_FOREACH(wn, &ignoreq, entry) {
-		if (strncasecmp(wn->name, cc->name, strlen(wn->name)) == 0) {
+		if (strcmp(wn->name, cc->name) == 0) {
 			ignore = true;
 			break;
 		}
