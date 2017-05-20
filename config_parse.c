@@ -326,7 +326,7 @@ config_intern_clients(cfg_t *cfg)
 		clients_sec = cfg_getnsec(cfg, "clients", i);
 
 		for (j = 0; j < cfg_size(clients_sec, "client"); j++) {
-			c_sec = cfg_getnsec(clients_sec, "client", i);
+			c_sec = cfg_getnsec(clients_sec, "client", j);
 
 			client_title = cfg_title(c_sec);
 			ctitle = (char *)client_title;
