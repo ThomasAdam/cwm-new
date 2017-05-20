@@ -17,9 +17,9 @@ use JSON::XS;
 use IO::Select;
 
 $| = 1;
+binmode STDOUT, ':encoding(UTF-8)';
 
 my $pipe = "/tmp/cwm.pipe";
-
 # If there are no pipes, that's OK.
 unless (-e $pipe) {
 	warn "No pipe found ($pipe) - exiting.\n";
