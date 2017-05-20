@@ -69,6 +69,7 @@ conf_cmd_remove(const char *name)
 		}
 	}
 }
+
 void
 conf_autogroup(int num, const char *name, const char *class)
 {
