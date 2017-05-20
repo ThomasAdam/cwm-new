@@ -1,7 +1,7 @@
 # cwm-new
 
 [![Build
-Status](https://travis-ci.org/ThomasAdam/cwm.svg?branch=new)](https://travis-ci.org/ThomasAdam/cwm)
+Status](https://travis-ci.org/ThomasAdam/cwm-new.svg?branch=new)](https://travis-ci.org/ThomasAdam/cwm-new)
 
 This is a working title for what will become a new window manager.  Ideas
 for a name are welcome.
