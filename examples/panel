@@ -1,11 +1,14 @@
 #!/bin/bash
 
-pkill -0 panel || {
-	echo "panel is already running" >&2
-	exit 1
-}
+pfile=${TMPDIR:-/tmp}/cwm-panel.pid
 
-trap 'trap - TERM; kill 0' INT TERM EXIT QUIT
+[ -f $pfile ] && kill -0 $(<$pfile) && {
+	echo "Already running..."
+	pkill -P $(<$pfile)
+	exit
+} || {
+	echo $$ > $pfile
+}
 
 pipe="/tmp/cwm.pipe"
 
@@ -14,6 +17,10 @@ pipe="/tmp/cwm.pipe"
 this_dpi=$(xdpyinfo | \
 	perl -wane '/resolution:\s+(?:(\d+)x(?:\d+))/ and print $1;')
 
+# Assume we last started conky.  Probably not ideal; we could go down the
+# route of tracking the PID if it's a problem.
+recent_conky=$(pgrep -n conky)
+kill $recent_conky
 conky -d -c ${PWD}/.conkyrc > "$pipe"
 
 font_opts=""
