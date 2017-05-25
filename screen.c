@@ -221,6 +221,12 @@ screen_init_contents(void)
 	screen_apply_ewmh();
 	config_parse();
 	client_scan_for_windows();
+
+	/* Run the panel command for each screen. */
+	TAILQ_FOREACH(sc, &Screenq, entry) {
+		if (sc->config_screen->panel_cmd != NULL)
+			u_spawn(sc->config_screen->panel_cmd);
+	}
 }
 
 struct screen_ctx *

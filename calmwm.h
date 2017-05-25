@@ -352,6 +352,7 @@ struct config_screen {
 	struct gap	 gap;
 	int		 snapdist;
 	char		*font;
+	char		*panel_cmd;
 };
 
 struct config_client {
