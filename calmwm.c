@@ -59,12 +59,12 @@ int
 main(int argc, char **argv)
 {
 	extern char	*__progname;
-	char		*conf_file, *display_name = NULL;
+	char		*conf_file = NULL, *display_name = NULL;
 	char		**cwm_argv;
 	int		 ch;
 	struct passwd	*pw;
 	bool		 open_logfile = false;
-	char		*pipe_name;
+	char		*pipe_name = NULL;
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		warnx("no locale support");
