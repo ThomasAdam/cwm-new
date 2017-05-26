@@ -116,7 +116,7 @@ void
 client_scan_for_windows(void)
 {
 	struct screen_ctx	*sc;
-	struct client_ctx	*cc;
+	struct client_ctx	*cc = NULL;
 	Window			*wins, w0, w1, root;
 	unsigned int		 i, nwins;
 	int			 ptr_x, ptr_y;

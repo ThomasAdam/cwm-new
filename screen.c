@@ -85,8 +85,7 @@ screen_maybe_init_randr(void)
 		screen_res->crtcs[iscres]);
 
 	    if (crtc_info->noutput == 0) {
-		    log_debug("Screen '%s' found, but no crtc info present",
-			oinfo->name);
+		    log_debug("Screen found, but no crtc info present");
 		    XRRFreeCrtcInfo(crtc_info);
 		    continue;
 	    }
