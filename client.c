@@ -47,7 +47,6 @@ static void			 client_expand_horiz(struct client_ctx *,
 static void			 client_expand_vert(struct client_ctx *,
 					struct geom *);
 static void			 client_remove_geom(struct client_ctx *);
-static struct geom		 client_constrain(struct client_ctx *);
 
 struct client_ctx	*curcc = NULL;
 
@@ -68,19 +67,6 @@ client_log_debug(const char *f, struct client_ctx *cc)
 		cc, cc->sc->name, cc->group->num, cc->group->name, cc->name,
 		cc->label ? cc->label : "\"\"", cc->bwidth, g.x, g.y, g.w, g.h);
 	log_debug("%s: %s", f, geom_str);
-}
-
-struct geom
-client_constrain(struct client_ctx *cc)
-{
-	struct geom	 g = cc->geom;
-
-	g.x -= cc->bwidth * 2;
-	g.y += cc->bwidth * 2;
-	g.w -= cc->bwidth * 2;
-	g.h += cc->bwidth * 2;
-
-	return (g);
 }
 
 void
