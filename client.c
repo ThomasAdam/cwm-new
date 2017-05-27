@@ -96,6 +96,7 @@ client_data_extend(struct client_ctx *cc)
 
 	client_getsizehints(cc);
 	client_applysizehints(cc);
+	client_log_debug(__func__, cc);
 }
 
 void
