@@ -5,10 +5,9 @@ pfile=${TMPDIR:-/tmp}/cwm-panel.pid
 [ -f $pfile ] && kill -0 $(<$pfile) && {
 	echo "Already running..."
 	pkill -P $(<$pfile)
-	exit
-} || {
-	echo $$ > $pfile
 }
+
+echo $$ > $pfile
 
 pipe="/tmp/cwm.pipe"
 
