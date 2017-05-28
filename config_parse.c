@@ -229,8 +229,9 @@ config_apply(void)
 		TAILQ_FOREACH(gc, &sc->groupq, entry) {
 			conf_screen(sc, gc);
 		}
-		conf_grab_kbd(sc->rootwin);
 	}
+	sc = TAILQ_FIRST(&Screenq);
+	conf_grab_kbd(sc->rootwin);
 }
 
 static void
@@ -278,7 +279,6 @@ config_intern_bindings(cfg_t *cfg)
 		}
 
 	}
-	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 static void
@@ -296,7 +296,7 @@ config_default(cfg_t *cfg, bool include_default_config)
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 
-		goto grab;
+		return;
 	}
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
@@ -309,8 +309,6 @@ config_default(cfg_t *cfg, bool include_default_config)
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 	}
-grab:
-	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 }
 
 static void
