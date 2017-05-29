@@ -553,8 +553,8 @@ config_parse(void)
 	TAILQ_INIT(&mousebindingq);
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&autogroupq);
-	TAILQ_INIT(&cmdq);
 	TAILQ_INIT(&ruleq);
+	TAILQ_INIT(&cmdpathq);
 
 	(void)snprintf(known_hosts, sizeof(known_hosts), "%s/%s",
 	    homedir, ".ssh/known_hosts");

@@ -181,17 +181,17 @@ void
 kbfunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
-	struct cmd		*cmd;
+	struct cmd_path		*cmd_p;
 	struct menu		*mi;
 	struct menu_q		 menuq;
 
 	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cmd, &cmdq, entry)
-		menuq_add(&menuq, cmd, "%s", cmd->name);
+	TAILQ_FOREACH(cmd_p, &cmdpathq, entry)
+		menuq_add(&menuq, cmd_p, "%s", cmd_p->name);
 
 	if ((mi = menu_filter(sc, &menuq, "application", NULL, 0,
 	    search_match_text, NULL)) != NULL)
-		u_spawn(((struct cmd *)mi->ctx)->path);
+		u_spawn(((struct cmd_path *)mi->ctx)->path);
 
 	menuq_clear(&menuq);
 }
@@ -246,22 +246,22 @@ kbfunc_cmdexec(struct client_ctx *cc, union arg *arg)
 void
 kbfunc_term(struct client_ctx *cc, union arg *arg)
 {
-	struct cmd *cmd;
+	struct cmd_path	*cmd_p;
 
-	TAILQ_FOREACH(cmd, &cmdq, entry) {
-		if (strcmp(cmd->name, "term") == 0)
-			u_spawn(cmd->path);
+	TAILQ_FOREACH(cmd_p, &cmdpathq, entry) {
+		if (strcmp(cmd_p->name, "term") == 0)
+			u_spawn(cmd_p->path);
 	}
 }
 
 void
 kbfunc_lock(struct client_ctx *cc, union arg *arg)
 {
-	struct cmd *cmd;
+	struct cmd_path	*cmd_p;
 
-	TAILQ_FOREACH(cmd, &cmdq, entry) {
-		if (strcmp(cmd->name, "lock") == 0)
-			u_spawn(cmd->path);
+	TAILQ_FOREACH(cmd_p, &cmdpathq, entry) {
+		if (strcmp(cmd_p->name, "lock") == 0)
+			u_spawn(cmd_p->path);
 	}
 }
 
@@ -356,7 +356,7 @@ void
 kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
-	struct cmd		*cmd;
+	struct cmd_path		*cmd_p;
 	struct menu		*mi;
 	struct menu_q		 menuq;
 	FILE			*fp;
@@ -371,8 +371,8 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 		return;
 	}
 
-	TAILQ_FOREACH(cmd, &cmdq, entry) {
-		if (strcmp(cmd->name, "term") == 0)
+	TAILQ_FOREACH(cmd_p, &cmdpathq, entry) {
+		if (strcmp(cmd_p->name, "term") == 0)
 			break;
 	}
 
@@ -409,7 +409,7 @@ kbfunc_ssh(struct client_ctx *cc, union arg *arg)
 		if (mi->text[0] == '\0')
 			goto out;
 		l = snprintf(path, sizeof(path), "%s -T '[ssh] %s' -e ssh %s",
-		    cmd->path, mi->text, mi->text);
+		    cmd_p->path, mi->text, mi->text);
 		if (l == -1 || l >= sizeof(path))
 			goto out;
 		u_spawn(path);

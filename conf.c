@@ -179,33 +179,34 @@ static const struct {
 int
 conf_cmd_add(const char *name, const char *path)
 {
-	struct cmd	*cmd;
+	struct cmd_path	*cmd_p;
 
-	cmd = xcalloc(1, sizeof *cmd);
+	cmd_p = xcalloc(1, sizeof *cmd_p);
 
-	cmd->name = xstrdup(name);
-	if (strlcpy(cmd->path, path, sizeof(cmd->path)) >= sizeof(cmd->path)) {
-		free(cmd->name);
-		free(cmd);
+	cmd_p->name = xstrdup(name);
+	if (strlcpy(cmd_p->path, path, sizeof(cmd_p->path)) >=
+	    sizeof(cmd_p->path)) {
+		free(cmd_p->name);
+		free(cmd_p);
 		return(0);
 	}
 
 	conf_cmd_remove(name);
 
-	TAILQ_INSERT_TAIL(&cmdq, cmd, entry);
+	TAILQ_INSERT_TAIL(&cmdpathq, cmd_p, entry);
 	return(1);
 }
 
 static void
 conf_cmd_remove(const char *name)
 {
-	struct cmd	*cmd = NULL, *cmdnxt;
+	struct cmd_path	*cmd_p = NULL, *cmdnxt_p;
 
-	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmdnxt) {
-		if (strcmp(cmd->name, name) == 0) {
-			TAILQ_REMOVE(&cmdq, cmd, entry);
-			free(cmd->name);
-			free(cmd);
+	TAILQ_FOREACH_SAFE(cmd_p, &cmdpathq, entry, cmdnxt_p) {
+		if (strcmp(cmd_p->name, name) == 0) {
+			TAILQ_REMOVE(&cmdpathq, cmd_p, entry);
+			free(cmd_p->name);
+			free(cmd_p);
 		}
 	}
 }
@@ -315,12 +316,12 @@ conf_clear(void)
 	struct autogroupwin	*aw, *aw_tmp;
 	struct binding		*kb, *mb, *bind_tmp;
 	struct winname		*wn, *wn_tmp;
-	struct cmd		*cmd, *cmd_tmp;
+	struct cmd_path		*cmd_p, *cmd_tmp_p;
 
-	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmd_tmp) {
-		free(cmd->name);
-		TAILQ_REMOVE(&cmdq, cmd, entry);
-		free(cmd);
+	TAILQ_FOREACH_SAFE(cmd_p, &cmdpathq, entry, cmd_tmp_p) {
+		free(cmd_p->name);
+		TAILQ_REMOVE(&cmdpathq, cmd_p, entry);
+		free(cmd_p);
 	}
 
 	TAILQ_FOREACH_SAFE(kb, &keybindingq, entry, bind_tmp) {

@@ -234,17 +234,17 @@ void
 mousefunc_menu_cmd(struct client_ctx *cc, union arg *arg)
 {
 	struct screen_ctx	*sc = cc->sc;
-	struct cmd		*cmd;
+	struct cmd_path		*cmd_p;
 	struct menu		*mi;
 	struct menu_q		 menuq;
 
 	TAILQ_INIT(&menuq);
-	TAILQ_FOREACH(cmd, &cmdq, entry)
-		menuq_add(&menuq, cmd, "%s", cmd->name);
+	TAILQ_FOREACH(cmd_p, &cmdpathq, entry)
+		menuq_add(&menuq, cmd_p, "%s", cmd_p->name);
 
 	if ((mi = menu_filter(sc, &menuq, NULL, NULL, CWM_MENU_LIST,
 	    NULL, NULL)) != NULL)
-		u_spawn(((struct cmd *)mi->ctx)->path);
+		u_spawn(((struct cmd_path *)mi->ctx)->path);
 
 	menuq_clear(&menuq);
 }

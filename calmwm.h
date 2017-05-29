@@ -331,12 +331,12 @@ struct binding {
 TAILQ_HEAD(keybinding_q, binding);
 TAILQ_HEAD(mousebinding_q, binding);
 
-struct cmd {
-	TAILQ_ENTRY(cmd)	 entry;
-	char			*name;
-	char			 path[PATH_MAX];
+struct cmd_path {
+	TAILQ_ENTRY(cmd_path)    entry;
+	char                    *name;
+	char                     path[PATH_MAX];
 };
-TAILQ_HEAD(cmd_q, cmd);
+TAILQ_HEAD(cmd_path_q, cmd_path);
 
 struct menu {
 	TAILQ_ENTRY(menu)	 entry;
@@ -357,9 +357,9 @@ struct keybinding_q	 keybindingq;
 struct mousebinding_q	 mousebindingq;
 struct autogroupwin_q	 autogroupq;
 struct ignore_q		 ignoreq;
-struct cmd_q		 cmdq;
 struct rule_q		 ruleq;
 struct rule_item_q	 ruleitemq;
+struct cmd_path_q	 cmdpathq;
 
 struct config_group {
 	int	 bwidth;
