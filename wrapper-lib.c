@@ -61,6 +61,22 @@ xcalloc(size_t no, size_t siz)
 }
 
 void *
+xrealloc(void *oldptr, size_t nmemb, size_t size)
+{
+	size_t	 newsize = nmemb * size;
+	void	*newptr;
+
+	if (newsize == 0)
+		log_fatal("zero size");
+	if (SIZE_MAX / nmemb < size)
+		log_fatal("nmemb * size > SIZE_MAX");
+	if ((newptr = realloc(oldptr, newsize)) == NULL)
+		log_fatal("xrealloc failed");
+
+	return (newptr);
+}
+
+void *
 xreallocarray(void *ptr, size_t nmemb, size_t size)
 {
 	void	*p;

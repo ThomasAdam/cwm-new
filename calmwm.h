@@ -52,11 +52,22 @@
 #include <X11/keysym.h>
 
 #include "array.h"
+#include "cmd.h"
 #include "config.h"
 
 #ifndef __dead
 #define __dead __attribute__ ((__noreturn__))
 #endif
+
+/* Definition to shut gcc up about unused arguments. */
+#define unused __attribute__ ((unused))
+
+/* Attribute to make gcc check printf-like arguments. */
+#define printflike1 __attribute__ ((format (printf, 1, 2)))
+#define printflike2 __attribute__ ((format (printf, 2, 3)))
+#define printflike3 __attribute__ ((format (printf, 3, 4)))
+#define printflike4 __attribute__ ((format (printf, 4, 5)))
+#define printflike5 __attribute__ ((format (printf, 5, 6)))
 
 #undef MIN
 #undef MAX
@@ -699,12 +710,40 @@ void			 u_spawn(char *);
 void			 u_init_pipe(void);
 void			 u_put_status(void);
 
+struct args 		*args_parse(const char *, int, char **);
+void             	 args_free(struct args *);
+size_t           	 args_print(struct args *, char *, size_t);
+int             	 args_has(struct args *, u_char);
+const char      	*args_get(struct args *, u_char);
+long long        	 args_strtonum(struct args *, u_char, long long,
+			    long long, char **);
+
+/* cmd.c */
+struct cmd_entry	*cmd_find_cmd(const char *);
+char			**cmd_copy_argv(int, char *const *);
+void			 cmd_free_argv(int, char **);
+struct cmd		*cmd_parse(int, char **, const char *, u_int, char **);
+
+/* cmd-list.c */
+struct cmd_list		*cmd_list_parse(int, char **, const char *, u_int,
+			    char **);
+void		 	 cmd_list_free(struct cmd_list *);
+
+/* cmd-queue.c */
+struct cmd_q		*cmdq_new(void);
+int			 cmdq_free(struct cmd_q *);
+void printflike2	 cmdq_error(struct cmd_q *, const char *, ...);
+void			 cmdq_run(struct cmd_q *, struct cmd_list *);
+void			 cmdq_append(struct cmd_q *, struct cmd_list *);
+int			 cmdq_continue(struct cmd_q *);
+void			 cmdq_flush(struct cmd_q *);
+
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);
+void			*xrealloc(void *, size_t, size_t);
 void			*xreallocarray(void *, size_t, size_t);
 char			*xstrdup(const char *);
 int			 xasprintf(char **, const char *, ...)
 			    __attribute__((__format__ (printf, 2, 3)))
 			    __attribute__((__nonnull__ (2)));
-
 #endif /* _CALMWM_H_ */
