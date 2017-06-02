@@ -268,6 +268,9 @@ config_intern_bindings(cfg_t *cfg)
 			key_mouse_sec = cfg_getnsec(bind_sec, "key", j);
 			key = cfg_title(key_mouse_sec);
 			cmd = cfg_getstr(key_mouse_sec, "command");
+			if (key == NULL || cmd == NULL)
+				continue;
+
 			conf_bind_kbd(key, cmd);
 		}
 
