@@ -354,8 +354,10 @@ group_autogroup(struct client_ctx *cc)
 	int			 num = -2, both_match = 0;
 	long			*grpnum;
 
-	if (cc->ch.res_class == NULL || cc->ch.res_name == NULL)
+	if (cc->ch.res_class == NULL || cc->ch.res_name == NULL) {
+		group_assign(NULL, cc);
 		return;
+	}
 
 	if (xu_getprop(cc->win, ewmh[_NET_WM_DESKTOP],
 	    XA_CARDINAL, 1, (unsigned char **)&grpnum) > 0) {
