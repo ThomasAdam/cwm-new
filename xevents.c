@@ -382,15 +382,12 @@ xev_handle_randr(XEvent *ee)
 {
 	XRRScreenChangeNotifyEvent	*rev = (XRRScreenChangeNotifyEvent *)ee;
 	struct screen_ctx		*sc;
-	int				 i;
 
-	i = XRRRootToScreen(X_Dpy, rev->root);
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		if (sc->which == i) {
-			XRRUpdateConfiguration(ee);
-			screen_update_geometry(sc);
-		}
-	}
+	XRRUpdateConfiguration(ee);
+
+	/* FIXME:  Need to look at redetecting monitors here, etc. */
+	TAILQ_FOREACH(sc, &Screenq, entry)
+		screen_update_geometry(sc);
 }
 
 /*
@@ -427,7 +424,7 @@ xev_process(void)
 	XEvent		 e;
 
 	XNextEvent(X_Dpy, &e);
-	if (e.type - Randr_ev == RRScreenChangeNotify)
+	if ((e.type - Randr_ev) == RRScreenChangeNotify)
 		xev_handle_randr(&e);
 	else if (e.type < LASTEvent && xev_handlers[e.type] != NULL)
 		(*xev_handlers[e.type])(&e);

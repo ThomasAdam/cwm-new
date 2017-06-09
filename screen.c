@@ -155,7 +155,6 @@ screen_create_randr_region(struct screen_ctx *sc, const char *name,
 
 	TAILQ_INSERT_TAIL(&Screenq, sc, entry);
 
-	XRRSelectInput(X_Dpy, sc->rootwin, RRScreenChangeNotifyMask);
 }
 
 void
@@ -190,6 +189,8 @@ screen_apply_ewmh(void)
 
 		XChangeWindowAttributes(X_Dpy, sc->rootwin,
 		    CWEventMask|CWCursor, &rootattr);
+
+		XRRSelectInput(X_Dpy, sc->rootwin, RRScreenChangeNotifyMask);
 
 		XSync(X_Dpy, False);
 	}

@@ -145,7 +145,8 @@ x_init(const char *dpyname)
 		    XDisplayName(dpyname));
 
 	XSetErrorHandler(x_wmerrorhandler);
-	XSelectInput(X_Dpy, DefaultRootWindow(X_Dpy), SubstructureRedirectMask);
+	XSelectInput(X_Dpy, DefaultRootWindow(X_Dpy),
+	    StructureNotifyMask|SubstructureRedirectMask);
 	XSync(X_Dpy, False);
 	XSetErrorHandler(x_errorhandler);
 
