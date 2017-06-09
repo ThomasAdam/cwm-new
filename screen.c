@@ -217,8 +217,8 @@ screen_init_contents(void)
 		for (i = 0; i < CALMWM_NGROUPS; i++)
 			group_init(sc, i);
 	}
-	screen_apply_ewmh();
 	config_parse();
+	screen_apply_ewmh();
 	client_scan_for_windows();
 
 	/* Run the panel command for each screen. */
