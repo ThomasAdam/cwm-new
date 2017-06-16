@@ -242,6 +242,7 @@ The structure looks like the following:
 .Bd -literal -offset -indent
 {
     version: INTEGER,
+    current_screen: "monitor_1"
     screens: {
 		monitor_1: {
 			current_client: "XTerm",
@@ -254,7 +255,8 @@ The structure looks like the following:
 					],
 					is_active: false,
 					is_current: true,
-					is_urgent: false
+					is_urgent: false,
+					is_hidden: false
 				}
 				two: {
 					...

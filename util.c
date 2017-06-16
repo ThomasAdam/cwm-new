@@ -187,6 +187,11 @@ u_put_status(void)
 						gc == sc->group_current);
 
 			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
+						gc->name, "is_hidden");
+			json_object_dotset_boolean(json_obj, key,
+						gc->flags & GROUP_HIDDEN);
+
+			snprintf(key, sizeof key, "%s.groups.%s.%s", scr_key,
 						gc->name, "number_of_clients");
 			json_object_dotset_number(json_obj, key,
 						json_array_get_count(clients));
