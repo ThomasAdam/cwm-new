@@ -458,6 +458,8 @@ conf_unbind_kbd(struct binding *unbind)
 
 		if (key->press.keysym == unbind->press.keysym) {
 			TAILQ_REMOVE(&keybindingq, key, entry);
+			XUngrabKey(X_Dpy, unbind->press.button, unbind->modmask,
+			    RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 			if (key->flags & CWM_CMD)
 				free(key->argument.c);
 			free(key);
