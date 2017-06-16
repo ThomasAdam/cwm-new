@@ -33,8 +33,8 @@
 
 static int	 no_of_screens;
 
-static void			 screen_create_randr_region(struct screen_ctx *,
-    const char *, struct geom *);
+static void	 screen_create_randr_region(struct screen_ctx *, const char *,
+    struct geom *);
 static void	 screen_init_contents(void);
 
 struct screen_ctx *
