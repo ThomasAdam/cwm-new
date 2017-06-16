@@ -147,6 +147,7 @@ group_init(struct screen_ctx *sc, int num)
 	gc->sc = sc;
 	gc->name = xstrdup(num_to_name[num]);
 	gc->num = num;
+	gc->flags = 0;
 	TAILQ_INIT(&gc->clientq);
 
 	log_debug("%s: added group '%d' (%s) to screen '%s'",
