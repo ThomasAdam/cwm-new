@@ -52,7 +52,7 @@ xu_btn_ungrab(Window win)
 void
 xu_key_grab(Window win, unsigned int mask, KeySym keysym)
 {
-	KeyCode		 code;
+	KeyCode		 code = 0;
 	unsigned int	 i;
 
 	code = XKeysymToKeycode(X_Dpy, keysym);
