@@ -223,6 +223,9 @@ config_apply(void)
 	struct screen_ctx	*sc;
 	struct group_ctx	*gc;
 
+	sc = TAILQ_FIRST(&Screenq);
+	conf_grab_kbd(sc->rootwin);
+
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		screen_update_geometry(sc);
 
@@ -230,8 +233,6 @@ config_apply(void)
 			conf_screen(sc, gc);
 		}
 	}
-	sc = TAILQ_FIRST(&Screenq);
-	conf_grab_kbd(sc->rootwin);
 }
 
 static void

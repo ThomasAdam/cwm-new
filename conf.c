@@ -419,8 +419,6 @@ conf_bind_kbd(const char *bind, const char *cmd)
 		return(0);
 	}
 
-	log_debug("%s: KeySym: %d", __func__, kb->press.keysym);
-
 	/* We now have the correct binding, remove duplicates. */
 	conf_unbind_kbd(kb);
 
@@ -458,8 +456,8 @@ conf_unbind_kbd(struct binding *unbind)
 
 		if (key->press.keysym == unbind->press.keysym) {
 			TAILQ_REMOVE(&keybindingq, key, entry);
-			XUngrabKey(X_Dpy, unbind->press.button, unbind->modmask,
-			    RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
+			log_debug("\t%s: removed key %d", __func__,
+			    key->press.keysym);
 			if (key->flags & CWM_CMD)
 				free(key->argument.c);
 			free(key);
