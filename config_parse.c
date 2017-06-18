@@ -149,7 +149,6 @@ cfg_opt_t	 client_opts[] = {
 	"key M-K	{command = bigmoveup}"		\
 	"key M-L	{command = bigmoveright}"	\
 	"key M-Left	{command = rcyclegroup}"	\
-	"key M-Return	{command = hide}"		\
 	"key M-Right	{command = cyclegroup}"		\
 	"key M-Tab	{command = cycle}"		\
 	"key M-Up	{command = raise}"		\
