@@ -113,8 +113,8 @@ u_init_pipe(void)
 void
 u_put_status(void)
 {
-	struct screen_ctx	*sc;
-	struct client_ctx	*cc = client_current(), *ci, fakecc;
+	struct screen_ctx	*sc, *sc_cur;
+	struct client_ctx	*cc = client_current(), *ci;
 	struct group_ctx	*gc;
 	JSON_Value		*json_root = json_value_init_object();
 	JSON_Object		*json_obj = json_object(json_root);
@@ -128,11 +128,9 @@ u_put_status(void)
 	if (cc == NULL) {
 		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
 		xu_ptr_getpos(root, &ptr_x, &ptr_y);
-		cc = &fakecc;
-		cc->sc = screen_find_screen(ptr_x, ptr_y);
+		sc_cur = screen_find_screen(ptr_x, ptr_y);
 
-		default_scr = cc->sc->name;
-		cc = NULL;
+		default_scr = sc_cur->name;
 	} else
 		default_scr = cc->sc->name;
 
