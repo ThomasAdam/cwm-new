@@ -262,7 +262,6 @@ xev_handle_keypress(XEvent *ee)
 	struct binding		*kb;
 	KeySym			 keysym, skeysym;
 	unsigned int		 modshift;
-	int			 ptr_x, ptr_y;
 
 	keysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 0);
 	skeysym = XkbKeycodeToKeysym(X_Dpy, e->keycode, 0, 1);
@@ -288,14 +287,12 @@ xev_handle_keypress(XEvent *ee)
 		if (((cc = client_find(e->window)) == NULL) &&
 		    (cc = client_current()) == NULL) {
 			/*
-			 * If no window is found, then look at the pointer's
-			 * screen position and use that instead.
+			 * If no window is found, then we were expecting one.
+			 * Log this as an error, and do nothing.
 			 */
-			xu_ptr_getpos(e->window, &ptr_x, &ptr_y);
-			cc = &fakecc;
-			cc->sc = screen_find_screen(ptr_x, ptr_y);
-			log_debug("%s: no client found, using pointer pos",
-				__func__);
+			log_debug("%s: binding expected a client, but there "
+			    "was none.  Doing nothing...", __func__);
+			return;
 		}
 		log_debug("%s: client (0x%x): screen '%s'", __func__,
 			(int)cc->win, cc->sc->name);
