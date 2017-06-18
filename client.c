@@ -693,9 +693,6 @@ client_expand(struct client_ctx *cc)
 		cc->geom = cc->savegeom;
 		cc->bwidth = cgrp->bwidth;
 
-		client_getsizehints(cc);
-		client_applysizehints(cc);
-
 		goto resize;
 	} else {
 		memcpy(&cc->savegeom, &cc->geom, sizeof(cc->geom));
@@ -712,6 +709,8 @@ client_expand(struct client_ctx *cc)
         cc->flags |= CLIENT_EXPANDED;
 
 resize:
+	client_getsizehints(cc);
+	client_applysizehints(cc);
         client_resize(cc, 0);
 }
 
