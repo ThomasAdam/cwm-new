@@ -182,7 +182,6 @@ screen_apply_ewmh(void)
 		xu_ewmh_net_showing_desktop(sc);
 		xu_ewmh_net_virtual_roots(sc);
 
-		rootattr.cursor = sc->config_screen->cursor[CF_NORMAL];
 		rootattr.event_mask = SubstructureRedirectMask|
 			SubstructureNotifyMask|PropertyChangeMask|
 			EnterWindowMask|LeaveWindowMask|
