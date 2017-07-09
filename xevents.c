@@ -219,7 +219,7 @@ static void
 xev_handle_buttonpress(XEvent *ee)
 {
 	XButtonEvent		*e = &ee->xbutton;
-	struct client_ctx	*cc, fakecc;
+	struct client_ctx	*cc;
 	struct binding		*mb;
 
 	e->state &= ~IGNOREMODMASK;
@@ -238,7 +238,8 @@ xev_handle_buttonpress(XEvent *ee)
 	} else {
 		if (e->window != e->root)
 			return;
-		cc = &fakecc;
+		cc = xcalloc(1, sizeof *cc);
+		TAILQ_INIT(&cc->geom_recordq);
 		cc->sc = screen_find(e->window);
 	}
 
@@ -258,7 +259,7 @@ static void
 xev_handle_keypress(XEvent *ee)
 {
 	XKeyEvent		*e = &ee->xkey;
-	struct client_ctx	*cc = NULL, fakecc;
+	struct client_ctx	*cc = NULL;
 	struct binding		*kb;
 	KeySym			 keysym, skeysym;
 	unsigned int		 modshift;
@@ -292,7 +293,8 @@ xev_handle_keypress(XEvent *ee)
 			 * screen position and use that instead.
 			 */
 			xu_ptr_getpos(e->window, &ptr_x, &ptr_y);
-			cc = &fakecc;
+			cc = xcalloc(1, sizeof *cc);
+			TAILQ_INIT(&cc->geom_recordq);
 			cc->sc = screen_find_screen(ptr_x, ptr_y);
 			log_debug("%s: no client found, using pointer pos",
 				__func__);
@@ -300,7 +302,8 @@ xev_handle_keypress(XEvent *ee)
 		log_debug("%s: client (0x%x): screen '%s'", __func__,
 			(int)cc->win, cc->sc->name);
 	} else {
-		cc = &fakecc;
+		cc = xcalloc(1, sizeof *cc);
+		TAILQ_INIT(&cc->geom_recordq);
 		cc->sc = screen_find(e->window);
 		log_debug("%s: using fake client (scr: %s)",
 		    __func__, cc->sc->name);
