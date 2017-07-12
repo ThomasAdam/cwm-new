@@ -206,6 +206,8 @@ conf_clear(void)
 		free(mb);
 	}
 
+	xu_key_ungrab(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
+
 	/* FIXME: free() colors here. */
 }
 
