@@ -295,7 +295,7 @@ xev_handle_keypress(XEvent *ee)
 			xu_ptr_getpos(e->window, &ptr_x, &ptr_y);
 			cc = xcalloc(1, sizeof *cc);
 			TAILQ_INIT(&cc->geom_recordq);
-			cc->sc = screen_find_screen(ptr_x, ptr_y);
+			cc->sc = screen_find_screen(ptr_x, ptr_y, NULL);
 			log_debug("%s: no client found, using pointer pos",
 				__func__);
 		}

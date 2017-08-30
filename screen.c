@@ -262,7 +262,7 @@ screen_updatestackingorder(struct screen_ctx *sc)
 
 /* Find out which screen is at x, y */
 struct screen_ctx *
-screen_find_screen(int x, int y)
+screen_find_screen(int x, int y, struct screen_ctx *s)
 {
 	struct screen_ctx	*sc, *sc_ret = NULL;
 	int			 x1 = abs(x), y1 = abs(y);
@@ -275,8 +275,20 @@ screen_find_screen(int x, int y)
 		}
 	}
 
-	if (sc_ret == NULL)
-		log_fatal("%s: couldn't find monitor at %dx%d", __func__, x, y);
+	if (sc_ret == NULL) {
+		/* Most likely, the monitor resolutions have found dead space,
+		 * which would put a window on an area where no screen
+		 * existed.
+		 *
+		 * For now, return the original screen.
+		 */
+		log_debug("%s: couldn't find monitor at %dx%d", __func__, x, y);
+		if (s != NULL)
+			return (s);
+
+		/* Return the first sccreen if s == NULL. */
+		return (TAILQ_FIRST(&Screenq));
+	}
 
 	return (sc_ret);
 }
@@ -287,7 +299,7 @@ screen_find_screen(int x, int y)
 struct geom
 screen_find_xinerama(int x, int y, int flags)
 {
-	struct screen_ctx	*sc = screen_find_screen(x, y);
+	struct screen_ctx	*sc = screen_find_screen(x, y, NULL);
 	struct config_screen	*cscr = sc->config_screen;
 	struct geom		 g = sc->view;
 

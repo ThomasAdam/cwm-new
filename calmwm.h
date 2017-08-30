@@ -524,7 +524,7 @@ void			 search_print_group(struct menu *, int);
 
 struct screen_ctx	*screen_find(Window);
 struct geom		 screen_find_xinerama(int, int, int);
-struct screen_ctx	*screen_find_screen(int, int);
+struct screen_ctx	*screen_find_screen(int, int, struct screen_ctx *);
 void			 screen_maybe_init_randr(void);
 void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);

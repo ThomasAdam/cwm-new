@@ -128,7 +128,7 @@ u_put_status(void)
 	if (cc == NULL) {
 		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
 		xu_ptr_getpos(root, &ptr_x, &ptr_y);
-		sc_cur = screen_find_screen(ptr_x, ptr_y);
+		sc_cur = screen_find_screen(ptr_x, ptr_y, NULL);
 
 		default_scr = sc_cur->name;
 	} else

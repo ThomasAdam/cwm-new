@@ -223,7 +223,7 @@ client_init(Window win, int skip_map_check)
 			client_set_wm_state(cc, cc->wmh->initial_state);
 	}
 
-	sc = screen_find_screen(cc->geom.x, cc->geom.y);
+	sc = screen_find_screen(cc->geom.x, cc->geom.y, NULL);
 	log_debug("client: (0x%x) to screen '%s'", (int)cc->win, sc->name);
 	cc->sc = sc;
 	group_autogroup(cc);
@@ -847,7 +847,7 @@ client_move(struct client_ctx *cc)
 	 * This assigns the client to the active group the output is on, if
 	 * the client being moved acrosses the boundaries between outputs.
 	 */
-	sc_new = screen_find_screen(cc->geom.x, cc->geom.y);
+	sc_new = screen_find_screen(cc->geom.x, cc->geom.y, cc->sc);
 	if (cc->sc != NULL && cc->sc != sc_new)
 		group_assign(sc_new->group_current, cc);
 
