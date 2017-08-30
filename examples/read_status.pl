@@ -41,7 +41,7 @@ sub query_xrandr
 
 	open(my $fh, '-|', 'xrandr -q') or die $!;
 	while (my $line = <$fh>) {
-		if ($line =~ /(.*?)\s+connected\s*(.*?)\s+/) {
+		if ($line =~ /(.*?)\s+connected|connected primary\s*(\d+x\d+\d+\+\d+)\s+/) {
 			my $output = $1;
 			$lb{$output} = {
 				screen  => $output,
