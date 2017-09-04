@@ -35,6 +35,8 @@
 
 #include "calmwm.h"
 
+sig_atomic_t	 cwm_status;
+
 #define LOGFILE_NAME "cwm-new.log"
 
 Display				*X_Dpy;
@@ -46,7 +48,6 @@ struct screen_ctx_q		 Screenq = TAILQ_HEAD_INITIALIZER(Screenq);
 
 int				 HasRandr, Randr_ev;
 const char			*homedir;
-volatile sig_atomic_t		 cwm_status;
 
 static void	sighdlr(int);
 static int	x_errorhandler(Display *, XErrorEvent *);

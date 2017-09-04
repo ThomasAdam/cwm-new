@@ -34,7 +34,8 @@
 
 #define MAXARGLEN 20
 
-static FILE	*status_fp;
+static FILE		*status_fp;
+extern sig_atomic_t	 cwm_status;
 
 void
 u_spawn(char *argstr)
@@ -125,6 +126,9 @@ u_put_status(void)
 	int			 ptr_x, ptr_y;
 	Window			 root;
 
+	if (cwm_status != CWM_RUNNING)
+		fflush(status_fp);
+
 	if (cc == NULL) {
 		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
 		xu_ptr_getpos(root, &ptr_x, &ptr_y);
@@ -197,6 +201,7 @@ u_put_status(void)
 
 	}
 	json_out_str = json_serialize_to_string(json_root);
+	fflush(status_fp);
 	fprintf(status_fp, "%s\n", json_out_str);
 	fflush(status_fp);
 
