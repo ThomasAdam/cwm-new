@@ -26,6 +26,7 @@ Rough ideas for CWM
 * [ ] Groups could be "global" across monitors, and switching to a group on a
   differnet monitor switches it to that monitor.  Much like how XMonad or
   herbstluftwm works.
+* [ ] Handle primary output and add first to the list of screens we manage.
 
 Documentation
 -------------
