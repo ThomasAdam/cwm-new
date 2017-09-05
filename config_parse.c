@@ -396,7 +396,7 @@ config_internalise_groups(struct screen_ctx *sc, cfg_t *sc_sec)
 			 */
 			cpy = t_cpy = xstrdup(gc_sec_title);
 			while ((item = strsep(&t_cpy, ",")) != NULL) {
-				if (item == '\0')
+				if (*item == '\0')
 					continue;
 
 				t_grp = strtonum(item, 0, 9, &errstr);
@@ -437,7 +437,7 @@ config_internalise(cfg_t *cfg)
 			} else 	{
 				cpy = t_cpy = xstrdup(sc_sec_title);
 				while ((item = strsep(&t_cpy, ",")) != NULL) {
-					if (item == '\0')
+					if (*item == '\0')
 						continue;
 					sc = screen_find_by_name(item);
 					if (strcmp(sc->name, item)) {
