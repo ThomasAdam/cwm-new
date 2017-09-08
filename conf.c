@@ -574,6 +574,8 @@ static char *cwmhints[] = {
 	"_MOTIF_WM_HINTS",
 	"UTF8_STRING",
 	"WM_CHANGE_STATE",
+	"_XROOTPMAP_ID",
+	"_XSETROOT_ID",
 };
 static char *ewmhints[] = {
 	"_NET_SUPPORTED",
