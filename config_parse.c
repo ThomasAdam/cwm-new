@@ -21,6 +21,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <errno.h>
 
 #include "calmwm.h"
 
@@ -33,6 +35,8 @@ static void	 config_intern_group(struct config_group *, cfg_t *);
 static void	 config_intern_screen(struct config_screen *, cfg_t *);
 static void	 config_intern_bindings(cfg_t *);
 static void	 config_intern_menu(cfg_t *);
+
+static bool	 validate_rule_title(const char *);
 
 cfg_opt_t	 color_opts[] = {
 	CFG_STR("activeborder", "#CCCCCC", CFGF_NONE),
@@ -83,9 +87,22 @@ cfg_opt_t	 menu_opts[] = {
 	CFG_END()
 };
 
+cfg_opt_t	 rule_item_types[] = {
+	CFG_STR_LIST("command", "{Boo}", CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t	 rules_item_opts[] = {
+	CFG_SEC("rule", rule_item_types,
+		CFGF_TITLE | CFGF_NO_TITLE_DUPES | CFGF_MULTI),
+	CFG_END()
+};
+
+
 cfg_opt_t	 client_item_opts[] = {
 	CFG_BOOL("ignore", cfg_false, CFGF_NONE),
 	CFG_STR("autogroup", NULL, CFGF_NONE),
+	CFG_SEC("rules", rules_item_opts, CFGF_MULTI),
 	CFG_END()
 };
 
@@ -216,6 +233,26 @@ cfg_opt_t	 all_cfg_opts[] = {
 		"}" \
 	"}", (DEFAULT_BINDINGS), (s)); str; })
 
+static bool
+validate_rule_title(const char *rule_title)
+{
+	const char	*rule_names[] = {
+		"on-map",
+		"on-focus",
+		"on-close",
+		NULL,
+	};
+
+	const char	**rt;
+
+	for (rt = rule_names; *rt != NULL; rt++) {
+		if (strcmp(*rt, rule_title) == 0)
+			return (true);
+	}
+
+	return (false);
+}
+
 static void
 config_apply(void)
 {
@@ -317,12 +354,12 @@ config_default(cfg_t *cfg, bool include_default_config)
 static void
 config_intern_clients(cfg_t *cfg)
 {
-	cfg_t		*clients_sec, *c_sec;
-	const char	*client_title, *errstr;
+	cfg_t		*clients_sec, *c_sec, *r_sec, *rule_sec;
+	const char	*client_title, *errstr, *rule_title;
 	char		*client_res[2], *tmp, *ctitle;
 	char		*grp;
 	int		 t_grp;
-	size_t		 i, j;
+	size_t		 i, j, r, rs;
 
 	for (i = 0; i < cfg_size(cfg, "clients"); i++) {
 		clients_sec = cfg_getnsec(cfg, "clients", i);
@@ -362,6 +399,25 @@ config_intern_clients(cfg_t *cfg)
 
 			if (cfg_getbool(c_sec, "ignore"))
 				conf_ignore(client_res[1]);
+
+			/* Process any rules here. */
+			r_sec = cfg_getsec(c_sec, "rules");
+
+			for (r = 0; r < cfg_size(r_sec, "rule"); r++) {
+				rule_sec = cfg_getnsec(r_sec, "rule", r);
+				rule_title = cfg_title(rule_sec);
+
+				if (!validate_rule_title(rule_title)) {
+					log_debug("rule '%s' has invalid title");
+					continue;
+				}
+
+				for (rs = 0;
+				     rs < cfg_size(rule_sec, "command"); rs++) {
+					conf_rule(ctitle, rule_title,
+					    cfg_getnstr(cfg, "command", rs));
+				}
+			}
 		}
 	}
 }
@@ -514,6 +570,7 @@ config_parse(void)
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&cmdq);
+	TAILQ_INIT(&ruleq);
 
 	(void)snprintf(known_hosts, sizeof(known_hosts), "%s/%s",
 	    homedir, ".ssh/known_hosts");
@@ -531,7 +588,7 @@ config_parse(void)
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't init config options");
 	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR) {
-		log_debug("Couldn't parse '%s'", conf_path);
+		log_debug("Couldn't parse '%s': %s", conf_path, strerror(errno));
 	}
 
 	if (cfg_size(cfg, "screen") > 0)

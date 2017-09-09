@@ -182,6 +182,21 @@ struct winname {
 TAILQ_HEAD(winname_q, winname);
 TAILQ_HEAD(ignore_q, winname);
 
+struct rule_item {
+	struct binding		*b;
+	TAILQ_ENTRY(rule_item)	 entry;
+};
+TAILQ_HEAD(rule_item_q, rule_item);
+
+struct rule {
+	const char		*client_class;
+	const char		*rule_name;
+	struct rule_item_q	 rule_item;
+
+	TAILQ_ENTRY(rule)	 entry;
+};
+TAILQ_HEAD(rule_q, rule);
+
 struct geom_record {
 	struct screen_ctx		*sc;
 	struct geom	 		 geom;
@@ -339,6 +354,8 @@ struct mousebinding_q	 mousebindingq;
 struct autogroupwin_q	 autogroupq;
 struct ignore_q		 ignoreq;
 struct cmd_q		 cmdq;
+struct rule_q		 ruleq;
+struct rule_item_q	 ruleitemq;
 
 struct config_group {
 	int	 bwidth;
@@ -615,6 +632,7 @@ void			 conf_grab_mouse(Window);
 void			 conf_init(void);
 void			 conf_ignore(const char *);
 void			 conf_screen(struct screen_ctx *, struct group_ctx *);
+void			 conf_rule(const char *, const char *, const char *);
 
 void			 config_parse(void);
 

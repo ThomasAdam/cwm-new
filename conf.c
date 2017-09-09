@@ -36,209 +36,6 @@ static void	 	 conf_cmd_remove(const char *);
 static void	 	 conf_unbind_kbd(struct binding *);
 static void	 	 conf_unbind_mouse(struct binding *);
 
-int
-conf_cmd_add(const char *name, const char *path)
-{
-	struct cmd	*cmd;
-
-	cmd = xcalloc(1, sizeof *cmd);
-
-	cmd->name = xstrdup(name);
-	if (strlcpy(cmd->path, path, sizeof(cmd->path)) >= sizeof(cmd->path)) {
-		free(cmd->name);
-		free(cmd);
-		return(0);
-	}
-
-	conf_cmd_remove(name);
-
-	TAILQ_INSERT_TAIL(&cmdq, cmd, entry);
-	return(1);
-}
-
-static void
-conf_cmd_remove(const char *name)
-{
-	struct cmd	*cmd = NULL, *cmdnxt;
-
-	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmdnxt) {
-		if (strcmp(cmd->name, name) == 0) {
-			TAILQ_REMOVE(&cmdq, cmd, entry);
-			free(cmd->name);
-			free(cmd);
-		}
-	}
-}
-
-void
-conf_autogroup(int num, const char *name, const char *class)
-{
-	struct autogroupwin	*aw;
-	char			*p;
-
-	aw = xmalloc(sizeof(*aw));
-
-	if ((p = strchr(class, ',')) == NULL) {
-		if (name == NULL)
-			aw->name = NULL;
-		else
-			aw->name = xstrdup(name);
-
-		aw->class = xstrdup(class);
-	} else {
-		*(p++) = '\0';
-
-		if (name == NULL)
-			aw->name = xstrdup(class);
-		else
-			aw->name = xstrdup(name);
-
-		aw->class = xstrdup(p);
-	}
-	aw->num = num;
-
-	TAILQ_INSERT_TAIL(&autogroupq, aw, entry);
-}
-
-void
-conf_ignore(const char *name)
-{
-	struct winname	*wn;
-
-	wn = xmalloc(sizeof(*wn));
-	wn->name = xstrdup(name);
-	TAILQ_INSERT_TAIL(&ignoreq, wn, entry);
-}
-
-void
-conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
-{
-	unsigned int		 i;
-	XftColor		 xc;
-	Colormap		 colormap = DefaultColormap(X_Dpy, sc->which);
-	Visual			*visual = DefaultVisual(X_Dpy, sc->which);
-	struct config_group	*cgrp = gc->config_group;
-	struct config_screen	*cscr = sc->config_screen;
-
-	cgrp->xftfont = XftFontOpenXlfd(X_Dpy, sc->which, cscr->font);
-	if (cgrp->xftfont == NULL) {
-		cgrp->xftfont = XftFontOpenName(X_Dpy, sc->which, cscr->font);
-		if (cgrp->xftfont == NULL)
-			log_fatal("XftFontOpenName() failed");
-	}
-
-	for (i = 0; i < nitems(cgrp->color); i++) {
-		if (i == CWM_COLOR_MENU_FONT_SEL) {
-			xu_xorcolor(cgrp->xftcolor[CWM_COLOR_MENU_BG],
-			    cgrp->xftcolor[CWM_COLOR_MENU_FG], &xc);
-			xu_xorcolor(cgrp->xftcolor[CWM_COLOR_MENU_FONT], xc, &xc);
-			if (!XftColorAllocValue(X_Dpy, visual, colormap,
-			    &xc.color, &cgrp->xftcolor[CWM_COLOR_MENU_FONT_SEL]))
-				log_debug("%s: %s", __func__, cgrp->color[i]);
-			break;
-		}
-		if (XftColorAllocName(X_Dpy, visual, colormap,
-		    cgrp->color[i], &xc)) {
-			cgrp->xftcolor[i] = xc;
-			XftColorFree(X_Dpy, visual, colormap, &xc);
-		} else {
-			XftColorAllocName(X_Dpy, visual, colormap,
-			    cgrp->color[i], &cgrp->xftcolor[i]);
-		}
-	}
-
-	if (sc->menuwin <= 0) {
-		sc->menuwin = XCreateSimpleWindow(X_Dpy, sc->rootwin, 0, 0, 1, 1,
-				cgrp->bwidth,
-				cgrp->xftcolor[CWM_COLOR_MENU_FG].pixel,
-				cgrp->xftcolor[CWM_COLOR_MENU_BG].pixel);
-	}
-
-	if (sc->xftdraw == NULL) {
-		sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
-		if (sc->xftdraw == NULL)
-			log_fatal("XftDrawCreate() failed");
-	}
-
-	conf_cursor(sc);
-}
-
-void
-conf_init(void)
-{
-	return;
-}
-
-void
-conf_clear(void)
-{
-	struct autogroupwin	*aw, *aw_tmp;
-	struct binding		*kb, *mb, *bind_tmp;
-	struct winname		*wn, *wn_tmp;
-	struct cmd		*cmd, *cmd_tmp;
-
-	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmd_tmp) {
-		free(cmd->name);
-		TAILQ_REMOVE(&cmdq, cmd, entry);
-		free(cmd);
-	}
-
-	TAILQ_FOREACH_SAFE(kb, &keybindingq, entry, bind_tmp) {
-		TAILQ_REMOVE(&keybindingq, kb, entry);
-		free(kb);
-	}
-
-	TAILQ_FOREACH_SAFE(aw, &autogroupq, entry, aw_tmp) {
-		free(aw->class);
-		free(aw->name);
-		TAILQ_REMOVE(&autogroupq, aw, entry);
-		free(aw);
-	}
-
-	TAILQ_FOREACH_SAFE(wn, &ignoreq, entry, wn_tmp) {
-		free(wn->name);
-		TAILQ_REMOVE(&ignoreq, wn, entry);
-		free(wn);
-	}
-
-	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, bind_tmp) {
-		TAILQ_REMOVE(&mousebindingq, mb, entry);
-		free(mb);
-	}
-
-	xu_key_ungrab(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
-
-	/* FIXME: free() colors here. */
-}
-
-void
-conf_client(struct client_ctx *cc)
-{
-	struct winname		*wn;
-	bool			 ignore = false;
-
-	if (cc->group == NULL) {
-		log_debug("Client '%p' is iffy", cc);
-		return;
-	}
-
-	cc->bwidth = cc->group->config_group->bwidth;
-
-	TAILQ_FOREACH(wn, &ignoreq, entry) {
-		if (strcmp(wn->name, cc->name) == 0) {
-			ignore = true;
-			break;
-		}
-	}
-
-	if (ignore) {
-		cc->bwidth = 0;
-		cc->flags |= ignore ? CLIENT_IGNORE : 0;
-	}
-	client_config(cc);
-	client_draw_border(cc);
-}
-
 static const struct {
 	const char	*tag;
 	void		 (*handler)(struct client_ctx *, union arg *);
@@ -382,6 +179,269 @@ static const struct {
 	{ '4',	Mod4Mask },
 	{ 'S',	ShiftMask },
 };
+
+int
+conf_cmd_add(const char *name, const char *path)
+{
+	struct cmd	*cmd;
+
+	cmd = xcalloc(1, sizeof *cmd);
+
+	cmd->name = xstrdup(name);
+	if (strlcpy(cmd->path, path, sizeof(cmd->path)) >= sizeof(cmd->path)) {
+		free(cmd->name);
+		free(cmd);
+		return(0);
+	}
+
+	conf_cmd_remove(name);
+
+	TAILQ_INSERT_TAIL(&cmdq, cmd, entry);
+	return(1);
+}
+
+static void
+conf_cmd_remove(const char *name)
+{
+	struct cmd	*cmd = NULL, *cmdnxt;
+
+	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmdnxt) {
+		if (strcmp(cmd->name, name) == 0) {
+			TAILQ_REMOVE(&cmdq, cmd, entry);
+			free(cmd->name);
+			free(cmd);
+		}
+	}
+}
+
+void
+conf_autogroup(int num, const char *name, const char *class)
+{
+	struct autogroupwin	*aw;
+	char			*p;
+
+	aw = xmalloc(sizeof(*aw));
+
+	if ((p = strchr(class, ',')) == NULL) {
+		if (name == NULL)
+			aw->name = NULL;
+		else
+			aw->name = xstrdup(name);
+
+		aw->class = xstrdup(class);
+	} else {
+		*(p++) = '\0';
+
+		if (name == NULL)
+			aw->name = xstrdup(class);
+		else
+			aw->name = xstrdup(name);
+
+		aw->class = xstrdup(p);
+	}
+	aw->num = num;
+
+	TAILQ_INSERT_TAIL(&autogroupq, aw, entry);
+}
+
+static struct binding *
+rule_make_binding(const char *action)
+{
+	struct binding	*b = NULL;
+	u_int		 i;
+
+	for (i = 0; i < nitems(name_to_func); i++) {
+		if (strcmp(name_to_func[i].tag, action) != 0)
+			continue;
+
+		b = xcalloc(1, sizeof(*b));
+		b->callback = name_to_func[i].handler;
+		b->flags = name_to_func[i].flags;
+		b->argument = name_to_func[i].argument;
+	}
+
+	return (b);
+}
+
+void
+conf_rule(const char *class, const char *rname, const char *action)
+{
+	struct rule		*rule, *r_find;
+	struct rule_item	*ritem;
+
+	if (action == NULL)
+		return;
+
+	if (!TAILQ_EMPTY(&ruleq)) {
+		TAILQ_FOREACH(r_find, &ruleq, entry) {
+			if (strcmp(r_find->client_class, rname) == 0) {
+				rule = r_find;
+				break;
+			}
+		}
+
+		if (rule != NULL) {
+			ritem = xmalloc(sizeof(*ritem));
+			if ((ritem->b = rule_make_binding(action)) == NULL) {
+				log_debug("%s: action binding was NULL",
+				    __func__);
+			}
+			TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
+		}
+	} else {
+		rule = xmalloc(sizeof(*rule));
+		TAILQ_INIT(&rule->rule_item);
+
+		rule->rule_name = xstrdup(rname);
+		rule->client_class = xstrdup(class);
+
+		ritem = xmalloc(sizeof(*ritem));
+		if ((ritem->b = rule_make_binding(action)) == NULL) {
+			log_debug("%s: action binding was NULL",
+			    __func__);
+		}
+		TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
+	}
+}
+
+void
+conf_ignore(const char *name)
+{
+	struct winname	*wn;
+
+	wn = xmalloc(sizeof(*wn));
+	wn->name = xstrdup(name);
+	TAILQ_INSERT_TAIL(&ignoreq, wn, entry);
+}
+
+void
+conf_screen(struct screen_ctx *sc, struct group_ctx *gc)
+{
+	unsigned int		 i;
+	XftColor		 xc;
+	Colormap		 colormap = DefaultColormap(X_Dpy, sc->which);
+	Visual			*visual = DefaultVisual(X_Dpy, sc->which);
+	struct config_group	*cgrp = gc->config_group;
+	struct config_screen	*cscr = sc->config_screen;
+
+	cgrp->xftfont = XftFontOpenXlfd(X_Dpy, sc->which, cscr->font);
+	if (cgrp->xftfont == NULL) {
+		cgrp->xftfont = XftFontOpenName(X_Dpy, sc->which, cscr->font);
+		if (cgrp->xftfont == NULL)
+			log_fatal("XftFontOpenName() failed");
+	}
+
+	for (i = 0; i < nitems(cgrp->color); i++) {
+		if (i == CWM_COLOR_MENU_FONT_SEL) {
+			xu_xorcolor(cgrp->xftcolor[CWM_COLOR_MENU_BG],
+			    cgrp->xftcolor[CWM_COLOR_MENU_FG], &xc);
+			xu_xorcolor(cgrp->xftcolor[CWM_COLOR_MENU_FONT], xc, &xc);
+			if (!XftColorAllocValue(X_Dpy, visual, colormap,
+			    &xc.color, &cgrp->xftcolor[CWM_COLOR_MENU_FONT_SEL]))
+				log_debug("%s: %s", __func__, cgrp->color[i]);
+			break;
+		}
+		if (XftColorAllocName(X_Dpy, visual, colormap,
+		    cgrp->color[i], &xc)) {
+			cgrp->xftcolor[i] = xc;
+			XftColorFree(X_Dpy, visual, colormap, &xc);
+		} else {
+			XftColorAllocName(X_Dpy, visual, colormap,
+			    cgrp->color[i], &cgrp->xftcolor[i]);
+		}
+	}
+
+	if (sc->menuwin <= 0) {
+		sc->menuwin = XCreateSimpleWindow(X_Dpy, sc->rootwin, 0, 0, 1, 1,
+				cgrp->bwidth,
+				cgrp->xftcolor[CWM_COLOR_MENU_FG].pixel,
+				cgrp->xftcolor[CWM_COLOR_MENU_BG].pixel);
+	}
+
+	if (sc->xftdraw == NULL) {
+		sc->xftdraw = XftDrawCreate(X_Dpy, sc->menuwin, visual, colormap);
+		if (sc->xftdraw == NULL)
+			log_fatal("XftDrawCreate() failed");
+	}
+
+	conf_cursor(sc);
+}
+
+void
+conf_init(void)
+{
+	return;
+}
+
+void
+conf_clear(void)
+{
+	struct autogroupwin	*aw, *aw_tmp;
+	struct binding		*kb, *mb, *bind_tmp;
+	struct winname		*wn, *wn_tmp;
+	struct cmd		*cmd, *cmd_tmp;
+
+	TAILQ_FOREACH_SAFE(cmd, &cmdq, entry, cmd_tmp) {
+		free(cmd->name);
+		TAILQ_REMOVE(&cmdq, cmd, entry);
+		free(cmd);
+	}
+
+	TAILQ_FOREACH_SAFE(kb, &keybindingq, entry, bind_tmp) {
+		TAILQ_REMOVE(&keybindingq, kb, entry);
+		free(kb);
+	}
+
+	TAILQ_FOREACH_SAFE(aw, &autogroupq, entry, aw_tmp) {
+		free(aw->class);
+		free(aw->name);
+		TAILQ_REMOVE(&autogroupq, aw, entry);
+		free(aw);
+	}
+
+	TAILQ_FOREACH_SAFE(wn, &ignoreq, entry, wn_tmp) {
+		free(wn->name);
+		TAILQ_REMOVE(&ignoreq, wn, entry);
+		free(wn);
+	}
+
+	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, bind_tmp) {
+		TAILQ_REMOVE(&mousebindingq, mb, entry);
+		free(mb);
+	}
+
+	xu_key_ungrab(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
+
+	/* FIXME: free() colors here. */
+}
+
+void
+conf_client(struct client_ctx *cc)
+{
+	struct winname		*wn;
+	bool			 ignore = false;
+
+	if (cc->group == NULL) {
+		log_debug("Client '%p' is iffy", cc);
+		return;
+	}
+
+	cc->bwidth = cc->group->config_group->bwidth;
+
+	TAILQ_FOREACH(wn, &ignoreq, entry) {
+		if (strcmp(wn->name, cc->name) == 0) {
+			ignore = true;
+			break;
+		}
+	}
+
+	if (ignore) {
+		cc->bwidth = 0;
+		cc->flags |= ignore ? CLIENT_IGNORE : 0;
+	}
+	client_config(cc);
+	client_draw_border(cc);
+}
 
 static const char *
 conf_bind_getmask(const char *name, unsigned int *mask)
