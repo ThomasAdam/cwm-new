@@ -56,6 +56,11 @@ group_assign(struct group_ctx *gc, struct client_ctx *cc)
 
 	xu_ewmh_net_wm_desktop(cc);
 
+	/* Update the working area, for Chromium to understand how to place
+	 * its menus.
+	 */
+	screen_update_geometry(cc->sc);
+
 	log_debug("client: (0x%x) assigned to group '%d' screen '%s'",
 		(int)cc->win, cc->group->num, cc->sc->name);
 

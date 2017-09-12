@@ -342,7 +342,13 @@ client_setactive(struct client_ctx *cc)
 	cc->flags &= ~CLIENT_URGENCY;
 	client_draw_border(cc);
 	conf_grab_mouse(cc->win);
+
 	xu_ewmh_net_active_window(sc, cc->win);
+
+	/* Update the working area, for Chromium to understand how to place
+	 * its menus.
+	 */
+	screen_update_geometry(sc);
 
 	u_put_status();
 }
