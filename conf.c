@@ -36,12 +36,7 @@ static void	 	 conf_cmd_remove(const char *);
 static void	 	 conf_unbind_kbd(struct binding *);
 static void	 	 conf_unbind_mouse(struct binding *);
 
-static const struct {
-	const char	*tag;
-	void		 (*handler)(struct client_ctx *, union arg *);
-	int		 flags;
-	union arg	 argument;
-} name_to_func[] = {
+const struct name_func name_to_func[] = {
 	{ "lower", kbfunc_client_lower, CWM_WIN, {0} },
 	{ "raise", kbfunc_client_raise, CWM_WIN, {0} },
 	{ "search", kbfunc_client_search, 0, {0} },
@@ -167,7 +162,8 @@ static const struct {
 	{ "menu_group", mousefunc_menu_group, 0, {0} },
 	{ "menu_unhide", mousefunc_menu_unhide, 0, {0} },
 	{ "menu_cmd", mousefunc_menu_cmd, 0, {0} },
-	{ "toggle_border", kbfunc_client_toggle_border, CWM_WIN, {0} }
+	{ "toggle_border", kbfunc_client_toggle_border, CWM_WIN, {0} },
+	{ NULL, NULL, 0, {0} },
 };
 
 static const struct {
@@ -242,66 +238,6 @@ conf_autogroup(int num, const char *name, const char *class)
 	aw->num = num;
 
 	TAILQ_INSERT_TAIL(&autogroupq, aw, entry);
-}
-
-static struct binding *
-rule_make_binding(const char *action)
-{
-	struct binding	*b = NULL;
-	u_int		 i;
-
-	for (i = 0; i < nitems(name_to_func); i++) {
-		if (strcmp(name_to_func[i].tag, action) != 0)
-			continue;
-
-		b = xcalloc(1, sizeof(*b));
-		b->callback = name_to_func[i].handler;
-		b->flags = name_to_func[i].flags;
-		b->argument = name_to_func[i].argument;
-	}
-
-	return (b);
-}
-
-void
-conf_rule(const char *class, const char *rname, const char *action)
-{
-	struct rule		*rule, *r_find;
-	struct rule_item	*ritem;
-
-	if (action == NULL)
-		return;
-
-	if (!TAILQ_EMPTY(&ruleq)) {
-		TAILQ_FOREACH(r_find, &ruleq, entry) {
-			if (strcmp(r_find->client_class, rname) == 0) {
-				rule = r_find;
-				break;
-			}
-		}
-
-		if (rule != NULL) {
-			ritem = xmalloc(sizeof(*ritem));
-			if ((ritem->b = rule_make_binding(action)) == NULL) {
-				log_debug("%s: action binding was NULL",
-				    __func__);
-			}
-			TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
-		}
-	} else {
-		rule = xmalloc(sizeof(*rule));
-		TAILQ_INIT(&rule->rule_item);
-
-		rule->rule_name = xstrdup(rname);
-		rule->client_class = xstrdup(class);
-
-		ritem = xmalloc(sizeof(*ritem));
-		if ((ritem->b = rule_make_binding(action)) == NULL) {
-			log_debug("%s: action binding was NULL",
-			    __func__);
-		}
-		TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
-	}
 }
 
 void

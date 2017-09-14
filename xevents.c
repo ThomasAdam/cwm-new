@@ -84,6 +84,9 @@ xev_handle_maprequest(XEvent *ee)
 
 	if ((cc != NULL) && (!(cc->flags & CLIENT_IGNORE)))
 		client_ptrwarp(cc);
+
+	rule_apply(cc, "on-map");
+
 }
 
 static void

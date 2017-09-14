@@ -184,6 +184,7 @@ TAILQ_HEAD(ignore_q, winname);
 
 struct rule_item {
 	struct binding		*b;
+	const char		*name;
 	TAILQ_ENTRY(rule_item)	 entry;
 };
 TAILQ_HEAD(rule_item_q, rule_item);
@@ -414,6 +415,15 @@ char					*conf_path;
 char					*cwm_pipe;
 char					 known_hosts[PATH_MAX];
 
+struct name_func {
+	const char	*tag;
+	void		 (*handler)(struct client_ctx *, union arg *);
+	int		 flags;
+	union arg	 argument;
+};
+
+extern const struct name_func		 name_to_func[];
+
 enum {
 	WM_STATE,
 	WM_DELETE_WINDOW,
@@ -632,11 +642,14 @@ void			 conf_grab_mouse(Window);
 void			 conf_init(void);
 void			 conf_ignore(const char *);
 void			 conf_screen(struct screen_ctx *, struct group_ctx *);
-void			 conf_rule(const char *, const char *, const char *);
 
 void			 config_parse(void);
 
 void			 xev_process(void);
+
+/* rules.c */
+void			 rule_config(const char *, const char *, const char *);
+void			 rule_apply(struct client_ctx *, const char *);
 
 void			 xu_btn_grab(Window, int, unsigned int);
 void			 xu_btn_ungrab(Window);

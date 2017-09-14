@@ -88,7 +88,7 @@ cfg_opt_t	 menu_opts[] = {
 };
 
 cfg_opt_t	 rule_item_types[] = {
-	CFG_STR_LIST("command", "{Boo}", CFGF_NONE),
+	CFG_STR_LIST("command", NULL, CFGF_NONE),
 	CFG_END()
 };
 
@@ -285,6 +285,8 @@ config_intern_menu(cfg_t *cfg)
 			item_sec = cfg_getnsec(menu_sec, "item", j);
 			entry = cfg_title(item_sec);
 			cmd = cfg_getstr(item_sec, "command");
+			if (cmd == NULL)
+				continue;
 			conf_cmd_add(entry, cmd);
 		}
 	}
@@ -356,7 +358,7 @@ config_intern_clients(cfg_t *cfg)
 {
 	cfg_t		*clients_sec, *c_sec, *r_sec, *rule_sec;
 	const char	*client_title, *errstr, *rule_title;
-	char		*client_res[2], *tmp, *ctitle;
+	char		*client_res[2], *tmp, *ctitle, *class_or_res;
 	char		*grp;
 	int		 t_grp;
 	size_t		 i, j, r, rs;
@@ -402,20 +404,24 @@ config_intern_clients(cfg_t *cfg)
 
 			/* Process any rules here. */
 			r_sec = cfg_getsec(c_sec, "rules");
+			class_or_res = client_res[0] != NULL ?
+				client_res[0] : client_res[1];
 
 			for (r = 0; r < cfg_size(r_sec, "rule"); r++) {
 				rule_sec = cfg_getnsec(r_sec, "rule", r);
 				rule_title = cfg_title(rule_sec);
 
 				if (!validate_rule_title(rule_title)) {
-					log_debug("rule '%s' has invalid title");
+					log_debug("%s: rule '%s' has invalid "
+					    "title", __func__, rule_title);
 					continue;
 				}
 
-				for (rs = 0;
-				     rs < cfg_size(rule_sec, "command"); rs++) {
-					conf_rule(ctitle, rule_title,
-					    cfg_getnstr(cfg, "command", rs));
+				for (rs = 0; rs < cfg_size(rule_sec, "command");
+				    rs++) {
+					rule_config(class_or_res, rule_title,
+					    cfg_getnstr(rule_sec, "command",
+					    rs));
 				}
 			}
 		}

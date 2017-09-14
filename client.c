@@ -122,6 +122,8 @@ client_scan_for_windows(void)
 
 				if (client_inbound(cc, ptr_x, ptr_y))
 					client_setactive(cc);
+
+				rule_apply(cc, "on-map");
 			}
 		}
 		client_data_extend(cc);
@@ -199,6 +201,7 @@ client_init(Window win, int skip_map_check)
 	client_setname(cc);
 
 	XGetClassHint(X_Dpy, cc->win, &cc->ch);
+
 	client_wm_hints(cc);
 	client_wm_protocols(cc);
 	client_getsizehints(cc);
@@ -244,6 +247,7 @@ client_init(Window win, int skip_map_check)
 	xu_ewmh_restore_net_wm_state(cc);
 
 	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
+
 
 	if (client_get_wm_state(cc) == IconicState)
 		client_hide(cc);
