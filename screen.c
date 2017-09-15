@@ -50,7 +50,8 @@ screen_find_by_name(const char *name)
 			return (sc);
 		}
 	}
-	log_fatal("%s: couldn't find monitor '%s'", __func__, name);
+	log_debug("%s: couldn't find monitor '%s'", __func__, name);
+	return (NULL);
 }
 
 void

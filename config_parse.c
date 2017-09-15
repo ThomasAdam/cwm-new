@@ -502,7 +502,7 @@ config_internalise(cfg_t *cfg)
 					if (*item == '\0')
 						continue;
 					sc = screen_find_by_name(item);
-					if (strcmp(sc->name, item)) {
+					if (sc == NULL || strcmp(sc->name, item)) {
 						log_debug("Screen section '%s' "
 						   "found without a "
 						   "corresponding screen to "
