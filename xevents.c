@@ -86,6 +86,7 @@ xev_handle_maprequest(XEvent *ee)
 		client_ptrwarp(cc);
 
 	rule_apply(cc, "on-map");
+	client_log_debug(__func__, cc);
 
 }
 

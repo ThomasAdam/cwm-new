@@ -85,6 +85,7 @@ rule_config(const char *class, const char *rname, const char *action)
 		}
 		log_debug("%s: adding rule: {r: %s, c: %s, a: %s}",
 				__func__, rname, class, action);
+		rule->ri_size++;
 		TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
 
 		return;
@@ -111,6 +112,8 @@ make_rule:
 	TAILQ_INSERT_TAIL(&ruleq, rule, entry);
 	log_debug("%s: adding rule: {r: %s, c: %s, a: %s}",
 			__func__, rname, class, action);
+
+	rule->ri_size++;
 	TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
 }
 
@@ -130,6 +133,8 @@ rule_apply(struct client_ctx *cc, const char *rule_name)
 		log_debug("%s: for client '%s', rule '%s' applies",
 		    __func__, class, rule->rule_name);
 
+		rule->cc = cc;
+
 		/* Otherwise, we found the rule we need. */
 		TAILQ_FOREACH(rule_i, &rule->rule_item, entry) {
 			/* Go through each binding and apply the rules in
@@ -141,4 +146,38 @@ rule_apply(struct client_ctx *cc, const char *rule_name)
 			(*rule_i->b->callback)(cc, &rule_i->b->argument);
 		}
 	}
+}
+
+const char *
+rule_print_rule(struct client_ctx *cc)
+{
+	struct rule		*r_find = NULL, *rule = NULL;
+	struct rule_item	*rule_i;
+	char			*rule_str;
+	char			*ra, *rule_actions;
+
+	TAILQ_FOREACH(r_find, &ruleq, entry) {
+		if (cc == r_find->cc) {
+			rule = r_find;
+			break;
+		}
+	}
+
+	if (rule == NULL) {
+		xasprintf(&rule_str, "%s", "none"); 
+		return (rule_str);
+	}
+
+	ra = rule_actions = malloc(rule->ri_size + 1);
+	TAILQ_FOREACH(rule_i, &rule->rule_item, entry) {
+		ra += sprintf(ra, "%s,", rule_i->name);
+	}
+	ra[-1] = '\0';
+
+	xasprintf(&rule_str, "[pointer: %p]:\n\t"
+	    "\tname: %s\n\t"
+	    "\tactions: {%s}",
+	    rule, rule->rule_name, rule_actions);
+
+	return (rule_str);
 }

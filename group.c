@@ -61,9 +61,6 @@ group_assign(struct group_ctx *gc, struct client_ctx *cc)
 	 */
 	screen_update_geometry(cc->sc);
 
-	log_debug("client: (0x%x) assigned to group '%d' screen '%s'",
-		(int)cc->win, cc->group->num, cc->sc->name);
-
 	client_draw_border(cc);
 }
 

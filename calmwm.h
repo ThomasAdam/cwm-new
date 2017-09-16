@@ -192,6 +192,8 @@ TAILQ_HEAD(rule_item_q, rule_item);
 struct rule {
 	const char		*client_class;
 	const char		*rule_name;
+	struct client_ctx	*cc;
+	size_t			 ri_size;
 	struct rule_item_q	 rule_item;
 
 	TAILQ_ENTRY(rule)	 entry;
@@ -650,6 +652,7 @@ void			 xev_process(void);
 /* rules.c */
 void			 rule_config(const char *, const char *, const char *);
 void			 rule_apply(struct client_ctx *, const char *);
+const char		*rule_print_rule(struct client_ctx *);
 
 void			 xu_btn_grab(Window, int, unsigned int);
 void			 xu_btn_ungrab(Window);
