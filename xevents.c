@@ -100,8 +100,10 @@ xev_handle_unmapnotify(XEvent *ee)
 		if (e->send_event) {
 			client_set_wm_state(cc, WithdrawnState);
 		} else {
-			if (!(cc->flags & CLIENT_HIDDEN))
+			if (!(cc->flags & CLIENT_HIDDEN)) {
 				client_delete(cc);
+				rule_apply(cc, "on-close");
+			}
 		}
 	}
 }
@@ -112,8 +114,10 @@ xev_handle_destroynotify(XEvent *ee)
 	XDestroyWindowEvent	*e = &ee->xdestroywindow;
 	struct client_ctx	*cc;
 
-	if ((cc = client_find(e->window)) != NULL)
+	if ((cc = client_find(e->window)) != NULL) {
 		client_delete(cc);
+		rule_apply(cc, "on-close");
+	}
 }
 
 static void
@@ -216,6 +220,8 @@ xev_handle_enternotify(XEvent *ee)
 
 	if ((cc = client_find(e->window)) != NULL)
 		client_setactive(cc);
+
+	rule_apply(cc, "on-focus");
 }
 
 /* We can split this into two event handlers. */
