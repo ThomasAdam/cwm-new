@@ -27,6 +27,9 @@ Current features which differ from cwm are:
   * Status output sent to a named FIFO (`/tmp/cwm.fifo`):
     * Can be parsed and used with dzen2/lemonbar, for instance, check the
 	  [read_status.pl](examples/read_status.pl) file for an example of this.
+* Hooks
+  * Clients have a few hooks which can be defined, and multiple actions occur
+    against said client.
 
 # Status bar
 
