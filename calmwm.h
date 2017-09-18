@@ -653,6 +653,7 @@ void			 xev_process(void);
 void			 rule_config(const char *, const char *, const char *);
 void			 rule_apply(struct client_ctx *, const char *);
 const char		*rule_print_rule(struct client_ctx *);
+bool			 rule_validate_title(const char *);
 
 void			 xu_btn_grab(Window, int, unsigned int);
 void			 xu_btn_ungrab(Window);

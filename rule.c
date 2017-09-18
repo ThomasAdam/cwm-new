@@ -19,9 +19,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <err.h>
 #include <errno.h>
-#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -46,6 +45,26 @@ rule_make_binding(const char *action)
 	}
 
 	return (b);
+}
+
+bool
+rule_validate_title(const char *rule_title)
+{
+	const char	*rule_names[] = {
+		"on-map",
+		"on-focus",
+		"on-close",
+		NULL,
+	};
+
+	const char	**rt;
+
+	for (rt = rule_names; *rt != NULL; rt++) {
+		if (strcmp(*rt, rule_title) == 0)
+			return (true);
+	}
+
+	return (false);
 }
 
 void

@@ -21,7 +21,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 #include <errno.h>
 
 #include "calmwm.h"
@@ -35,8 +34,6 @@ static void	 config_intern_group(struct config_group *, cfg_t *);
 static void	 config_intern_screen(struct config_screen *, cfg_t *);
 static void	 config_intern_bindings(cfg_t *);
 static void	 config_intern_menu(cfg_t *);
-
-static bool	 validate_rule_title(const char *);
 
 cfg_opt_t	 color_opts[] = {
 	CFG_STR("activeborder", "#CCCCCC", CFGF_NONE),
@@ -233,26 +230,6 @@ cfg_opt_t	 all_cfg_opts[] = {
 		"}" \
 	"}", (DEFAULT_BINDINGS), (s)); str; })
 
-static bool
-validate_rule_title(const char *rule_title)
-{
-	const char	*rule_names[] = {
-		"on-map",
-		"on-focus",
-		"on-close",
-		NULL,
-	};
-
-	const char	**rt;
-
-	for (rt = rule_names; *rt != NULL; rt++) {
-		if (strcmp(*rt, rule_title) == 0)
-			return (true);
-	}
-
-	return (false);
-}
-
 static void
 config_apply(void)
 {
@@ -411,7 +388,7 @@ config_intern_clients(cfg_t *cfg)
 				rule_sec = cfg_getnsec(r_sec, "rule", r);
 				rule_title = cfg_title(rule_sec);
 
-				if (!validate_rule_title(rule_title)) {
+				if (!rule_validate_title(rule_title)) {
 					log_debug("%s: rule '%s' has invalid "
 					    "title", __func__, rule_title);
 					continue;
