@@ -218,10 +218,10 @@ xev_handle_enternotify(XEvent *ee)
 
 	Last_Event_Time = e->time;
 
-	if ((cc = client_find(e->window)) != NULL)
+	if ((cc = client_find(e->window)) != NULL) {
 		client_setactive(cc);
-
-	rule_apply(cc, "on-focus");
+		rule_apply(cc, "on-focus");
+	}
 }
 
 /* We can split this into two event handlers. */
