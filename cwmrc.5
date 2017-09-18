@@ -178,6 +178,43 @@ clients {
 }
 .Ed
 .Pp
+.Ss Rules
+This block, which is only valid within a
+.Sx Client
+block, denotes actions which, when triggered, will run a number of commands
+against the client.
+Each rule must have a title, and a command list of defined actions.
+.Pp
+Valid actions are:
+.Pp
+.Bl -tag -width Ds -compact
+.It Ic on-map
+Occurs whenever a client is mapped to the screen; this also applies to
+recapturing of windows (such as during a restart).
+.Pp
+.It Ic on-focus
+Occurs whenever a client receives input focus.
+.Pp
+.It Ic on-close
+Occurs whenever a client is closed/unmapped.
+.Pp
+.El
+Example:
+.Bd -literal -offset -indent
+clients {
+	client "Foo" {
+		rules {
+			rule "on-map" {
+				commands = {"movetogroup2", "hide"}
+			}
+			rule "on-close" {
+				commands = {"group1"}
+			}
+		}
+	}
+}
+.Ed
+.Pp
 .Ss Screens
 This section controls per-screen configuration and can contain a number of
 blocks.  See
