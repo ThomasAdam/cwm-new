@@ -8,7 +8,9 @@ Rough ideas for CWM
   geometry per workspace; when switching workspaces, the client's
   geometries are relocated.
   * [ ] Clients could have some undo list for last known positions.
-* [ ] Hooks?  Events to be fired off after certain actions.
+* Hooks?  Events to be fired off after certain actions.
+  * [x] client hooks
+  * [ ] group hooks
 *  [ ] Window/workspace actions via command-prompt (just like ratpoison).
 * Internal structs:
   * [x] Don't use typedefs.
