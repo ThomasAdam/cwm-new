@@ -54,6 +54,7 @@ rule_validate_title(const char *rule_title)
 		"on-map",
 		"on-focus",
 		"on-close",
+		"on-net-active",
 		NULL,
 	};
 

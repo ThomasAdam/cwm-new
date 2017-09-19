@@ -366,8 +366,8 @@ xev_handle_clientmessage(XEvent *ee)
 	if (e->message_type == ewmh[_NET_ACTIVE_WINDOW] && e->format == 32) {
 		if ((old_cc = client_current()))
 			client_ptrsave(old_cc);
-		client_ptrwarp(cc);
-		group_setactive(cc->group);
+
+		rule_apply(cc, "on-net-active");
 	}
 
 	if (e->message_type == ewmh[_NET_WM_DESKTOP] && e->format == 32) {
