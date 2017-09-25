@@ -61,16 +61,17 @@ client_log_debug(const char *f, struct client_ctx *cc)
 	snprintf(geom_str, sizeof geom_str,
 		"client [pointer: %p]:\n\t"
 		"win: 0x%x\n\t"
-		"screen: %s\n\t"
+		"screen: %s%s\n\t"
 		"group: %d (%s)\n\t"
 		"name: %s\n\t"
 		"label: %s\n\t"
 		"bwidth: %d\n\t"
 		"geom: {x: %d, y: %d, w: %d, h: %d}\n\t"
 		"rule: %s\n",
-		cc, (int)cc->win, cc->sc->name, cc->group->num, cc->group->name,
-		cc->name, cc->label ? cc->label : "\"\"", cc->bwidth,
-		g.x, g.y, g.w, g.h, rule_str);
+		cc, (int)cc->win, cc->sc->name,
+		cc->sc->is_primary ? " (primary)" : "",  cc->group->num,
+		cc->group->name, cc->name, cc->label ? cc->label : "\"\"",
+		cc->bwidth, g.x, g.y, g.w, g.h, rule_str);
 	log_debug("%s: %s", f, geom_str);
 	free((char *)rule_str);
 }

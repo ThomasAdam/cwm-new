@@ -304,6 +304,7 @@ struct screen_ctx {
 	TAILQ_ENTRY(screen_ctx)	 entry;
 	const char		*name;
 	int			 which;
+	int			 is_primary;
 	Window			 rootwin;
 	Window			 menuwin;
 	int			 cycling;

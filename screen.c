@@ -34,7 +34,7 @@
 static int	 no_of_screens;
 
 static void	 screen_create_randr_region(struct screen_ctx *, const char *,
-    struct geom *);
+    struct geom *, int);
 static void	 screen_init_contents(void);
 
 struct screen_ctx *
@@ -58,12 +58,12 @@ void
 screen_maybe_init_randr(void)
 {
 	XRRScreenResources	*screen_res;
-        XRROutputInfo		*oinfo;
-        XRRCrtcInfo		*crtc_info;
-	RROutput		 rr_output;
+	XRROutputInfo		*oinfo;
+	XRRCrtcInfo		*crtc_info;
+	RROutput		 rr_output, rr_output_primary;
 	struct screen_ctx	*sc;
 	struct geom		 size;
-        int			 iscres, i;
+	int			 iscres, i, is_primary = 0;
 
 	if (!XRRQueryExtension(X_Dpy, &Randr_ev, &i)) {
 		/* No RandR present.  Single screen only. */
@@ -92,6 +92,13 @@ screen_maybe_init_randr(void)
 	    }
 
 	    rr_output = crtc_info->outputs[0];
+	    rr_output_primary = XRRGetOutputPrimary(X_Dpy,
+		DefaultRootWindow(X_Dpy));
+
+	    if (rr_output == rr_output_primary)
+		    is_primary = 1;
+	    else
+		    is_primary = 0;
 
             oinfo = XRRGetOutputInfo (X_Dpy, screen_res, rr_output);
 
@@ -116,7 +123,7 @@ screen_maybe_init_randr(void)
 	    size.w = crtc_info->width;
 	    size.h = crtc_info->height;
 
-	    screen_create_randr_region(sc, oinfo->name, &size);
+	    screen_create_randr_region(sc, oinfo->name, &size, is_primary);
 	    no_of_screens++;
 
 	    XRRFreeCrtcInfo(crtc_info);
@@ -137,7 +144,7 @@ single_screen:
 	size.w = DisplayWidth(X_Dpy, sc->which);
 	size.h = DisplayHeight(X_Dpy, sc->which);
 
-	screen_create_randr_region(sc, GLOBAL_SCREEN_NAME, &size);
+	screen_create_randr_region(sc, GLOBAL_SCREEN_NAME, &size, is_primary);
 out:
 	screen_init_contents();
 }
@@ -145,16 +152,22 @@ out:
 /* Each RandR output is its own screen_ctx */
 static void
 screen_create_randr_region(struct screen_ctx *sc, const char *name,
-    struct geom *geom)
+    struct geom *geom, int is_primary)
 {
-	log_debug("RandR output:\t%s\n", name);
+	log_debug("RandR output:\t%s %s\n", name, is_primary ? "(primary)" : "");
 	log_debug("\t\tx: %d\n\t\ty: %d\n\t\tw: %d\n\t\th: %d\n",
 		geom->x, geom->y, geom->w, geom->h);
 
 	sc->name = xstrdup(name);
 	memcpy(&sc->view, geom, sizeof(*geom));
 
-	TAILQ_INSERT_TAIL(&Screenq, sc, entry);
+	if (is_primary) {
+		sc->is_primary = 1;
+		TAILQ_INSERT_HEAD(&Screenq, sc, entry);
+	} else {
+		sc->is_primary = 0;
+		TAILQ_INSERT_TAIL(&Screenq, sc, entry);
+	}
 
 	XRRSelectInput(X_Dpy, sc->rootwin, RRScreenChangeNotifyMask);
 }
