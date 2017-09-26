@@ -215,8 +215,27 @@ xev_handle_enternotify(XEvent *ee)
 {
 	XCrossingEvent		*e = &ee->xcrossing;
 	struct client_ctx	*cc;
+	struct screen_ctx	*sc;
+	Window			 root;
 
 	Last_Event_Time = e->time;
+
+	/* If the pointer enters the root window, take focus away from the
+	 * current client.
+	 */
+	root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
+	if (e->window == root) {
+		if ((sc = screen_find(root)) != NULL) {
+			if ((cc = client_current()) != NULL) {
+				cc->flags &= ~CLIENT_ACTIVE;
+				client_draw_border(cc);
+				client_none(sc);
+				XSetInputFocus(X_Dpy, root, RevertToPointerRoot,
+				    CurrentTime);
+			}
+		}
+		return;
+	}
 
 	if ((cc = client_find(e->window)) != NULL) {
 		client_setactive(cc);

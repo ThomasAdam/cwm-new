@@ -37,7 +37,6 @@
 static struct client_ctx	*client_next(struct client_ctx *);
 static struct client_ctx	*client_prev(struct client_ctx *);
 static void			 client_mtf(struct client_ctx *);
-static void			 client_none(struct screen_ctx *);
 static void			 client_placecalc(struct client_ctx *);
 static void			 client_wm_protocols(struct client_ctx *);
 static void			 client_mwm_hints(struct client_ctx *);
@@ -366,7 +365,7 @@ client_setactive(struct client_ctx *cc)
 /*
  * set when there is no active client
  */
-static void
+void
 client_none(struct screen_ctx *sc)
 {
 	Window none = None;
