@@ -189,6 +189,7 @@ cfg_opt_t	 screen_opts[] = {
 	CFG_INT("snapdist", 0, CFGF_NONE),
 	CFG_STR("font", CONF_FONT, CFGF_NONE),
 	CFG_STR("panel-cmd", NULL, CFGF_NONE),
+	CFG_SEC("rules", rules_item_opts, CFGF_MULTI),
 	CFG_END()
 };
 
@@ -396,7 +397,8 @@ config_intern_clients(cfg_t *cfg)
 
 				for (rs = 0; rs < cfg_size(rule_sec, "command");
 				    rs++) {
-					rule_config(class_or_res, rule_title,
+					rule_config_class(class_or_res,
+					    rule_title,
 					    cfg_getnstr(rule_sec, "command",
 					    rs));
 				}

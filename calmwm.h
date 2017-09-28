@@ -652,8 +652,9 @@ void			 config_parse(void);
 void			 xev_process(void);
 
 /* rules.c */
-void			 rule_config(const char *, const char *, const char *);
 void			 rule_apply(struct client_ctx *, const char *);
+void			 rule_config_client(const char *, const char *,
+			    const char *);
 const char		*rule_print_rule(struct client_ctx *);
 bool			 rule_validate_title(const char *);
 
