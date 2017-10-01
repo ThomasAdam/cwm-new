@@ -397,10 +397,10 @@ config_intern_clients(cfg_t *cfg)
 
 				for (rs = 0; rs < cfg_size(rule_sec, "command");
 				    rs++) {
-					rule_config_class(class_or_res,
-					    rule_title,
-					    cfg_getnstr(rule_sec, "command",
-					    rs));
+					struct rule_config	 rc;
+					rc.name = class_or_res;
+					rule_config_rule(&rc, rule_title,
+					    cfg_getnstr(rule_sec, "command", rs));
 				}
 			}
 		}

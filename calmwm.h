@@ -189,10 +189,19 @@ struct rule_item {
 };
 TAILQ_HEAD(rule_item_q, rule_item);
 
+#define RULE_CLIENT 0x1
+#define RULE_GROUP  0x2
+
+struct rule_config {
+	void		*obj;
+	const char	*name;
+	int		 num;
+};
+
 struct rule {
-	const char		*client_class;
 	const char		*rule_name;
-	struct client_ctx	*cc;
+	struct rule_config	*data;
+	int			 type;
 	size_t			 ri_size;
 	struct rule_item_q	 rule_item;
 
@@ -653,7 +662,7 @@ void			 xev_process(void);
 
 /* rules.c */
 void			 rule_apply(struct client_ctx *, const char *);
-void			 rule_config_client(const char *, const char *,
+void			 rule_config_rule(const char *, const char *,
 			    const char *);
 const char		*rule_print_rule(struct client_ctx *);
 bool			 rule_validate_title(const char *);

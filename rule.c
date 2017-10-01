@@ -69,7 +69,7 @@ rule_validate_title(const char *rule_title)
 }
 
 void
-rule_config_client(const char *class, const char *rname, const char *action)
+rule_config_rule(const char *class, const char *rname, const char *action)
 {
 	struct rule		*rule = NULL, *r_find = NULL;
 	struct rule_item	*ritem;
