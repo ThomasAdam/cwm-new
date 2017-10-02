@@ -85,9 +85,9 @@ xev_handle_maprequest(XEvent *ee)
 	if ((cc != NULL) && (!(cc->flags & CLIENT_IGNORE)))
 		client_ptrwarp(cc);
 
+	rule_apply(cc, "on-initial-map");
 	rule_apply(cc, "on-map");
 	client_log_debug(__func__, cc);
-
 }
 
 static void
@@ -103,6 +103,7 @@ xev_handle_unmapnotify(XEvent *ee)
 			if (!(cc->flags & CLIENT_HIDDEN)) {
 				client_delete(cc);
 				rule_apply(cc, "on-close");
+				client_log_debug(__func__, cc);
 			}
 		}
 	}
@@ -117,6 +118,7 @@ xev_handle_destroynotify(XEvent *ee)
 	if ((cc = client_find(e->window)) != NULL) {
 		client_delete(cc);
 		rule_apply(cc, "on-close");
+		client_log_debug(__func__, cc);
 	}
 }
 

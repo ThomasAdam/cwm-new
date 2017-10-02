@@ -190,6 +190,7 @@ struct rule_item {
 TAILQ_HEAD(rule_item_q, rule_item);
 
 struct rule {
+	int			 no_of_execs;
 	const char		*client_class;
 	const char		*rule_name;
 	struct client_ctx	*cc;

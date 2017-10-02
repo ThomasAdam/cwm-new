@@ -26,7 +26,30 @@
 #include <unistd.h>
 #include "calmwm.h"
 
+static void   append_str(char **, const char *, ...);
 static struct binding	*rule_make_binding(const char *);
+
+static void
+append_str(char **append, const char *fmt, ...)
+{
+	char	*temp, *result;
+	va_list	 ap;
+
+	va_start(ap, fmt);
+	vasprintf(&temp, fmt, ap);
+	va_end(ap);
+
+	/* Big enough on the first iteration to hold the value of temp. */
+	if (*append == NULL)
+		*append = xcalloc(1, strlen(temp) + 1);
+
+	xasprintf(&result, "%s%s", *append, temp);
+
+	free(temp);
+	free(*append);
+
+	*append = xstrdup(result);
+}
 
 static struct binding *
 rule_make_binding(const char *action)
@@ -51,6 +74,7 @@ bool
 rule_validate_title(const char *rule_title)
 {
 	const char	*rule_names[] = {
+		"on-initial-map",
 		"on-map",
 		"on-focus",
 		"on-close",
@@ -103,9 +127,9 @@ rule_config(const char *class, const char *rname, const char *action)
 			free(ritem);
 			return;
 		}
+		rule->ri_size++;
 		log_debug("%s: adding rule: {r: %s, c: %s, a: %s}",
 				__func__, rname, class, action);
-		rule->ri_size++;
 		TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
 
 		return;
@@ -115,6 +139,8 @@ make_rule:
 	rule = xmalloc(sizeof(*rule));
 	TAILQ_INIT(&rule->rule_item);
 
+	rule->no_of_execs = 0;
+	rule->ri_size = 0;
 	rule->rule_name = xstrdup(rname);
 	rule->client_class = xstrdup(class);
 
@@ -129,11 +155,11 @@ make_rule:
 
 		return;
 	}
+	rule->ri_size++;
 	TAILQ_INSERT_TAIL(&ruleq, rule, entry);
 	log_debug("%s: adding rule: {r: %s, c: %s, a: %s}",
 			__func__, rname, class, action);
 
-	rule->ri_size++;
 	TAILQ_INSERT_TAIL(&rule->rule_item, ritem, entry);
 }
 
@@ -150,6 +176,14 @@ rule_apply(struct client_ctx *cc, const char *rule_name)
 		if (strcmp(class, rule->client_class) != 0)
 			continue;
 
+		/* FIXME: This should be handled better, and not special-cased
+		 * here like this.
+		 */
+		if (strcmp(rule_name, "on-initial-map") == 0) {
+			if (rule->no_of_execs > 1)
+				continue;
+		}
+
 		log_debug("%s: for client '%s', rule '%s' applies",
 		    __func__, class, rule->rule_name);
 
@@ -165,6 +199,7 @@ rule_apply(struct client_ctx *cc, const char *rule_name)
 
 			(*rule_i->b->callback)(cc, &rule_i->b->argument);
 		}
+		rule->no_of_execs++;
 	}
 }
 
@@ -173,31 +208,32 @@ rule_print_rule(struct client_ctx *cc)
 {
 	struct rule		*r_find = NULL, *rule = NULL;
 	struct rule_item	*rule_i;
-	char			*rule_str;
+	char			*rule_str = NULL;
 	char			*ra, *rule_actions;
 
 	TAILQ_FOREACH(r_find, &ruleq, entry) {
-		if (cc == r_find->cc) {
-			rule = r_find;
-			break;
+		if (cc != r_find->cc)
+			continue;
+
+		rule = r_find;
+
+		ra = rule_actions = xmalloc(rule->ri_size + 1);
+		TAILQ_FOREACH(rule_i, &rule->rule_item, entry) {
+			ra += sprintf(ra, "%s,", rule_i->name);
 		}
+		ra[-1] = '\0';
+
+		append_str(&rule_str, "[pointer: %p]:\n\t"
+		    "\tname: %s\n\t"
+		    "\tactions: {%s}",
+		    rule, rule->rule_name, rule_actions);
+
+		if (rule_str != NULL)
+			append_str(&rule_str, "%s", "\n\t\t");
 	}
 
-	if (rule == NULL) {
-		xasprintf(&rule_str, "%s", "none"); 
-		return (rule_str);
-	}
-
-	ra = rule_actions = malloc(rule->ri_size + 1);
-	TAILQ_FOREACH(rule_i, &rule->rule_item, entry) {
-		ra += sprintf(ra, "%s,", rule_i->name);
-	}
-	ra[-1] = '\0';
-
-	xasprintf(&rule_str, "[pointer: %p]:\n\t"
-	    "\tname: %s\n\t"
-	    "\tactions: {%s}",
-	    rule, rule->rule_name, rule_actions);
+	if (rule_str == NULL)
+		xasprintf(&rule_str, "%s", "(none)");
 
 	return (rule_str);
 }
