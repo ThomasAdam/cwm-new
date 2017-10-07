@@ -420,6 +420,34 @@ struct mwm_hints {
 #define MWM_DECOR_MINIMIZE	(1<<5)
 #define MWM_DECOR_MAXIMIZE	(1<<6)
 
+/* Option table entries. */
+enum options_table_type {
+	OPTIONS_TABLE_STRING,
+	OPTIONS_TABLE_NUMBER,
+	OPTIONS_TABLE_KEY,
+	OPTIONS_TABLE_COLOUR,
+	OPTIONS_TABLE_FLAG,
+};
+enum options_table_scope {
+	OPTIONS_TABLE_NONE,
+	OPTIONS_TABLE_SCREEN,
+	OPTIONS_TABLE_GROUP,
+	OPTIONS_TABLE_CLIENT,
+};
+
+struct options_table_entry {
+	const char		 *name;
+	enum options_table_type	  type;
+	enum options_table_scope  scope;
+
+	u_int			  minimum;
+	u_int			  maximum;
+
+	const char		 *default_str;
+	long long		  default_num;
+
+};
+
 extern Display				*X_Dpy;
 extern Time				 Last_Event_Time;
 extern struct screen_ctx_q		 Screenq;
@@ -550,6 +578,55 @@ void			 group_toggle_membership_enter(struct client_ctx *);
 void			 group_toggle_membership_leave(struct client_ctx *);
 void			 group_update_names(struct screen_ctx *);
 struct group_ctx	*group_find_by_num(struct screen_ctx *, int);
+
+/* options.c */
+struct options	*options_create(struct options *);
+void		 options_free(struct options *);
+struct options_entry *options_first(struct options *);
+struct options_entry *options_next(struct options_entry *);
+struct options_entry *options_empty(struct options *,
+		     const struct options_table_entry *);
+struct options_entry *options_default(struct options *,
+		     const struct options_table_entry *);
+const char	*options_name(struct options_entry *);
+const struct options_table_entry *options_table_entry(struct options_entry *);
+struct options_entry *options_get_only(struct options *, const char *);
+struct options_entry *options_get(struct options *, const char *);
+void		 options_remove(struct options_entry *);
+void		 options_array_clear(struct options_entry *);
+const char	*options_array_get(struct options_entry *, u_int);
+int		 options_array_set(struct options_entry *, u_int, const char *,
+		     int);
+int		 options_array_size(struct options_entry *, u_int *);
+void		 options_array_assign(struct options_entry *, const char *);
+int		 options_isstring(struct options_entry *);
+const char	*options_tostring(struct options_entry *, int, int);
+char		*options_parse(const char *, int *);
+struct options_entry *options_parse_get(struct options *, const char *, int *,
+		     int);
+char		*options_match(const char *, int *, int *);
+struct options_entry *options_match_get(struct options *, const char *, int *,
+		     int, int *);
+const char	*options_get_string(struct options *, const char *);
+long long	 options_get_number(struct options *, const char *);
+const struct grid_cell *options_get_style(struct options *, const char *);
+struct options_entry *options_set_string(struct options *,
+		     const char *, int, const char *, ...);
+struct options_entry *options_set_number(struct options *, const char *,
+		     long long);
+struct options_entry *options_set_style(struct options *, const char *, int,
+		     const char *);
+/*
+enum options_table_scope options_scope_from_flags(struct args *, int,
+		     struct cmd_find_state *, struct options **, char **);
+*/		     
+void		 options_style_update_new(struct options *,
+		     struct options_entry *);
+void		 options_style_update_old(struct options *,
+		     struct options_entry *);
+
+/* options-table.c */
+extern const struct options_table_entry options_table[];
 
 void			 search_match_client(struct menu_q *, struct menu_q *,
 			     char *);
@@ -746,4 +823,7 @@ char			*xstrdup(const char *);
 int			 xasprintf(char **, const char *, ...)
 			    __attribute__((__format__ (printf, 2, 3)))
 			    __attribute__((__nonnull__ (2)));
+int			 xsnprintf(char *, size_t, const char *, ...);
+int			 xvsnprintf(char *, size_t, const char *, va_list);
+int			 xvasprintf(char **, const char *, va_list);
 #endif /* _CALMWM_H_ */

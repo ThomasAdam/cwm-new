@@ -114,3 +114,48 @@ xasprintf(char **ret, const char *fmt, ...)
 
 	return(i);
 }
+
+int
+xvasprintf(char **ret, const char *fmt, va_list ap)
+{
+	int i;
+
+	i = vasprintf(ret, fmt, ap);
+
+	if (i < 0 || *ret == NULL)
+		log_fatal("xasprintf: %s", strerror(errno));
+
+	return i;
+}
+
+
+
+int
+xsnprintf(char *str, size_t len, const char *fmt, ...)
+{
+	va_list ap;
+	int i;
+
+	va_start(ap, fmt);
+	i = xvsnprintf(str, len, fmt, ap);
+	va_end(ap);
+
+	return i;
+}
+
+
+int
+xvsnprintf(char *str, size_t len, const char *fmt, va_list ap)
+{
+	int i;
+
+	if (len > INT_MAX)
+		log_fatal("xsnprintf: len > INT_MAX");
+
+	i = vsnprintf(str, len, fmt, ap);
+
+	if (i < 0 || i >= (int)len)
+		log_fatal("xsnprintf: overflow");
+
+	return i;
+}
