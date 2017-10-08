@@ -27,5 +27,23 @@
  */
 
 const struct options_table_entry options_table[] = {
+	{ .name = "border-width",
+	  .type = OPTIONS_TABLE_NUMBER,
+	  .scope = OPTIONS_TABLE_GROUP | OPTIONS_TABLE_CLIENT,
+	  .default_num = 4,
+	  .minimum = 0,
+	  .maximum = INT_MAX,
+	},
+	{ .name = "gap",
+	  .type = OPTIONS_TABLE_STRING,
+	  .scope = OPTIONS_TABLE_SCREEN,
+	  .default_str = "0,0,0,0",
+	},
+	{ .name = "move-amount",
+	  .type = OPTIONS_TABLE_NUMBER,
+	  .default_num = 1,
+	  .minimum = 1,
+	  .maximum = INT_MAX,
+	},
 	{ .name = NULL }
 };
