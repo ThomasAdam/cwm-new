@@ -61,6 +61,7 @@ main(int argc, char **argv)
 {
 	extern char	*__progname;
 	char		*conf_file = NULL, *display_name = NULL;
+	char		*log_file = NULL;
 	char		**cwm_argv;
 	int		 ch;
 	struct passwd	*pw;
@@ -71,14 +72,19 @@ main(int argc, char **argv)
 		warnx("no locale support");
 	mbtowc(NULL, NULL, MB_CUR_MAX);
 
+	log_file = LOGFILE_NAME;
+
 	cwm_argv = argv;
-	while ((ch = getopt(argc, argv, "vc:d:p:")) != -1) {
+	while ((ch = getopt(argc, argv, "Nvc:d:l:p:")) != -1) {
 		switch (ch) {
 		case 'c':
 			conf_file = optarg;
 			break;
 		case 'd':
 			display_name = optarg;
+			break;
+		case 'l':
+			log_file = optarg;
 			break;
 		case 'p':
 			pipe_name = optarg;
@@ -96,7 +102,7 @@ main(int argc, char **argv)
 		err(1, "signal");
 
 	if (open_logfile) {
-		log_open(LOGFILE_NAME);
+		log_open(log_file);
 	}
 
 	if ((homedir = getenv("HOME")) == NULL || *homedir == '\0') {
