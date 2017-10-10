@@ -139,6 +139,7 @@ size_t		 strlcpy(char *, const char *, size_t);
 size_t		 strlcat(char *, const char*, size_t);
 void		*reallocarray(void *, size_t, size_t);
 char		*fgetln(FILE *, size_t *);
+char		*fparseln(FILE *, size_t *, size_t *, const char *, int);
 
 union arg {
 	char	*c;
