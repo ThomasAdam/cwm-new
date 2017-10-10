@@ -373,6 +373,8 @@ struct rule_q		 ruleq;
 struct rule_item_q	 ruleitemq;
 struct cmd_path_q	 cmdpathq;
 
+bool new_config;
+
 struct config_group {
 	int	 bwidth;
 	char	*color[CWM_COLOR_NITEMS];
@@ -738,6 +740,8 @@ void			 conf_screen(struct screen_ctx *, struct group_ctx *);
 
 void			 config_parse(void);
 
+void			 config2(void);
+
 void			 xev_process(void);
 
 /* rules.c */
@@ -801,6 +805,8 @@ struct cmd_entry	*cmd_find_cmd(const char *);
 char			**cmd_copy_argv(int, char *const *);
 void			 cmd_free_argv(int, char **);
 struct cmd		*cmd_parse(int, char **, const char *, u_int, char **);
+int			 cmd_string_parse(const char *, struct cmd_list **,
+			    const char *, u_int, char **);
 
 /* cmd-list.c */
 struct cmd_list		*cmd_list_parse(int, char **, const char *, u_int,

@@ -19,8 +19,69 @@
  * $OpenBSD$
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "calmwm.h"
+
+int
+load_cfg(const char *path)
+{
+	FILE			*f;
+	const char		 delim[3] = { '\\', '\\', '\0' };
+	u_int			 found = 0;
+	size_t			 line = 0;
+	char			*buf, *cause1, *p, *q;
+	struct cmd_list		*cmdlist;
+	struct cmdq_item	*new_item;
+
+	log_debug("loading %s", path);
+	if ((f = fopen(path, "rb")) == NULL) {
+		log_debug("%s: %s: %s", __func__, path, strerror(errno));
+		return (-1);
+	}
+
+	while ((buf = fparseln(f, NULL, &line, delim, 0)) != NULL) {
+		log_debug("%s: %s: %s", __func__, path, buf);
+
+		p = buf;
+		while (isspace((u_char)*p))
+			p++;
+		if (*p == '\0') {
+			free(buf);
+			continue;
+		}
+		q = p + strlen(p) - 1;
+		while (q != p && isspace((u_char)*q))
+			*q-- = '\0';
+
+		cmdlist = cmd_string_parse(p, path, line, &cause1);
+		if (cmdlist == NULL) {
+			free(buf);
+			if (cause1 == NULL)
+				continue;
+			log_debug("%s: %s:%zu: %s", __func__, path, line, cause1);
+			free(cause1);
+			continue;
+		}
+		free(buf);
+
+		new_item = cmdq_get_command(cmdlist, NULL, NULL, 0);
+		cmdq_append(c, new_item);
+		cmd_list_free(cmdlist);
+
+		found++;
+	}
+	fclose(f);
+
+	return (found);
+}
+
+void
+config2(void)
+{
+	log_debug("You got me...");
+}

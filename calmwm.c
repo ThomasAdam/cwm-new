@@ -91,6 +91,9 @@ main(int argc, char **argv)
 		case 'v':
 			open_logfile = true;
 			break;
+		case 'N':
+			new_config = true;
+			break;
 		default:
 			usage();
 		}

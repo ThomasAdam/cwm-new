@@ -231,7 +231,14 @@ screen_init_contents(void)
 			group_init(sc, i);
 	}
 	screen_apply_ewmh();
-	config_parse();
+
+	if (new_config)
+		config2();
+	else {
+		config_parse();
+		exit(0);
+	}
+
 	client_scan_for_windows();
 
 	/* Run the panel command for each screen. */
