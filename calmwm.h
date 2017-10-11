@@ -805,8 +805,9 @@ struct cmd_entry	*cmd_find_cmd(const char *);
 char			**cmd_copy_argv(int, char *const *);
 void			 cmd_free_argv(int, char **);
 struct cmd		*cmd_parse(int, char **, const char *, u_int, char **);
-int			 cmd_string_parse(const char *, struct cmd_list **,
-			    const char *, u_int, char **);
+struct cmd_list		*cmd_string_parse(const char *, const char *, u_int,
+			    char **);
+int			 cmd_string_split(const char *, int *, char ***);
 
 /* cmd-list.c */
 struct cmd_list		*cmd_list_parse(int, char **, const char *, u_int,
@@ -816,15 +817,16 @@ void		 	 cmd_list_free(struct cmd_list *);
 /* cmd-queue.c */
 struct cmd_q		*cmdq_new(void);
 int			 cmdq_free(struct cmd_q *);
-void printflike2	 cmdq_error(struct cmd_q *, const char *, ...);
+void printflike2	 cmdq_error(struct cmdq_item *, const char *, ...);
 void			 cmdq_run(struct cmd_q *, struct cmd_list *);
-void			 cmdq_append(struct cmd_q *, struct cmd_list *);
+void			 cmdq_append(struct cmdq_item *);
 int			 cmdq_continue(struct cmd_q *);
 void			 cmdq_flush(struct cmd_q *);
+struct cmdq_item	*cmdq_get_command(struct cmd_list *, int);
 
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);
-void			*xrealloc(void *, size_t, size_t);
+void			*xrealloc(void *, size_t);
 void			*xreallocarray(void *, size_t, size_t);
 char			*xstrdup(const char *);
 int			 xasprintf(char **, const char *, ...)

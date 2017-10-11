@@ -69,8 +69,8 @@ load_cfg(const char *path)
 		}
 		free(buf);
 
-		new_item = cmdq_get_command(cmdlist, NULL, NULL, 0);
-		cmdq_append(c, new_item);
+		new_item = cmdq_get_command(cmdlist, 0);
+		cmdq_append(new_item);
 		cmd_list_free(cmdlist);
 
 		found++;

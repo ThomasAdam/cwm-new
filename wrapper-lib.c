@@ -61,31 +61,23 @@ xcalloc(size_t no, size_t siz)
 }
 
 void *
-xrealloc(void *oldptr, size_t nmemb, size_t size)
+xrealloc(void *ptr, size_t size)
 {
-	size_t	 newsize = nmemb * size;
-	void	*newptr;
-
-	if (newsize == 0)
-		log_fatal("zero size");
-	if (SIZE_MAX / nmemb < size)
-		log_fatal("nmemb * size > SIZE_MAX");
-	if ((newptr = realloc(oldptr, newsize)) == NULL)
-		log_fatal("xrealloc failed");
-
-	return (newptr);
+	return (xreallocarray(ptr, 1, size));
 }
 
 void *
 xreallocarray(void *ptr, size_t nmemb, size_t size)
 {
-	void	*p;
+	void *new_ptr;
 
-	p = reallocarray(ptr, nmemb, size);
-	if (p == NULL)
-		errx(1, "xreallocarray: out of memory (new_size %zu bytes)",
-		    nmemb * size);
-	return(p);
+	if (nmemb == 0 || size == 0)
+		errx(1, "xreallocarray: zero size");
+	new_ptr = reallocarray(ptr, nmemb, size);
+	if (new_ptr == NULL)
+		errx(1, "xreallocarray: allocating %zu * %zu bytes: %s",
+		    nmemb, size, strerror(errno));
+	return (new_ptr);
 }
 
 char *
