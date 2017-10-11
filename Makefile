@@ -17,16 +17,18 @@ LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xrandr libconfuse)
 
 MANPREFIX?=	${PREFIX}/share/man
 
+QUIET_CC=	@echo '   ' CC $@;
+
 all: ${PROG}
 
 clean:
 	rm -f *.o compat/*.o core* ${PROG}
 
 ${PROG}: ${OBJS}
-	${CC} ${OBJS} ${CPPFLAGS} ${LDFLAGS} -o ${PROG}
+	$(QUIET_CC)${CC} ${OBJS} ${CPPFLAGS} ${LDFLAGS} -o ${PROG}
 
 .c.o:
-	${CC} -c ${CFLAGS} ${CPPFLAGS} -o $@ $<
+	$(QUIET_CC)${CC} -c ${CFLAGS} ${CPPFLAGS} -o $@ $<
 
 install: ${PROG}
 	install -d ${DESTDIR}${PREFIX}/bin ${DESTDIR}${MANPREFIX}/man1 ${DESTDIR}${MANPREFIX}/man5
