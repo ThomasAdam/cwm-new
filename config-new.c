@@ -27,6 +27,8 @@
 
 #include "calmwm.h"
 
+static struct cmdq_item	*new_item;
+
 int
 load_cfg(const char *path)
 {
@@ -36,7 +38,6 @@ load_cfg(const char *path)
 	size_t			 line = 0;
 	char			*buf, *cause1, *p, *q;
 	struct cmd_list		*cmdlist;
-	struct cmdq_item	*new_item;
 
 	log_debug("loading %s", path);
 	if ((f = fopen(path, "rb")) == NULL) {
@@ -83,5 +84,6 @@ load_cfg(const char *path)
 void
 config2(void)
 {
-	log_debug("You got me...");
+	load_cfg(conf_file);
+	cmdq_next();
 }

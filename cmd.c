@@ -19,21 +19,26 @@
 #include <string.h>
 #include "calmwm.h"
 
-struct cmd_entry	*cmd_table[] = {
-	NULL
+extern const struct cmd_entry	cmd_example_entry;
+
+const struct cmd_entry	*cmd_table[] = {
+	&cmd_example_entry,
+	NULL,
 };
 
-struct cmd_entry *
+const struct cmd_entry *
 cmd_find_cmd(const char *cmd_name)
 {
-	struct cmd_entry	**cmd_ent = NULL;
-	struct cmd_entry	*cmd_p = NULL;
+	const struct cmd_entry	**cmd_ent = NULL;
+	const struct cmd_entry	*cmd_p = NULL;
 
 	if (cmd_name == NULL)
 		log_fatal("command name was NULL");
 
 	for (cmd_ent = cmd_table; *cmd_ent != NULL; cmd_ent++) {
 		if (strcmp((*cmd_ent)->name, cmd_name) == 0) {
+			log_debug("%s: found: %s with %s", __func__,
+			    (*cmd_ent)->name, cmd_name);
 			cmd_p = *cmd_ent;
 			break;
 		}

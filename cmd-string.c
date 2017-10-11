@@ -39,7 +39,7 @@ char	*cmd_string_variable(const char *, size_t *);
 char	*cmd_string_expand_tilde(const char *, size_t *);
 */
 
-static int
+int
 cmd_string_getc(const char *s, size_t *p)
 {
 	const u_char	*ucs = s;

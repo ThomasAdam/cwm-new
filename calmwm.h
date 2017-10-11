@@ -459,6 +459,7 @@ extern int				 Randr_ev;
 char					*conf_path;
 char					*cwm_pipe;
 char					 known_hosts[PATH_MAX];
+char					*conf_file;
 
 struct name_func {
 	const char	*tag;
@@ -801,7 +802,7 @@ long long        	 args_strtonum(struct args *, u_char, long long,
 			    long long, char **);
 
 /* cmd.c */
-struct cmd_entry	*cmd_find_cmd(const char *);
+const struct cmd_entry	*cmd_find_cmd(const char *);
 char			**cmd_copy_argv(int, char *const *);
 void			 cmd_free_argv(int, char **);
 struct cmd		*cmd_parse(int, char **, const char *, u_int, char **);
@@ -818,7 +819,7 @@ void		 	 cmd_list_free(struct cmd_list *);
 struct cmd_q		*cmdq_new(void);
 int			 cmdq_free(struct cmd_q *);
 void printflike2	 cmdq_error(struct cmdq_item *, const char *, ...);
-void			 cmdq_run(struct cmd_q *, struct cmd_list *);
+u_int			 cmdq_next(void);
 void			 cmdq_append(struct cmdq_item *);
 int			 cmdq_continue(struct cmd_q *);
 void			 cmdq_flush(struct cmd_q *);

@@ -60,7 +60,7 @@ int
 main(int argc, char **argv)
 {
 	extern char	*__progname;
-	char		*conf_file = NULL, *display_name = NULL;
+	char		*display_name = NULL;
 	char		*log_file = NULL;
 	char		**cwm_argv;
 	int		 ch;
