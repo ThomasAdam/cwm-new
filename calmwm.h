@@ -818,12 +818,11 @@ void		 	 cmd_list_free(struct cmd_list *);
 /* cmd-queue.c */
 struct cmd_q		*cmdq_new(void);
 int			 cmdq_free(struct cmd_q *);
-void printflike2	 cmdq_error(struct cmdq_item *, const char *, ...);
-u_int			 cmdq_next(void);
-void			 cmdq_append(struct cmdq_item *);
+void printflike2	 cmdq_error(struct cmd_q *, const char *, ...);
+void			 cmdq_run(struct cmd_q *, struct cmd_list *);
+void			 cmdq_append(struct cmd_q *, struct cmd_list *);
 int			 cmdq_continue(struct cmd_q *);
 void			 cmdq_flush(struct cmd_q *);
-struct cmdq_item	*cmdq_get_command(struct cmd_list *, int);
 
 void			*xcalloc(size_t, size_t);
 void			*xmalloc(size_t);

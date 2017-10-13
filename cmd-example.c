@@ -25,7 +25,7 @@
  * Kill the server and do nothing else.
  */
 
-static enum cmd_retval	cmd_example_exec(struct cmd *, struct cmdq_item *);
+static enum cmd_retval	cmd_example_exec(struct cmd *, struct cmd_q *);
 
 const struct cmd_entry cmd_example_entry = {
 	.name = "example",
@@ -37,7 +37,7 @@ const struct cmd_entry cmd_example_entry = {
 };
 
 static enum cmd_retval
-cmd_example_exec(struct cmd *self, unused struct cmdq_item *item)
+cmd_example_exec(struct cmd *self, unused struct cmd_q *cmdq)
 {
 	log_debug("%s: I got called!", __func__);
 

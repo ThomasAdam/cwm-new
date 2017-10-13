@@ -27,10 +27,10 @@
 
 #include "calmwm.h"
 
-static struct cmdq_item	*new_item;
+static int	 load_cfg(struct cmd_q *, const char *);
 
-int
-load_cfg(const char *path)
+static int
+load_cfg(struct cmd_q *cmdq, const char *path)
 {
 	FILE			*f;
 	const char		 delim[3] = { '\\', '\\', '\0' };
@@ -70,8 +70,7 @@ load_cfg(const char *path)
 		}
 		free(buf);
 
-		new_item = cmdq_get_command(cmdlist, 0);
-		cmdq_append(new_item);
+		cmdq_append(cmdq, cmdlist);
 		cmd_list_free(cmdlist);
 
 		found++;
@@ -84,6 +83,8 @@ load_cfg(const char *path)
 void
 config2(void)
 {
-	load_cfg(conf_file);
-	cmdq_next();
+	struct cmd_q		*cmdq = cmdq_new();
+
+	load_cfg(cmdq, conf_file);
+	cmdq_continue(cmdq);
 }

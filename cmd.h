@@ -70,38 +70,21 @@ enum cmdq_type {
 };
 
 /* Command queue item. */
-struct cmdq_item;
-
-typedef enum cmd_retval (*cmdq_cb) (struct cmdq_item *, void *);
-struct cmdq_item {
-	const char		*name;
-	struct cmdq_list	*queue;
-	struct cmdq_item	*next;
-
-	enum cmdq_type		 type;
-	u_int			 group;
-
-	u_int			 number;
-	time_t			 time;
-
-	struct cmd_list		*cmdlist;
-	struct cmd		*cmd;
-
-	cmdq_cb			 cb;
-	void			*data;
-
-	TAILQ_ENTRY(cmdq_item)	 entry;
+struct cmd_q_item {
+        struct cmd_list         *cmdlist;
+        TAILQ_ENTRY(cmd_q_item)  qentry;
 };
-TAILQ_HEAD(cmdq_list, cmdq_item);
 TAILQ_HEAD(cmd_q_items, cmd_q_item);
 
 /* Command queue. */
 struct cmd_q {
-	int			 references;
+        int                      references;
 
-	struct cmd_q_items	 queue;
-	struct cmd_q_item	*item;
-	struct cmd		*cmd;
+        struct cmd_q_items       queue;
+        struct cmd_q_item       *item;
+        struct cmd              *cmd;
+
+        void                    *data;
 };
 
 struct cmd_entry {
@@ -114,7 +97,7 @@ struct cmd_entry {
 	} args;
 	const char		*usage;
 
-	enum cmd_retval  (*exec)(struct cmd *, struct cmdq_item *);
+	enum cmd_retval  (*exec)(struct cmd *, struct cmd_q *);
 };
 
 #endif
