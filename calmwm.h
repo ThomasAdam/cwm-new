@@ -803,6 +803,7 @@ long long        	 args_strtonum(struct args *, u_char, long long,
 
 /* cmd.c */
 const struct cmd_entry	*cmd_find_cmd(const char *);
+struct cmd_find		*cmd_find_target(struct cmd_q *, const char *);
 char			**cmd_copy_argv(int, char *const *);
 void			 cmd_free_argv(int, char **);
 struct cmd		*cmd_parse(int, char **, const char *, u_int, char **);

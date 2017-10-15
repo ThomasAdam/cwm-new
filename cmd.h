@@ -63,12 +63,6 @@ enum cmd_retval {
 	CMD_RETURN_NORMAL = 0,
 };
 
-/* Command queue item type. */
-enum cmdq_type {
-	CMDQ_COMMAND,
-	CMDQ_CALLBACK,
-};
-
 /* Command queue item. */
 struct cmd_q_item {
         struct cmd_list         *cmdlist;
@@ -98,6 +92,11 @@ struct cmd_entry {
 	const char		*usage;
 
 	enum cmd_retval  (*exec)(struct cmd *, struct cmd_q *);
+};
+
+struct cmd_find {
+	struct screen_ctx	*sc;
+	struct client_ctx	*cc;
 };
 
 #endif

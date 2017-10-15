@@ -118,3 +118,41 @@ usage:
 	return (NULL);
 }
 
+struct cmd_find *
+cmd_find_target(struct cmd_q *cmd, const char *target)
+{
+	/* Some commands are going to need to ensure:
+	 *
+	 * screen:group:client
+	 *
+	 * If screen is missing, then the command will either expect a group,
+	 * and/or a client.  The current screen is assumed.  This is the one
+	 * which has either the client focus, or the mouse focus on the root
+	 * window.
+	 *
+	 * If a group is requested and no screen is present, then the current
+	 * screen is assumed (see above).  Otherwise, the group number is
+	 * assumed to be the correct argument.  Currently, group names are not
+	 * accepted.
+	 *
+	 * If neither screen or group are present, then the client is assumed.
+	 * A client format can be one of:
+	 *
+	 * Window ID (0x1234567)
+	 * Label (as set by the 'label' command)
+	 * Class/Resource name.
+	 *
+	 * If a client match is not amiguous, and there's more than one, then
+	 * a menu is shown with which to select the available clients.
+	 *
+	 * If a client is found to be matching a WindowID and that is not
+	 * found, then an error occurs since that was a deliberate and
+	 * explicit intent by the user.
+	 *
+	 * -t 0x12345	-- explicit cilent (global; no need for screen)
+	 * -t HDMI1:1	-- group 1 on screen 'HDMI1'
+	 * -t :2	-- group 2 on current screen
+	 * -t 2		-- group 2 on current screen
+	 * -t :1:foo	-- client "foo" in group 1 on current screen.
+	 */
+}
