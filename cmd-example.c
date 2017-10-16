@@ -32,7 +32,7 @@ const struct cmd_entry cmd_example_entry = {
 
 	.args = { "", 0, 0 },
 	.usage = "",
-
+	.flags = CMD_SCREEN,
 	.exec = cmd_example_exec
 };
 
