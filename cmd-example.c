@@ -32,7 +32,7 @@ const struct cmd_entry cmd_example_entry = {
 
 	.args = { "", 0, 0 },
 	.usage = "",
-	.flags = CMD_SCREEN,
+	.flags = CMD_CLIENT,
 	.exec = cmd_example_exec
 };
 
@@ -40,6 +40,11 @@ static enum cmd_retval
 cmd_example_exec(struct cmd *self, unused struct cmd_q *cmdq)
 {
 	log_debug("%s: I got called!", __func__);
+
+	struct cmd_find		*cft;
+
+	cft = cmd_find_target(cmdq, "0x12345");
+	cft = cmd_find_target(cmdq, ":0x12345");
 
 	return (CMD_RETURN_NORMAL);
 }
