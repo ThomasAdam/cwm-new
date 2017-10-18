@@ -160,7 +160,7 @@ client_find_win_str(struct screen_ctx *sc, const char *win_str)
 		if (sc != NULL && sc_find != sc)
 			continue;
 
-		TAILQ_FOREACH(cc, &sc->clientq, entry) {
+		TAILQ_FOREACH(cc, &sc_find->clientq, entry) {
 			if ((int)cc->win == win)
 				return(cc);
 		}

@@ -153,14 +153,14 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	 * Label (as set by the 'label' command)
 	 * Class/Resource name.
 	 *
-	 * If a client match is not amiguous, and there's more than one, then
+	 * If a client match is not ambiguous, and there's more than one, then
 	 * a menu is shown with which to select the available clients.
 	 *
 	 * If a client is found to be matching a WindowID and that is not
 	 * found, then an error occurs since that was a deliberate and
 	 * explicit intent by the user.
 	 *
-	 * -t 0x12345	-- explicit cilent (global; no need for screen)
+	 * -t 0x12345	-- explicit client (global; no need for screen)
 	 * -t HDMI1:1	-- group 1 on screen 'HDMI1'
 	 * -t :2	-- group 2 on current screen
 	 * -t 2		-- group 2 on current screen
@@ -170,7 +170,8 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	struct cmd_find		*cmdf;
 	struct screen_ctx	*sc_cur;
 	struct client_ctx	*cc_cur;
-	int			 direct_client = 0;
+	struct group_ctx	*gc_cur;
+	char			*scr_name;
 
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
@@ -178,32 +179,47 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 
 	if (cmdq->cmd->entry->flags == CMD_CLIENT) {
 		log_debug("%s: cmd is CMD_CLIENT", __func__);
+
+		if (target == NULL) {
+			if ((cc_cur = client_current()) == NULL)
+				goto error;
+			sc_cur = cc_cur->sc;
+			goto fill_cmdf_state;
+		}
+
 		if (starts_with(target, "0x")) {
 			/* Skip the '0x' */
 			target += 2;
 			log_debug("%s: 0x -- direct client.  target is: %s",
 			    __func__, target);
-			direct_client = 1;
-		} else if (starts_with(target, ":0x")) {
-			/* It might be that we have:
-			 *
-			 * :0x1234
-			 *
-			 * Which would mean the current screen has a client
-			 * with an ID.
+			cc_cur = client_find_win_str(NULL, target);
+			if (cc_cur == NULL)
+				goto error;
+
+			sc_cur = cc_cur->sc;
+		} else {
+			/* Get the screen name from the string. */
+			if ((scr_name = strchr(target, ':')) == NULL)
+				goto error;
+
+			if ((sc_cur = screen_find_by_name(scr_name)) == NULL)
+				goto error;
+
+			/* FIXME: logic-backward.  If we parse the string now,
+			 * we have to repeat the same dance as above.  Time to
+			 * have helper functions.
 			 */
-
-			/* Skip the ':0x' */
-			target += 3;
-
-			log_debug("%s: :0x -- target is: %s", __func__, target);
-
-			sc_cur = screen_current_screen(NULL);
-			cc_cur = client_find_win_str(sc_cur, target);
-
-			log_debug("%s: sc_cur: %p (%s), cc_cur: %p", __func__,
-			    sc_cur, sc_cur->name, cc_cur);
 		}
+
 	}
+fill_cmdf_state:
+	cmdf->sc = sc_cur;
+	cmdf->cc = cc_cur;
+	cmdf->gc = gc_cur;
+
+	return (cmdf);
+error:
+	log_debug("Error setting cmd_state");
+	free(cmdf);
 	return (NULL);
 }
