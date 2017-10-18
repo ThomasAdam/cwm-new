@@ -70,6 +70,12 @@ struct cmd_q_item {
 };
 TAILQ_HEAD(cmd_q_items, cmd_q_item);
 
+struct cmd_find {
+	struct screen_ctx	*sc;
+	struct group_ctx	*gc;
+	struct client_ctx	*cc;
+};
+
 /* Command queue. */
 struct cmd_q {
         int                      references;
@@ -77,6 +83,7 @@ struct cmd_q {
         struct cmd_q_items       queue;
         struct cmd_q_item       *item;
         struct cmd              *cmd;
+	struct cmd_find		*state;
 
         void                    *data;
 };
@@ -97,11 +104,6 @@ struct cmd_entry {
 	int			 flags;
 
 	enum cmd_retval  (*exec)(struct cmd *, struct cmd_q *);
-};
-
-struct cmd_find {
-	struct screen_ctx	*sc;
-	struct client_ctx	*cc;
 };
 
 #endif

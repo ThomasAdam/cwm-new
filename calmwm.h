@@ -527,6 +527,7 @@ void			 client_draw_border(struct client_ctx *);
 void			 client_data_extend(struct client_ctx *);
 void			 client_expand(struct client_ctx *);
 struct client_ctx	*client_find(Window);
+struct client_ctx	*client_find_win_str(struct screen_ctx *, const char *);
 void			 client_record_geom(struct client_ctx *);
 void			 client_restore_geom(struct client_ctx *, int);
 long			 client_get_wm_state(struct client_ctx *);

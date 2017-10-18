@@ -17,7 +17,10 @@
 /* Routines for generic command parsing. */
 
 #include <string.h>
+#include <stdbool.h>
 #include "calmwm.h"
+
+static bool	 starts_with(const char *, const char *);
 
 extern const struct cmd_entry	cmd_example_entry;
 
@@ -118,8 +121,16 @@ usage:
 	return (NULL);
 }
 
+static bool
+starts_with(const char *full_str, const char *sub_str)
+{
+	size_t	 size = strlen(sub_str);
+
+	return (strncmp(full_str, sub_str, size) == 0);
+}
+
 struct cmd_find *
-cmd_find_target(struct cmd_q *cmd, const char *target)
+cmd_find_target(struct cmd_q *cmdq, const char *target)
 {
 	/* Some commands are going to need to ensure:
 	 *
@@ -155,4 +166,44 @@ cmd_find_target(struct cmd_q *cmd, const char *target)
 	 * -t 2		-- group 2 on current screen
 	 * -t :1:foo	-- client "foo" in group 1 on current screen.
 	 */
+
+	struct cmd_find		*cmdf;
+	struct screen_ctx	*sc_cur;
+	struct client_ctx	*cc_cur;
+	int			 direct_client = 0;
+
+	cmdf = xcalloc(1, sizeof(*cmdf));
+
+	log_debug("%s: target is: %s", __func__, target);
+
+	if (cmdq->cmd->entry->flags == CMD_CLIENT) {
+		log_debug("%s: cmd is CMD_CLIENT", __func__);
+		if (starts_with(target, "0x")) {
+			/* Skip the '0x' */
+			target += 2;
+			log_debug("%s: 0x -- direct client.  target is: %s",
+			    __func__, target);
+			direct_client = 1;
+		} else if (starts_with(target, ":0x")) {
+			/* It might be that we have:
+			 *
+			 * :0x1234
+			 *
+			 * Which would mean the current screen has a client
+			 * with an ID.
+			 */
+
+			/* Skip the ':0x' */
+			target += 3;
+
+			log_debug("%s: :0x -- target is: %s", __func__, target);
+
+			sc_cur = screen_current_screen(NULL);
+			cc_cur = client_find_win_str(sc_cur, target);
+
+			log_debug("%s: sc_cur: %p (%s), cc_cur: %p", __func__,
+			    sc_cur, sc_cur->name, cc_cur);
+		}
+	}
+	return (NULL);
 }

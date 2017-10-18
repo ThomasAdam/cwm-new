@@ -147,6 +147,29 @@ client_scan_for_windows(void)
 }
 
 struct client_ctx *
+client_find_win_str(struct screen_ctx *sc, const char *win_str)
+{
+	struct screen_ctx	*sc_find;
+	struct client_ctx	*cc;
+	int			 win;
+	const char		*errstr;
+
+	win = strtonum(win_str, 0, INT_MAX, &errstr);
+
+	TAILQ_FOREACH(sc_find, &Screenq, entry) {
+		if (sc != NULL && sc_find != sc)
+			continue;
+
+		TAILQ_FOREACH(cc, &sc->clientq, entry) {
+			if ((int)cc->win == win)
+				return(cc);
+		}
+	}
+
+	return (NULL);
+}
+
+struct client_ctx *
 client_find(Window win)
 {
 	struct screen_ctx	*sc;
