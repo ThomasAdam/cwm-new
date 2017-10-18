@@ -54,6 +54,30 @@ screen_find_by_name(const char *name)
 	return (NULL);
 }
 
+struct screen_ctx *
+screen_current_screen(struct client_ctx **cc)
+{
+	struct client_ctx	*cur_cc;
+	struct screen_ctx	*sc;
+	Window			 root;
+	int			 ptr_x, ptr_y;
+
+	cur_cc = client_current();
+
+	if (cur_cc == NULL) {
+		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
+		xu_ptr_getpos(root, &ptr_x, &ptr_y);
+		sc = screen_find_screen(ptr_x, ptr_y, NULL);
+	} else {
+		sc = cur_cc->sc;
+	}
+
+	if (cc != NULL)
+		*cc = cur_cc;
+
+	return (sc);
+}
+
 void
 screen_maybe_init_randr(void)
 {

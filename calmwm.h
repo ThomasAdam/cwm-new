@@ -653,6 +653,7 @@ void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);
 struct screen_ctx	*screen_find_by_name(const char *);
 void			 screen_apply_ewmh(void);
+struct screen_ctx	*screen_current_screen(struct client_ctx **);
 
 
 void			 kbfunc_client_cycle(struct client_ctx *, union arg *);

@@ -114,8 +114,8 @@ u_init_pipe(void)
 void
 u_put_status(void)
 {
-	struct screen_ctx	*sc, *sc_cur;
-	struct client_ctx	*cc = client_current(), *ci;
+	struct screen_ctx	*sc;
+	struct client_ctx	*cc, *ci;
 	struct group_ctx	*gc;
 	JSON_Value		*json_root = json_value_init_object();
 	JSON_Object		*json_obj = json_object(json_root);
@@ -123,20 +123,11 @@ u_put_status(void)
 	char			*json_out_str;
 	const char		*default_scr;
 	char			 key[1024], scr_key[1024];
-	int			 ptr_x, ptr_y;
-	Window			 root;
 
 	if (cwm_status != CWM_RUNNING)
 		fflush(status_fp);
 
-	if (cc == NULL) {
-		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
-		xu_ptr_getpos(root, &ptr_x, &ptr_y);
-		sc_cur = screen_find_screen(ptr_x, ptr_y, NULL);
-
-		default_scr = sc_cur->name;
-	} else
-		default_scr = cc->sc->name;
+	default_scr = screen_current_screen(&cc)->name;
 
 	json_object_set_number(json_obj, "version", 1);
 	/* Go through all groups, and all clients on those groups, and report
