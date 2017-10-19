@@ -20,13 +20,20 @@
 #include <stdbool.h>
 #include "calmwm.h"
 
-static bool	 starts_with(const char *, const char *);
+static bool			 starts_with(const char *, const char *);
+static struct cmd_target_tokens	*cmd_parse_target(const char *);
 
 extern const struct cmd_entry	cmd_example_entry;
 
 const struct cmd_entry	*cmd_table[] = {
 	&cmd_example_entry,
 	NULL,
+};
+
+struct cmd_target_tokens {
+	const char	*sc_name;
+	const char	*gr_name;
+	const char	*win_name;
 };
 
 const struct cmd_entry *
@@ -129,6 +136,90 @@ starts_with(const char *full_str, const char *sub_str)
 	return (strncmp(full_str, sub_str, size) == 0);
 }
 
+static struct cmd_target_tokens *
+cmd_parse_target(const char *target)
+{
+	struct cmd_target_tokens	*ctt;
+	char				*sess_tmp, *grp_tmp, *cli_tmp, *copy;
+	char				*colon, *full_stop;
+	int				 grp_from_target;
+
+	if (target == NULL) {
+		log_debug("%s: target is NULL", __func__);
+		return (NULL);
+#if 0
+		if ((cc_cur = client_current()) == NULL)
+			goto error;
+		sc_cur = cc_cur->sc;
+		goto fill_cmdf_state;
+#endif
+	}
+
+	if (starts_with(target, "0x")) {
+		/* Skip the '0x' */
+		target += 2;
+		log_debug("%s: 0x -- direct client.  target is: %s",
+		    __func__, target);
+#if 0
+		cc_cur = client_find_win_str(NULL, target);
+		if (cc_cur == NULL)
+			goto error;
+
+		sc_cur = cc_cur->sc;
+#endif
+		return (NULL);
+	}
+
+	if (starts_with(target, ":.")) {
+		/* Current screen, group, and hence looking at the client
+		 * only.
+		 */
+		target += 2;
+		log_debug("%s: target: %s", __func__, target);
+
+		return (NULL);
+	}
+
+	if (*target == ':' && (target[1] >= '0' && target[1] <= '9')) {
+		grp_from_target = target[1] - '0';
+
+		log_debug("%s: group_from_target: %d", __func__,
+		    grp_from_target);
+
+		/* Check to see if there's a period for the client.  That is,
+		 * we have:
+		 *
+		 * :0.{client}
+		 */
+		target += 2;
+
+		if (*target == '.') {
+			/* Capture client here. */
+		}
+
+		return (NULL);
+	}
+
+	copy = xstrdup(target);
+	colon = strchr(copy, ':');
+	if (colon != NULL) {
+		*colon++ = '\0';
+		log_debug("%s: colon: %s", __func__, colon);
+	}
+
+	if (colon == NULL)
+		full_stop = strchr(copy, '.');
+
+	if (full_stop != NULL)
+		*full_stop++ = '\0';
+
+	free(copy);
+
+	log_debug("%s: colon: %s, full_stop: %s", __func__, colon, full_stop);
+
+	return (NULL);
+}
+
 struct cmd_find *
 cmd_find_target(struct cmd_q *cmdq, const char *target)
 {
@@ -164,14 +255,13 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	 * -t HDMI1:1	-- group 1 on screen 'HDMI1'
 	 * -t :2	-- group 2 on current screen
 	 * -t 2		-- group 2 on current screen
-	 * -t :1:foo	-- client "foo" in group 1 on current screen.
+	 * -t :1.foo	-- client "foo" in group 1 on current screen.
 	 */
 
 	struct cmd_find		*cmdf;
 	struct screen_ctx	*sc_cur;
 	struct client_ctx	*cc_cur;
 	struct group_ctx	*gc_cur;
-	char			*scr_name;
 
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
@@ -179,47 +269,8 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 
 	if (cmdq->cmd->entry->flags == CMD_CLIENT) {
 		log_debug("%s: cmd is CMD_CLIENT", __func__);
-
-		if (target == NULL) {
-			if ((cc_cur = client_current()) == NULL)
-				goto error;
-			sc_cur = cc_cur->sc;
-			goto fill_cmdf_state;
-		}
-
-		if (starts_with(target, "0x")) {
-			/* Skip the '0x' */
-			target += 2;
-			log_debug("%s: 0x -- direct client.  target is: %s",
-			    __func__, target);
-			cc_cur = client_find_win_str(NULL, target);
-			if (cc_cur == NULL)
-				goto error;
-
-			sc_cur = cc_cur->sc;
-		} else {
-			/* Get the screen name from the string. */
-			if ((scr_name = strchr(target, ':')) == NULL)
-				goto error;
-
-			if ((sc_cur = screen_find_by_name(scr_name)) == NULL)
-				goto error;
-
-			/* FIXME: logic-backward.  If we parse the string now,
-			 * we have to repeat the same dance as above.  Time to
-			 * have helper functions.
-			 */
-		}
-
+		(void)cmd_parse_target(target);
 	}
-fill_cmdf_state:
-	cmdf->sc = sc_cur;
-	cmdf->cc = cc_cur;
-	cmdf->gc = gc_cur;
-
-	return (cmdf);
-error:
-	log_debug("Error setting cmd_state");
 	free(cmdf);
 	return (NULL);
 }

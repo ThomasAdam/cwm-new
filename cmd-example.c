@@ -43,8 +43,9 @@ cmd_example_exec(struct cmd *self, unused struct cmd_q *cmdq)
 
 	struct cmd_find		*cft;
 
-	cft = cmd_find_target(cmdq, "0x12345");
-	cft = cmd_find_target(cmdq, ":0x12345");
+	cft = cmd_find_target(cmdq, ":2");
+	cft = cmd_find_target(cmdq, ":.client");
+	cft = cmd_find_target(cmdq, "default:3.myclient");
 
 	return (CMD_RETURN_NORMAL);
 }
