@@ -163,17 +163,12 @@ cmd_parse_target(const char *target)
 		 * only.
 		 */
 		target += 2;
-		log_debug("%s: target: %s", __func__, target);
-
 		ctt->win_name = xstrdup(target);
 		return (ctt);
 	}
 
 	if (*target == ':' && (target[1] >= '0' && target[1] <= '9')) {
 		grp_from_target = target[1] - '0';
-
-		log_debug("%s: group_from_target: %d", __func__,
-		    grp_from_target);
 
 		ctt->grp_num = grp_from_target;
 
@@ -183,9 +178,10 @@ cmd_parse_target(const char *target)
 		 * :0.{client}
 		 */
 		target += 2;
-
-		if (*target == '.')
-			ctt->win_name = xstrdup(target++);
+		if (*target == '.') {
+			target++;
+			ctt->win_name = xstrdup(target);
+		}
 
 		return (ctt);
 	}
@@ -202,9 +198,6 @@ cmd_parse_target(const char *target)
 
 	if (full_stop != NULL)
 		*full_stop++ = '\0';
-
-	log_debug("%s: copy: %s, colon: %s, full_stop: %s", __func__,
-	    copy, colon, full_stop);
 
 	grp_from_target = *colon - '0';
 
@@ -257,27 +250,56 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 
 	struct cmd_find			*cmdf;
 	struct cmd_target_tokens	*ctt = NULL;
-	struct screen_ctx		*sc_cur;
-	struct client_ctx		*cc_cur;
-	struct group_ctx		*gc_cur;
 
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
-	log_debug("%s: target is: %s", __func__, target);
-
 	ctt = cmd_parse_target(target);
 
-	if (ctt != NULL) {
-		log_debug("%s: found: ctt->sc_name: %s, ctt->grp_num: %d, "
-		    "ctt->win_name: %s", __func__, ctt->sc_name, ctt->grp_num,
-		    ctt->win_name);
+	switch (cmdq->cmd->entry->flags) {
+	case CMD_CLIENT:
+		/* We expect at most the client to be filled in. */
+		if (ctt->win_name == NULL) {
+			log_debug("%s: expected a client name", __func__);
+			goto error;
+		}
+
+		cmdf->cc = client_find_win_str(NULL, ctt->win_name);
+		if (cmdf->cc == NULL) {
+			log_debug("%s: No client with name '%s'", __func__,
+			    ctt->win_name);
+			goto error;
+		}
+
+		if (ctt->sc_name == NULL)
+			cmdf->sc = cmdf->cc->sc;
+		else
+			cmdf->sc = screen_find_by_name(ctt->sc_name);
+
+		/* If the screens do not match, that's a problem as the client
+		 * was intended to belong to a specific screen.
+		 */
+		if (strcmp(cmdf->sc->name, ctt->sc_name) != 0) {
+			log_debug("%s: client is on screen %s but expected %s",
+			    cmdf->sc->name, ctt->sc_name);
+			goto error;
+		}
+
+		if (ctt->grp_num == -1)
+			cmdf->gc = cmdf->cc->group;
+		else
+			cmdf->gc = group_find_by_num(cmdf->sc, ctt->grp_num);
+		break;
+	default:
+		break;
 	}
 
+	log_debug("%s: cmd_find has\n\t",
+	    "sc (%p): %s\n\tgc (%p): %d",
+	    cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
+error:
 	free((char *)ctt->sc_name);
 	free((char *)ctt->win_name);
 	free(ctt);
 
-
-	free(cmdf);
-	return (NULL);
+	return (cmdf);
 }

@@ -39,12 +39,11 @@ const struct cmd_entry cmd_example_entry = {
 static enum cmd_retval
 cmd_example_exec(struct cmd *self, unused struct cmd_q *cmdq)
 {
-	log_debug("%s: I got called!", __func__);
-
 	struct cmd_find		*cft;
 
 	cft = cmd_find_target(cmdq, ":2");
 	cft = cmd_find_target(cmdq, ":.client");
+	cft = cmd_find_target(cmdq, ":6.myclient.foo");
 	cft = cmd_find_target(cmdq, "default:3.myclient");
 
 	return (CMD_RETURN_NORMAL);

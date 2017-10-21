@@ -161,8 +161,15 @@ client_find_win_str(struct screen_ctx *sc, const char *win_str)
 			continue;
 
 		TAILQ_FOREACH(cc, &sc_find->clientq, entry) {
-			if ((int)cc->win == win)
-				return(cc);
+			if (errstr != NULL && (int)cc->win == win)
+				return (cc);
+
+			if (strcmp(cc->label, win_str) == 0)
+				return (cc);
+
+			if ((strcmp(cc->ch.res_class, win_str) == 0) ||
+			    (strcmp(cc->ch.res_name, win_str) == 0))
+				return (cc);
 		}
 	}
 
