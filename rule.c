@@ -117,6 +117,7 @@ make_rule:
 
 	rule->rule_name = xstrdup(rname);
 	rule->client_class = xstrdup(class);
+	rule->ri_size = 0;
 
 	ritem = xcalloc(1, sizeof(*ritem));
 	ritem->name = xstrdup(action);
