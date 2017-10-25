@@ -256,7 +256,8 @@ config_intern_menu(cfg_t *cfg)
 	size_t		 i, j;
 
 	for (i = 0; i < cfg_size(cfg, "menu"); i++) {
-		menu_sec = cfg_getnsec(cfg, "menu", i);
+		if ((menu_sec = cfg_getnsec(cfg, "menu", i)) == NULL)
+			continue;
 
 		for (j = 0; j < cfg_size(menu_sec, "item"); j++) {
 			item_sec = cfg_getnsec(menu_sec, "item", j);
