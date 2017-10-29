@@ -145,6 +145,9 @@ rule_apply(struct client_ctx *cc, const char *rule_name)
 	struct rule		*rule;
 	struct rule_item	*rule_i;
 
+	if (class == NULL)
+		return;
+
 	TAILQ_FOREACH(rule, &ruleq, entry) {
 		if (strcmp(rule->rule_name, rule_name) != 0)
 			continue;
