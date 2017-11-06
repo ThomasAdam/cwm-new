@@ -139,7 +139,7 @@ cmd_parse_target(const char *target)
 {
 	struct cmd_target_tokens	*ctt;
 	char				*copy, *colon, *full_stop;
-	int				 grp_from_target;
+	int				 grp_from_target = -1;
 
 	ctt = xcalloc(1, sizeof(*ctt));
 	ctt->sc_name = NULL;
@@ -148,41 +148,6 @@ cmd_parse_target(const char *target)
 
 	if (target == NULL) {
 		log_debug("%s: target is NULL", __func__);
-		return (ctt);
-	}
-
-	if (starts_with(target, "0x")) {
-		/* Skip the '0x' */
-		target += 2;
-		ctt->win_name = xstrdup(target);
-		return (ctt);
-	}
-
-	if (starts_with(target, ":.")) {
-		/* Current screen, group, and hence looking at the client
-		 * only.
-		 */
-		target += 2;
-		ctt->win_name = xstrdup(target);
-		return (ctt);
-	}
-
-	if (*target == ':' && (target[1] >= '0' && target[1] <= '9')) {
-		grp_from_target = target[1] - '0';
-
-		ctt->grp_num = grp_from_target;
-
-		/* Check to see if there's a period for the client.  That is,
-		 * we have:
-		 *
-		 * :0.{client}
-		 */
-		target += 2;
-		if (*target == '.') {
-			target++;
-			ctt->win_name = xstrdup(target);
-		}
-
 		return (ctt);
 	}
 
@@ -199,14 +164,70 @@ cmd_parse_target(const char *target)
 	if (full_stop != NULL)
 		*full_stop++ = '\0';
 
-	grp_from_target = *colon - '0';
+	log_debug("%s: colon: %s, fs: %s", __func__, colon, full_stop);
 
-	ctt->sc_name = xstrdup(copy);
+	if (starts_with(target, "0x")) {
+		/* Skip the '0x' */
+		target += 2;
+		ctt->win_name = xstrdup(target);
+
+		goto out;
+	}
+
+	if (starts_with(target, ":.")) {
+		/* Current screen, group, and hence looking at the client
+		 * only.
+		 */
+		target += 2;
+		ctt->win_name = xstrdup(target);
+		
+		goto out;
+	}
+
+	if (*target >= '0' && *target <= '9') {
+		grp_from_target = *target - '0';
+		
+		if (copy != NULL && *copy != '\0')
+			ctt->sc_name = xstrdup(copy);
+		ctt->grp_num = grp_from_target;
+
+		goto out;
+	}
+
+	if (*target == ':' && (target[1] >= '0' && target[1] <= '9')) {
+		grp_from_target = target[1] - '0';
+
+		if (copy != NULL && *copy != '\0')
+			ctt->sc_name = xstrdup(copy);
+		ctt->grp_num = grp_from_target;
+
+		/* Check to see if there's a period for the client.  That is,
+		 * we have:
+		 *
+		 * :0.{client}
+		 */
+		target += 2;
+		log_debug("%s: sc_name: <%s>, target: <%s>", __func__,
+		    ctt->sc_name, target);
+		if (*target != '\0' && *target == '.') {
+			target++;
+			ctt->win_name = xstrdup(target);
+		}
+
+		goto out;
+	}
+
+	if (colon != NULL)
+		grp_from_target = *colon - '0';
+	if (copy != NULL || *copy != '\0')
+		ctt->sc_name = xstrdup(copy);
+	if (full_stop != NULL)
+		ctt->win_name = xstrdup(full_stop);
 	ctt->grp_num = grp_from_target;
-	ctt->win_name = xstrdup(full_stop);
 
+out:
+	log_debug("%s: on exit here: sc: %s", __func__, ctt->sc_name);
 	free(copy);
-
 	return (ctt);
 }
 
@@ -251,6 +272,8 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	struct cmd_find			*cmdf;
 	struct cmd_target_tokens	*ctt = NULL;
 
+	log_debug("%s: target: <<%s>>", __func__, target);
+
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
 	ctt = cmd_parse_target(target);
@@ -289,13 +312,27 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 		else
 			cmdf->gc = group_find_by_num(cmdf->sc, ctt->grp_num);
 		break;
+	case CMD_GROUP:
+		if (ctt->grp_num == -1) {
+			log_debug("Group invalid");
+			goto error;
+		}
+
+		if (ctt->sc_name == NULL)
+			ctt->sc_name = screen_current_screen(NULL)->name; 
+
+		log_debug("%s: SC IS: <<%s>>", __func__, ctt->sc_name);
+		cmdf->sc = screen_find_by_name(ctt->sc_name);
+		cmdf->gc = group_find_by_num(cmdf->sc, ctt->grp_num);
+		break;
 	default:
 		break;
 	}
 
-	log_debug("%s: cmd_find has\n\t",
+	log_debug("%s: cmd_find has\n\t"
 	    "sc (%p): %s\n\tgc (%p): %d",
-	    cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
+	    __func__, cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
+
 error:
 	free((char *)ctt->sc_name);
 	free((char *)ctt->win_name);

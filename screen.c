@@ -58,7 +58,7 @@ struct screen_ctx *
 screen_current_screen(struct client_ctx **cc)
 {
 	struct client_ctx	*cur_cc;
-	struct screen_ctx	*sc;
+	struct screen_ctx	*sc = NULL;
 	Window			 root;
 	int			 ptr_x, ptr_y;
 
@@ -68,6 +68,11 @@ screen_current_screen(struct client_ctx **cc)
 		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
 		xu_ptr_getpos(root, &ptr_x, &ptr_y);
 		sc = screen_find_screen(ptr_x, ptr_y, NULL);
+
+		log_debug("%s: sc is: p: %p, n: <%s>", __func__, sc, sc->name);
+
+		if (sc->name == NULL || *sc->name == '\0')
+			abort();
 	} else {
 		sc = cur_cc->sc;
 	}
@@ -319,6 +324,8 @@ screen_find_screen(int x, int y, struct screen_ctx *s)
 			break;
 		}
 	}
+
+	log_debug("%s: SC_RET: %p, NAME: %s", __func__, sc_ret, sc_ret->name);
 
 	if (sc_ret == NULL) {
 		/* Most likely, the monitor resolutions have found dead space,
