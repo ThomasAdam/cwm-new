@@ -114,6 +114,7 @@ u_init_pipe(void)
 void
 u_put_status(void)
 {
+	return;
 	struct screen_ctx	*sc;
 	struct client_ctx	*cc, *ci;
 	struct group_ctx	*gc;

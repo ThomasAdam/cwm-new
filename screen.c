@@ -71,8 +71,10 @@ screen_current_screen(struct client_ctx **cc)
 
 		log_debug("%s: sc is: p: %p, n: <%s>", __func__, sc, sc->name);
 
+#if 0
 		if (sc->name == NULL || *sc->name == '\0')
 			abort();
+#endif
 	} else {
 		sc = cur_cc->sc;
 	}
@@ -261,13 +263,7 @@ screen_init_contents(void)
 	}
 	screen_apply_ewmh();
 
-	if (new_config)
-		config2();
-	else {
-		config_parse();
-		exit(0);
-	}
-
+	config_parse();
 	client_scan_for_windows();
 
 	/* Run the panel command for each screen. */
@@ -275,6 +271,9 @@ screen_init_contents(void)
 		if (sc->config_screen->panel_cmd != NULL)
 			u_spawn(sc->config_screen->panel_cmd);
 	}
+	if (new_config)
+		config2();
+
 }
 
 struct screen_ctx *

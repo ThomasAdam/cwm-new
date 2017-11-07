@@ -141,7 +141,7 @@ cmd_parse_target(const char *target)
 	char				*copy, *colon, *full_stop;
 	int				 grp_from_target = -1;
 
-	ctt = xcalloc(1, sizeof(*ctt));
+	ctt = xmalloc(sizeof(*ctt));
 	ctt->sc_name = NULL;
 	ctt->grp_num = -1;
 	ctt->win_name = NULL;
@@ -333,6 +333,8 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	    "sc (%p): %s\n\tgc (%p): %d",
 	    __func__, cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
 
+	/* FIXME -- returning here and not free()ing is bad. */
+	return (cmdf);
 error:
 	free((char *)ctt->sc_name);
 	free((char *)ctt->win_name);
