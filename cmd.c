@@ -226,7 +226,6 @@ cmd_parse_target(const char *target)
 	ctt->grp_num = grp_from_target;
 
 out:
-	log_debug("%s: on exit here: sc: %s", __func__, ctt->sc_name);
 	free(copy);
 	return (ctt);
 }
@@ -271,8 +270,7 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 
 	struct cmd_find			*cmdf;
 	struct cmd_target_tokens	*ctt = NULL;
-
-	log_debug("%s: target: <<%s>>", __func__, target);
+	struct screen_ctx		*sc = NULL;
 
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
@@ -314,14 +312,17 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 		break;
 	case CMD_GROUP:
 		if (ctt->grp_num == -1) {
-			log_debug("Group invalid");
+			log_debug("%s: group from '%s' is invalid", __func__,
+			    target);
 			goto error;
 		}
 
-		if (ctt->sc_name == NULL)
-			ctt->sc_name = screen_current_screen(NULL)->name; 
+		if (ctt->sc_name == NULL) {
+			if ((sc = screen_current_screen(NULL)) == NULL)
+				goto error;
 
-		log_debug("%s: SC IS: <<%s>>", __func__, ctt->sc_name);
+			ctt->sc_name = strdup(sc->name);
+		}
 		cmdf->sc = screen_find_by_name(ctt->sc_name);
 		cmdf->gc = group_find_by_num(cmdf->sc, ctt->grp_num);
 		break;
@@ -333,8 +334,6 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	    "sc (%p): %s\n\tgc (%p): %d",
 	    __func__, cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
 
-	/* FIXME -- returning here and not free()ing is bad. */
-	return (cmdf);
 error:
 	free((char *)ctt->sc_name);
 	free((char *)ctt->win_name);

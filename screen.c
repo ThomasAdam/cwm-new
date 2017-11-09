@@ -68,13 +68,6 @@ screen_current_screen(struct client_ctx **cc)
 		root = RootWindow(X_Dpy, DefaultScreen(X_Dpy));
 		xu_ptr_getpos(root, &ptr_x, &ptr_y);
 		sc = screen_find_screen(ptr_x, ptr_y, NULL);
-
-		log_debug("%s: sc is: p: %p, n: <%s>", __func__, sc, sc->name);
-
-#if 0
-		if (sc->name == NULL || *sc->name == '\0')
-			abort();
-#endif
 	} else {
 		sc = cur_cc->sc;
 	}
