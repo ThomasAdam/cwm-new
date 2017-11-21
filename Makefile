@@ -11,7 +11,7 @@ OBJS=		$(patsubst %.c,%.o,$(SRCS))
 
 CPPFLAGS+=	$(shell pkg-config --cflags fontconfig x11 xft xrandr libconfuse)
 
-CFLAGS+=	-Wall -Wimplicit-int -O0 -ggdb -D_GNU_SOURCE -I.
+CFLAGS+=	-Wall -Wimplicit-int -Wno-pointer-sign -O0 -ggdb -D_GNU_SOURCE -I.
 
 LDFLAGS+=	$(shell pkg-config --libs fontconfig x11 xft xrandr libconfuse)
 
