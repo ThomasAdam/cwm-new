@@ -164,8 +164,6 @@ cmd_parse_target(const char *target)
 	if (full_stop != NULL)
 		*full_stop++ = '\0';
 
-	log_debug("%s: colon: %s, fs: %s", __func__, colon, full_stop);
-
 	if (starts_with(target, "0x")) {
 		/* Skip the '0x' */
 		target += 2;
@@ -186,11 +184,8 @@ cmd_parse_target(const char *target)
 
 	if (*target >= '0' && *target <= '9') {
 		grp_from_target = *target - '0';
-		
-		if (copy != NULL && *copy != '\0')
-			ctt->sc_name = xstrdup(copy);
-		ctt->grp_num = grp_from_target;
 
+		ctt->grp_num = grp_from_target;
 		goto out;
 	}
 
@@ -207,8 +202,6 @@ cmd_parse_target(const char *target)
 		 * :0.{client}
 		 */
 		target += 2;
-		log_debug("%s: sc_name: <%s>, target: <%s>", __func__,
-		    ctt->sc_name, target);
 		if (*target != '\0' && *target == '.') {
 			target++;
 			ctt->win_name = xstrdup(target);
@@ -231,7 +224,7 @@ out:
 }
 
 struct cmd_find *
-cmd_find_target(struct cmd_q *cmdq, const char *target)
+cmd_find_target(struct cmd_q *cmdq, struct args *args)
 {
 	/* Some commands are going to need to ensure:
 	 *
@@ -271,6 +264,7 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 	struct cmd_find			*cmdf;
 	struct cmd_target_tokens	*ctt = NULL;
 	struct screen_ctx		*sc = NULL;
+	const char			*target = args_get(args, 't');
 
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
@@ -330,14 +324,21 @@ cmd_find_target(struct cmd_q *cmdq, const char *target)
 		break;
 	}
 
-	log_debug("%s: cmd_find has\n\t"
-	    "sc (%p): %s\n\tgc (%p): %d",
-	    __func__, cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
-
+	cmd_find_print(cmdf);
 error:
 	free((char *)ctt->sc_name);
 	free((char *)ctt->win_name);
 	free(ctt);
 
 	return (cmdf);
+}
+
+void
+cmd_find_print(struct cmd_find *cmdf)
+{
+	if (cmdf == NULL)
+		return;
+
+	log_debug("cmd_find (%p):\n\tsc (%p): %s\n\tgc (%p): %d\n\t",
+	    cmdf, cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
 }

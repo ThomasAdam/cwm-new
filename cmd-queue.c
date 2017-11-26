@@ -109,7 +109,7 @@ cmdq_continue(struct cmd_q *cmdq)
 		next = TAILQ_NEXT(cmdq->item, qentry);
 
 		while (cmdq->cmd != NULL) {
-			/* XXX - Deal with cmd_find_state here. */
+			cmdq->state = cmd_find_target(cmdq, cmdq->cmd->args);
 			retval = cmdq->cmd->entry->exec(cmdq->cmd, cmdq);
 
 			if (retval == CMD_RETURN_ERROR)
