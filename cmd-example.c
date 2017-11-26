@@ -30,23 +30,14 @@ static enum cmd_retval	cmd_example_exec(struct cmd *, struct cmd_q *);
 const struct cmd_entry cmd_example_entry = {
 	.name = "example",
 
-	.args = { "", 0, 0 },
-	.usage = "",
+	.args = { "t:", 0, 0 },
+	.usage = "[-t group]",
 	.flags = CMD_GROUP,
 	.exec = cmd_example_exec
 };
 
 static enum cmd_retval
-cmd_example_exec(struct cmd *self, unused struct cmd_q *cmdq)
+cmd_example_exec(struct cmd *self, struct cmd_q *cmdq)
 {
-	//struct cmd_find		*cft;
-
-	(void)cmd_find_target(cmdq, ":2");
-	(void)cmd_find_target(cmdq, "jkljljlj");
-	
-	//(void)cmd_find_target(cmdq, ":.client");
-	//(void)cmd_find_target(cmdq, ":6.myclient.foo");
-	//(void)cmd_find_target(cmdq, "default:3.myclient");
-
 	return (CMD_RETURN_NORMAL);
 }

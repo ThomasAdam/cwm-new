@@ -1,4 +1,4 @@
 # Comment
-example ; example
-example
+example -t :2 ; example -t :1
+example -t 6
 This is a line
