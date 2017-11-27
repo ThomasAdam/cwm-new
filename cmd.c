@@ -23,9 +23,11 @@
 static bool			 starts_with(const char *, const char *);
 static struct cmd_target_tokens	*cmd_parse_target(const char *);
 
+extern const struct cmd_entry	cmd_bind_entry;
 extern const struct cmd_entry	cmd_example_entry;
 
 const struct cmd_entry	*cmd_table[] = {
+	&cmd_bind_entry,
 	&cmd_example_entry,
 	NULL,
 };
@@ -178,7 +180,7 @@ cmd_parse_target(const char *target)
 		 */
 		target += 2;
 		ctt->win_name = xstrdup(target);
-		
+
 		goto out;
 	}
 
@@ -264,7 +266,16 @@ cmd_find_target(struct cmd_q *cmdq, struct args *args)
 	struct cmd_find			*cmdf;
 	struct cmd_target_tokens	*ctt = NULL;
 	struct screen_ctx		*sc = NULL;
-	const char			*target = args_get(args, 't');
+	const char			*target = NULL;
+
+	if (args_has(args, 't'))
+		target = args_get(args, 't');
+
+	if (cmdq->cmd->entry->flags & CMD_NONE)
+		return (NULL);
+
+	if (target == NULL)
+		return (NULL);
 
 	cmdf = xcalloc(1, sizeof(*cmdf));
 
@@ -320,6 +331,14 @@ cmd_find_target(struct cmd_q *cmdq, struct args *args)
 		cmdf->sc = screen_find_by_name(ctt->sc_name);
 		cmdf->gc = group_find_by_num(cmdf->sc, ctt->grp_num);
 		break;
+	case CMD_SCREEN:
+		if (ctt->sc_name == NULL) {
+			if ((sc = screen_current_screen(NULL)) == NULL)
+				goto error;
+
+			ctt->sc_name = strdup(sc->name);
+		}
+		break;
 	default:
 		break;
 	}
@@ -340,5 +359,7 @@ cmd_find_print(struct cmd_find *cmdf)
 		return;
 
 	log_debug("cmd_find (%p):\n\tsc (%p): %s\n\tgc (%p): %d\n\t",
-	    cmdf, cmdf->sc, cmdf->sc->name, cmdf->gc, cmdf->gc->num);
+	    cmdf ? cmdf : NULL, cmdf->sc ? cmdf->sc : NULL,
+	    cmdf->sc ? cmdf->sc->name : "null",
+	    cmdf->gc ? cmdf->gc : NULL, cmdf->gc ? cmdf->gc->num : -1);
 }

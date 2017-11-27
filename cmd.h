@@ -98,9 +98,10 @@ struct cmd_entry {
 	} args;
 	const char		*usage;
 
-#define CMD_SCREEN	0x1
-#define CMD_GROUP	0x2
-#define CMD_CLIENT	0x4
+#define CMD_NONE	0x1
+#define CMD_SCREEN	0x2
+#define CMD_GROUP	0x4
+#define CMD_CLIENT	0x8
 	int			 flags;
 
 	enum cmd_retval  (*exec)(struct cmd *, struct cmd_q *);
