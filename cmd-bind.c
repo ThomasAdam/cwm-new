@@ -25,22 +25,40 @@
  * Handle key-bindings.
  */
 
-static enum cmd_retval	cmd_bind_exec(struct cmd *, struct cmd_q *);
-static void		bindings_init(void);
+static enum cmd_retval	 cmd_bind_exec(struct cmd *, struct cmd_q *);
+static struct binding	*bindings_find(const char *);
+static bool		 bindings_bind(const char *, const char *,
+			    enum binding_type);
+static void		 bindings_unbind(struct binding *, enum binding_type);
+static const char	*binding_getmask(const char *, unsigned int *);
 
 const struct cmd_entry cmd_bind_entry = {
 	.name = "bind",
 
-	.args = { "m", 2, -1 },
+	.args = { "mu", 2, -1 },
 	.usage = "[-m] key command(s)",
 	.flags = CMD_NONE,
 	.exec = cmd_bind_exec,
 };
 
-static void
+static const struct {
+	const char	ch;
+	int		mask;
+} bind_mods[] = {
+	{ 'C',	ControlMask },
+	{ 'M',	Mod1Mask },
+	{ '4',	Mod4Mask },
+	{ 'S',	ShiftMask },
+};
+
+void
 bindings_init(void)
 {
-	char	*defaults[] = {
+	unsigned int 	 i;
+	struct cmd_list	*cmdlist;
+	struct cmd_q	*cmdq = cmdq_new();
+	char		*cause;
+	char		*defaults[] = {
 		"bind 4S-Down	 snapdown",
 		"bind 4S-Left	 snapleft",
 		"bind 4S-Right	 snapright",
@@ -114,10 +132,155 @@ bindings_init(void)
 		"bind -m M-3	 window_lower",
 		"bind -m CMS-3	 window_hide",
 	};
+
+	TAILQ_INIT(&bindingq);
+
+	for (i = 0; i < nitems(defaults); i++) {
+		cmdlist = cmd_string_parse(defaults[i], "<default>", i, &cause);
+		if (cause != NULL)
+			log_fatal("Bad default key: %s", defaults[i]);
+		cmdq_append(cmdq, cmdlist);
+	}
+
+	cmdq_continue(cmdq);
 }
 
+static struct binding *
+bindings_find(const char *bind)
+{
+	struct binding	*key = NULL, *keynxt;
+	unsigned int	 modmask;
+	const char	*modifier;
+
+	modifier = binding_getmask(bind, &modmask);
+
+	TAILQ_FOREACH_SAFE(key, &bindingq, entry, keynxt) {
+		if (key->modmask == modmask)
+			return (key);
+	}
+
+	return (NULL);
+}
+
+static const char *
+binding_getmask(const char *name, unsigned int *mask)
+{
+	char		*dash;
+	const char	*ch;
+	unsigned int	 i;
+
+	*mask = 0;
+	if ((dash = strchr(name, '-')) == NULL)
+		return(name);
+	for (i = 0; i < nitems(bind_mods); i++) {
+		if ((ch = strchr(name, bind_mods[i].ch)) != NULL && ch < dash)
+			*mask |= bind_mods[i].mask;
+	}
+
+	/* Skip past modifiers. */
+	return (dash + 1);
+}
+static bool
+bindings_bind(const char *bind, const char *cmd, enum binding_type type)
+{
+	struct binding		*b;
+	const struct name_func	*nf;
+	const char		*key, *errstr;
+	bool			 is_mouse = (type == BINDING_MOUSE);
+
+	b = xcalloc(1, sizeof(*b));
+	b->type = type;
+	key = binding_getmask(bind, &b->modmask);
+
+	log_debug("%s: type: %s, key %s, bind: %s, cmd: %s",
+	    __func__, is_mouse ? "mouse" : "key", key, bind, cmd);
+
+	if (!is_mouse) {
+		b->press.keysym = XStringToKeysym(key);
+		if (b->press.keysym == NoSymbol) {
+			log_debug("unknown symbol: %s", key);
+			free(b);
+			return (false);
+		}
+	} else {
+		/* Mouse binding. */
+		b->press.button = strtonum(key, Button1, Button5, &errstr);
+		if (errstr != NULL) {
+			log_debug("button number is %s: %s", errstr, key);
+			free(b);
+			return (false);
+		}
+	}
+
+	/* We now have the correct binding, remove duplicates. */
+	bindings_unbind(b, type);
+
+	if (strcmp("unmap", cmd) == 0) {
+		free(b);
+		return (true);
+	}
+
+	for (nf = name_to_func; nf->tag != NULL; nf++) {
+		if (strcmp(nf->tag, cmd) != 0)
+			continue;
+
+		b->callback = nf->handler;
+		b->flags = nf->flags;
+		b->argument = nf->argument;
+		TAILQ_INSERT_TAIL(&bindingq, b, entry);
+		return (true);
+	}
+
+	if (is_mouse)
+		return (true);
+
+	b->callback = kbfunc_cmdexec;
+	b->flags = CWM_CMD;
+	b->argument.c = xstrdup(cmd);
+	TAILQ_INSERT_TAIL(&bindingq, b, entry);
+	return (true);
+}
+
+static void
+bindings_unbind(struct binding *b, enum binding_type type)
+{
+	struct binding	*ub, *ubnxt;
+	bool		 is_mouse = (type == BINDING_MOUSE);
+
+	TAILQ_FOREACH_SAFE(ub, &bindingq, entry, ubnxt) {
+		if (b->modmask != ub->modmask)
+			continue;
+
+		if ((!is_mouse && (b->press.keysym == ub->press.keysym))
+		    ||
+		   (is_mouse && (b->press.button == ub->press.button))) {
+			TAILQ_REMOVE(&bindingq, b, entry);
+			log_debug("\t%s: removed key %d", __func__,
+			    is_mouse ? b->press.button : b->press.keysym);
+			if (!is_mouse && b->flags & CWM_CMD)
+				free(b->argument.c);
+			free(b);
+		}
+	}
+}
 static enum cmd_retval
 cmd_bind_exec(struct cmd *self, struct cmd_q *cmdq)
 {
+	struct args		*args = self->args;
+	struct binding		*b;
+	enum binding_type	 type;
+
+	type = args_has(args, 'm') ? BINDING_MOUSE : BINDING_KEY;
+
+	if (args_has(args, 'u')) {
+		if ((b = bindings_find(args->argv[0])) == NULL)
+			return (CMD_RETURN_ERROR);
+		bindings_unbind(b, type);
+
+		return (CMD_RETURN_NORMAL);
+	}
+
+	bindings_bind(args->argv[0], args->argv[1], type);
+
 	return (CMD_RETURN_NORMAL);
 }

@@ -249,18 +249,20 @@ xev_handle_buttonpress(XEvent *ee)
 {
 	XButtonEvent		*e = &ee->xbutton;
 	struct client_ctx	*cc;
-	struct binding		*mb;
+	struct binding		*b;
 
 	e->state &= ~IGNOREMODMASK;
 
-	TAILQ_FOREACH(mb, &mousebindingq, entry) {
-		if (e->button == mb->press.button && e->state == mb->modmask)
+	TAILQ_FOREACH(b, &bindingq, entry) {
+		if (b->type != BINDING_MOUSE)
+			continue;
+		if (e->button == b->press.button && e->state == b->modmask)
 			break;
 	}
 
-	if (mb == NULL)
+	if (b == NULL)
 		return;
-	if (mb->flags & CWM_WIN) {
+	if (b->flags & CWM_WIN) {
 		if (((cc = client_find(e->window)) == NULL) &&
 		    (cc = client_current()) == NULL)
 			return;
@@ -272,7 +274,7 @@ xev_handle_buttonpress(XEvent *ee)
 		cc->sc = screen_find(e->window);
 	}
 
-	(*mb->callback)(cc, &mb->argument);
+	(*b->callback)(cc, &b->argument);
 }
 
 static void
@@ -289,7 +291,7 @@ xev_handle_keypress(XEvent *ee)
 {
 	XKeyEvent		*e = &ee->xkey;
 	struct client_ctx	*cc = NULL;
-	struct binding		*kb;
+	struct binding		*b;
 	KeySym			 keysym, skeysym;
 	unsigned int		 modshift;
 	int			 ptr_x, ptr_y;
@@ -299,22 +301,24 @@ xev_handle_keypress(XEvent *ee)
 
 	e->state &= ~IGNOREMODMASK;
 
-	TAILQ_FOREACH(kb, &keybindingq, entry) {
-		if (keysym != kb->press.keysym && skeysym == kb->press.keysym)
+	TAILQ_FOREACH(b, &bindingq, entry) {
+		if (b->type != BINDING_KEY)
+			continue;
+		if (keysym != b->press.keysym && skeysym == b->press.keysym)
 			modshift = ShiftMask;
 		else
 			modshift = 0;
 
-		if ((kb->modmask | modshift) != e->state)
+		if ((b->modmask | modshift) != e->state)
 			continue;
 
-		if (kb->press.keysym == (modshift == 0 ? keysym : skeysym))
+		if (b->press.keysym == (modshift == 0 ? keysym : skeysym))
 			break;
 	}
 
-	if (kb == NULL || kb->callback == NULL)
+	if (b == NULL || b->callback == NULL)
 		return;
-	if (kb->flags & CWM_WIN) {
+	if (b->flags & CWM_WIN) {
 		if (((cc = client_find(e->window)) == NULL) &&
 		    (cc = client_current()) == NULL) {
 			/*
@@ -338,7 +342,7 @@ xev_handle_keypress(XEvent *ee)
 		    __func__, cc->sc->name);
 	}
 
-	(*kb->callback)(cc, &kb->argument);
+	(*b->callback)(cc, &b->argument);
 }
 
 /*

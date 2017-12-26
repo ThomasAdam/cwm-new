@@ -332,6 +332,13 @@ struct screen_ctx {
 };
 TAILQ_HEAD(screen_ctx_q, screen_ctx);
 
+enum binding_type
+{
+	BINDING_NONE = 0,
+	BINDING_KEY,
+	BINDING_MOUSE,
+};
+
 struct binding {
 	TAILQ_ENTRY(binding)	 entry;
 	void			(*callback)(struct client_ctx *, union arg *);
@@ -339,7 +346,9 @@ struct binding {
 	unsigned int		 modmask;
 	union press		 press;
 	int			 flags;
+	enum binding_type	 type;
 };
+TAILQ_HEAD(binding_q, binding);
 TAILQ_HEAD(keybinding_q, binding);
 TAILQ_HEAD(mousebinding_q, binding);
 
@@ -365,6 +374,7 @@ TAILQ_HEAD(menu_q, menu);
 #define CONF_FONT	"sans-serif:pixelsize=14:bold"
 #define CONF_MAMOUNT	1
 #define CONF_SNAPDIST	0
+struct binding_q	 bindingq;
 struct keybinding_q	 keybindingq;
 struct mousebinding_q	 mousebindingq;
 struct autogroupwin_q	 autogroupq;
@@ -655,6 +665,8 @@ void			 screen_updatestackingorder(struct screen_ctx *);
 struct screen_ctx	*screen_find_by_name(const char *);
 void			 screen_apply_ewmh(void);
 struct screen_ctx	*screen_current_screen(struct client_ctx **);
+
+void		 	 bindings_init(void);
 
 
 void			 kbfunc_client_cycle(struct client_ctx *, union arg *);

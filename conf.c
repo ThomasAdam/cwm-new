@@ -406,6 +406,8 @@ conf_bind_kbd(const char *bind, const char *cmd)
 	const char	*key;
 	unsigned int	 i;
 
+	return (1);
+
 	kb = xcalloc(1, sizeof(*kb));
 	key = conf_bind_getmask(bind, &kb->modmask);
 

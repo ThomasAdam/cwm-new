@@ -85,6 +85,8 @@ config2(void)
 {
 	struct cmd_q		*cmdq = cmdq_new();
 
+	bindings_init();
+
 	load_cfg(cmdq, conf_file);
 	cmdq_continue(cmdq);
 }
