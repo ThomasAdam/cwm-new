@@ -317,8 +317,6 @@ screen_find_screen(int x, int y, struct screen_ctx *s)
 		}
 	}
 
-	log_debug("%s: SC_RET: %p, NAME: %s", __func__, sc_ret, sc_ret->name);
-
 	if (sc_ret == NULL) {
 		/* Most likely, the monitor resolutions have found dead space,
 		 * which would put a window on an area where no screen

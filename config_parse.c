@@ -32,7 +32,6 @@ static void	 config_internalise_groups(struct screen_ctx *, cfg_t *);
 static void	 config_intern_clients(cfg_t *);
 static void	 config_intern_group(struct config_group *, cfg_t *);
 static void	 config_intern_screen(struct config_screen *, cfg_t *);
-static void	 config_intern_bindings(cfg_t *);
 static void	 config_intern_menu(cfg_t *);
 
 cfg_opt_t	 color_opts[] = {
@@ -62,14 +61,6 @@ cfg_opt_t	 groups_opts[] = {
 
 cfg_opt_t	 key_mouse_opts[] = {
 	CFG_STR("command", NULL, CFGF_NONE),
-	CFG_END()
-};
-
-cfg_opt_t	 bind_opts[] = {
-	CFG_SEC("key", key_mouse_opts, 
-		CFGF_TITLE | CFGF_NO_TITLE_DUPES | CFGF_MULTI),
-	CFG_SEC("mouse", key_mouse_opts, 
-		CFGF_TITLE | CFGF_NO_TITLE_DUPES | CFGF_MULTI),
 	CFG_END()
 };
 
@@ -109,80 +100,6 @@ cfg_opt_t	 client_opts[] = {
 	CFG_END()
 };
 
-#define DEFAULT_BINDINGS				\
-	"key 4S-Down	{command = snapdown}"		\
-	"key 4S-Left	{command = snapleft}"		\
-	"key 4S-Right	{command = snapright}"		\
-	"key 4S-Up	{command = snapup}"		\
-	"key C-Return   {command = expand}"		\
-	"key C-Down	{command = ptrmovedown}"	\
-	"key C-Left	{command = ptrmoveleft}"	\
-	"key C-Right	{command = ptrmoveright}"	\
-	"key C-Up	{command = ptrmoveup}"		\
-	"key C-slash	{command = menusearch}"		\
-	"key CM-0	{command = group0}"		\
-	"key CM-1	{command = group1}"		\
-	"key CM-2	{command = group2}"		\
-	"key CM-3	{command = group3}"		\
-	"key CM-4	{command = group4}"		\
-	"key CM-5	{command = group5}"		\
-	"key CM-6	{command = group6}"		\
-	"key CM-7	{command = group7}"		\
-	"key CM-8	{command = group8}"		\
-	"key CM-9	{command = group9}"		\
-	"key CM-B	{command = toggle_border}"	\
-	"key CM-Delete	{command = lock}"		\
-	"key CM-H	{command = bigresizeleft}"	\
-	"key CM-J	{command = bigresizedown}"	\
-	"key CM-K	{command = bigresizeup}"	\
-	"key CM-L	{command = bigresizeright}"	\
-	"key CM-Return	{command = terminal}"		\
-	"key CM-a	{command = nogroup}"		\
-	"key CM-equal	{command = vmaximize}"		\
-	"key CM-f	{command = fullscreen}"		\
-	"key CM-g	{command = grouptoggle}"	\
-	"key CM-h	{command = resizeleft}"		\
-	"key CM-j	{command = resizedown}"		\
-	"key CM-k	{command = resizeup}"		\
-	"key CM-l	{command = resizeright}"	\
-	"key CM-m	{command = maximize}"		\
-	"key CM-n	{command = label}"		\
-	"key CM-s	{command = sticky}"		\
-	"key CM-x	{command = delete}"		\
-	"key CMS-equal	{command = hmaximize}"		\
-	"key CMS-f	{command = freeze}"		\
-	"key CMS-q	{command = quit}"		\
-	"key CMS-r	{command = restart}"		\
-	"key CS-Down	{command = bigptrmovedown}"	\
-	"key CS-Left	{command = bigptrmoveleft}"	\
-	"key CS-Right	{command = bigptrmoveright}"	\
-	"key CS-Up	{command = bigptrmoveup}"	\
-	"key M-Down	{command = lower}"		\
-	"key M-H	{command = bigmoveleft}"	\
-	"key M-J	{command = bigmovedown}"	\
-	"key M-K	{command = bigmoveup}"		\
-	"key M-L	{command = bigmoveright}"	\
-	"key M-Left	{command = rcyclegroup}"	\
-	"key M-Right	{command = cyclegroup}"		\
-	"key M-Tab	{command = cycle}"		\
-	"key M-Up	{command = raise}"		\
-	"key M-h	{command = moveleft}"		\
-	"key M-j	{command = movedown}"		\
-	"key M-k	{command = moveup}"		\
-	"key M-l	{command = moveright}"		\
-	"key M-period	{command = ssh}"		\
-	"key M-question	{command = exec}"		\
-	"key M-slash	{command = search}"		\
-	"key MS-Tab	{command = rcycle}"		\
-	"mouse 1	{command = menu_unhide}"	\
-	"mouse 2	{command = menu_group}"		\
-	"mouse 3	{command = menu_cmd}"		\
-	"mouse M-1	{command = window_move}"	\
-	"mouse CM-1	{command = window_grouptoggle}"	\
-	"mouse M-2	{command = window_resize}"	\
-	"mouse M-3	{command = window_lower}"	\
-	"mouse CMS-3	{command = window_hide}"
-
 cfg_opt_t	 screen_opts[] = {
 	CFG_SEC("groups", groups_opts, CFGF_NONE),
 	CFG_INT_LIST("gap", "{0,0,0,0}", CFGF_NONE),
@@ -194,7 +111,6 @@ cfg_opt_t	 screen_opts[] = {
 
 cfg_opt_t	 all_cfg_opts[] = {
 	CFG_SEC("clients", client_opts, CFGF_NO_TITLE_DUPES | CFGF_MULTI),
-	CFG_SEC("bindings", bind_opts, CFGF_NO_TITLE_DUPES | CFGF_MULTI),
 	CFG_SEC("menu", menu_opts, CFGF_MULTI),
 	CFG_SEC("screen", screen_opts,
 		CFGF_TITLE | CFGF_NO_TITLE_DUPES | CFGF_MULTI),
@@ -212,9 +128,6 @@ cfg_opt_t	 all_cfg_opts[] = {
 			"command = \"lock\"" \
 		"}" \
 	"}" \
-	"bindings {" \
-		"%s" \
-	"}" \
 	"screen %s {" \
 		"groups {" \
 			"group 0 {}" \
@@ -228,7 +141,7 @@ cfg_opt_t	 all_cfg_opts[] = {
 			"group 8 {}" \
 			"group 9 {}" \
 		"}" \
-	"}", (DEFAULT_BINDINGS), (s)); str; })
+	"}", (s)); str; })
 
 static void
 config_apply(void)
@@ -271,37 +184,6 @@ config_intern_menu(cfg_t *cfg)
 }
 
 static void
-config_intern_bindings(cfg_t *cfg)
-{
-	cfg_t			*bind_sec, *key_mouse_sec;
-	const char		*key, *cmd;
-	size_t			 i, j;
-
-	/* Parse mouse/key bindings. */
-	for (i = 0; i < cfg_size(cfg, "bindings"); i++) {
-		bind_sec = cfg_getnsec(cfg, "bindings", i);
-
-		for (j = 0; j < cfg_size(bind_sec, "key"); j++) {
-			key_mouse_sec = cfg_getnsec(bind_sec, "key", j);
-			key = cfg_title(key_mouse_sec);
-			cmd = cfg_getstr(key_mouse_sec, "command");
-			if (key == NULL || cmd == NULL)
-				continue;
-
-			conf_bind_kbd(key, cmd);
-		}
-
-		for (j = 0; j < cfg_size(bind_sec, "mouse"); j++) {
-			key_mouse_sec = cfg_getnsec(bind_sec, "mouse", j);
-			key = cfg_title(key_mouse_sec);
-			cmd = cfg_getstr(key_mouse_sec, "command");
-			conf_bind_mouse(key, cmd);
-		}
-
-	}
-}
-
-static void
 config_default(cfg_t *cfg, bool include_default_config)
 {
 	struct screen_ctx	*sc;
@@ -312,7 +194,6 @@ config_default(cfg_t *cfg, bool include_default_config)
 		 * config has been read.
 		 */
 		config_intern_clients(cfg);
-		config_intern_bindings(cfg);
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 
@@ -325,7 +206,6 @@ config_default(cfg_t *cfg, bool include_default_config)
 			log_fatal("Unable to load DEFAULT_CONFIG");
 
 		config_intern_clients(cfg);
-		config_intern_bindings(cfg);
 		config_internalise(cfg);
 		config_intern_menu(cfg);
 	}
@@ -549,8 +429,6 @@ config_parse(void)
 {
 	cfg_t	*cfg_default, *cfg;
 
-	TAILQ_INIT(&keybindingq);
-	TAILQ_INIT(&mousebindingq);
 	TAILQ_INIT(&ignoreq);
 	TAILQ_INIT(&autogroupq);
 	TAILQ_INIT(&ruleq);

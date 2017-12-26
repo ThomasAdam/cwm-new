@@ -31,10 +31,7 @@
 
 #include "calmwm.h"
 
-static const char	*conf_bind_getmask(const char *, unsigned int *);
 static void	 	 conf_cmd_remove(const char *);
-static void	 	 conf_unbind_kbd(struct binding *);
-static void	 	 conf_unbind_mouse(struct binding *);
 
 const struct name_func name_to_func[] = {
 	{ "lower", kbfunc_client_lower, CWM_WIN, {0} },
@@ -164,16 +161,6 @@ const struct name_func name_to_func[] = {
 	{ "menu_cmd", mousefunc_menu_cmd, 0, {0} },
 	{ "toggle_border", kbfunc_client_toggle_border, CWM_WIN, {0} },
 	{ NULL, NULL, 0, {0} },
-};
-
-static const struct {
-	const char	ch;
-	int		mask;
-} bind_mods[] = {
-	{ 'C',	ControlMask },
-	{ 'M',	Mod1Mask },
-	{ '4',	Mod4Mask },
-	{ 'S',	ShiftMask },
 };
 
 int
@@ -314,7 +301,7 @@ void
 conf_clear(void)
 {
 	struct autogroupwin	*aw, *aw_tmp;
-	struct binding		*kb, *mb, *bind_tmp;
+	struct binding		*kb, *bind_tmp;
 	struct winname		*wn, *wn_tmp;
 	struct cmd_path		*cmd_p, *cmd_tmp_p;
 
@@ -324,8 +311,8 @@ conf_clear(void)
 		free(cmd_p);
 	}
 
-	TAILQ_FOREACH_SAFE(kb, &keybindingq, entry, bind_tmp) {
-		TAILQ_REMOVE(&keybindingq, kb, entry);
+	TAILQ_FOREACH_SAFE(kb, &bindingq, entry, bind_tmp) {
+		TAILQ_REMOVE(&bindingq, kb, entry);
 		free(kb);
 	}
 
@@ -340,11 +327,6 @@ conf_clear(void)
 		free(wn->name);
 		TAILQ_REMOVE(&ignoreq, wn, entry);
 		free(wn);
-	}
-
-	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, bind_tmp) {
-		TAILQ_REMOVE(&mousebindingq, mb, entry);
-		free(mb);
 	}
 
 	xu_key_ungrab(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
@@ -380,147 +362,6 @@ conf_client(struct client_ctx *cc)
 	client_draw_border(cc);
 }
 
-static const char *
-conf_bind_getmask(const char *name, unsigned int *mask)
-{
-	char		*dash;
-	const char	*ch;
-	unsigned int 	 i;
-
-	*mask = 0;
-	if ((dash = strchr(name, '-')) == NULL)
-		return(name);
-	for (i = 0; i < nitems(bind_mods); i++) {
-		if ((ch = strchr(name, bind_mods[i].ch)) != NULL && ch < dash)
-			*mask |= bind_mods[i].mask;
-	}
-
-	/* Skip past modifiers. */
-	return (dash + 1);
-}
-
-int
-conf_bind_kbd(const char *bind, const char *cmd)
-{
-	struct binding	*kb;
-	const char	*key;
-	unsigned int	 i;
-
-	return (1);
-
-	kb = xcalloc(1, sizeof(*kb));
-	key = conf_bind_getmask(bind, &kb->modmask);
-
-	log_debug("%s: key %s, bind: %s, cmd: %s", __func__, key, bind, cmd);
-
-	kb->press.keysym = XStringToKeysym(key);
-	if (kb->press.keysym == NoSymbol) {
-		log_debug("unknown symbol: %s", key);
-		free(kb);
-		return(0);
-	}
-
-	/* We now have the correct binding, remove duplicates. */
-	conf_unbind_kbd(kb);
-
-	if (strcmp("unmap", cmd) == 0) {
-		free(kb);
-		return(1);
-	}
-
-	for (i = 0; i < nitems(name_to_func); i++) {
-		if (strcmp(name_to_func[i].tag, cmd) != 0)
-			continue;
-
-		kb->callback = name_to_func[i].handler;
-		kb->flags = name_to_func[i].flags;
-		kb->argument = name_to_func[i].argument;
-		TAILQ_INSERT_TAIL(&keybindingq, kb, entry);
-		return(1);
-	}
-
-	kb->callback = kbfunc_cmdexec;
-	kb->flags = CWM_CMD;
-	kb->argument.c = xstrdup(cmd);
-	TAILQ_INSERT_TAIL(&keybindingq, kb, entry);
-	return(1);
-}
-
-static void
-conf_unbind_kbd(struct binding *unbind)
-{
-	struct binding	*key = NULL, *keynxt;
-
-	TAILQ_FOREACH_SAFE(key, &keybindingq, entry, keynxt) {
-		if (key->modmask != unbind->modmask)
-			continue;
-
-		if (key->press.keysym == unbind->press.keysym) {
-			TAILQ_REMOVE(&keybindingq, key, entry);
-			log_debug("\t%s: removed key %d", __func__,
-			    key->press.keysym);
-			if (key->flags & CWM_CMD)
-				free(key->argument.c);
-			free(key);
-		}
-	}
-}
-
-int
-conf_bind_mouse(const char *bind, const char *cmd)
-{
-	struct binding	*mb;
-	const char	*button, *errstr;
-	unsigned int	 i;
-
-	mb = xmalloc(sizeof(*mb));
-	button = conf_bind_getmask(bind, &mb->modmask);
-
-	mb->press.button = strtonum(button, Button1, Button5, &errstr);
-	if (errstr) {
-		log_debug("button number is %s: %s", errstr, button);
-		free(mb);
-		return(0);
-	}
-
-	/* We now have the correct binding, remove duplicates. */
-	conf_unbind_mouse(mb);
-
-	if (strcmp("unmap", cmd) == 0) {
-		free(mb);
-		return(1);
-	}
-
-	for (i = 0; i < nitems(name_to_func); i++) {
-		if (strcmp(name_to_func[i].tag, cmd) != 0)
-			continue;
-
-		mb->callback = name_to_func[i].handler;
-		mb->flags = name_to_func[i].flags;
-		mb->argument = name_to_func[i].argument;
-		TAILQ_INSERT_TAIL(&mousebindingq, mb, entry);
-		return(1);
-	}
-
-	return(0);
-}
-
-static void
-conf_unbind_mouse(struct binding *unbind)
-{
-	struct binding		*mb = NULL, *mbnxt;
-
-	TAILQ_FOREACH_SAFE(mb, &mousebindingq, entry, mbnxt) {
-		if (mb->modmask != unbind->modmask)
-			continue;
-
-		if (mb->press.button == unbind->press.button) {
-			TAILQ_REMOVE(&mousebindingq, mb, entry);
-			free(mb);
-		}
-	}
-}
-
 static int cursor_binds[] = {
 	XC_X_cursor,		/* CF_DEFAULT */
 	XC_fleur,		/* CF_MOVE */
@@ -542,26 +383,29 @@ conf_cursor(struct screen_ctx *sc)
 void
 conf_grab_mouse(Window win)
 {
-	struct binding	*mb;
+	struct binding	*b;
 
 	xu_btn_ungrab(win);
 
-	TAILQ_FOREACH(mb, &mousebindingq, entry) {
-		if (mb->flags & CWM_WIN)
-			xu_btn_grab(win, mb->modmask, mb->press.button);
+	TAILQ_FOREACH(b, &bindingq, entry) {
+		if (b->type == BINDING_MOUSE && (b->flags & CWM_WIN))
+			xu_btn_grab(win, b->modmask, b->press.button);
 	}
 }
 
 void
 conf_grab_kbd(Window win)
 {
-	struct binding	*kb;
+	struct binding	*b;
 
 	XGrabServer(X_Dpy);
 	xu_key_ungrab(win);
 
-	TAILQ_FOREACH(kb, &keybindingq, entry)
-		xu_key_grab(win, kb->modmask, kb->press.keysym);
+	TAILQ_FOREACH(b, &bindingq, entry) {
+		if (b->type != BINDING_KEY)
+			continue;
+		xu_key_grab(win, b->modmask, b->press.keysym);
+	}
 	XUngrabServer(X_Dpy);
 }
 

@@ -349,8 +349,6 @@ struct binding {
 	enum binding_type	 type;
 };
 TAILQ_HEAD(binding_q, binding);
-TAILQ_HEAD(keybinding_q, binding);
-TAILQ_HEAD(mousebinding_q, binding);
 
 struct cmd_path {
 	TAILQ_ENTRY(cmd_path)    entry;
@@ -375,8 +373,6 @@ TAILQ_HEAD(menu_q, menu);
 #define CONF_MAMOUNT	1
 #define CONF_SNAPDIST	0
 struct binding_q	 bindingq;
-struct keybinding_q	 keybindingq;
-struct mousebinding_q	 mousebindingq;
 struct autogroupwin_q	 autogroupq;
 struct ignore_q		 ignoreq;
 struct rule_q		 ruleq;
