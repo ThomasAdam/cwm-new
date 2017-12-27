@@ -150,7 +150,6 @@ config_apply(void)
 	struct group_ctx	*gc;
 
 	sc = TAILQ_FIRST(&Screenq);
-	conf_grab_kbd(sc->rootwin);
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		screen_update_geometry(sc);
@@ -441,7 +440,7 @@ config_parse(void)
 		log_fatal("Couldn't init  config options");
 
 	config_default(cfg_default, true);
-
+#if 0
 	if (conf_path == NULL) {
 		log_debug("No user-supplied config file present.");
 		goto apply;
@@ -455,7 +454,7 @@ config_parse(void)
 
 	if (cfg_size(cfg, "screen") > 0)
 		config_default(cfg, false);
-
+#endif
 
 apply:
 	config_apply();
