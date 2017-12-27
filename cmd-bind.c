@@ -35,7 +35,7 @@ static const char	*binding_getmask(const char *, unsigned int *);
 const struct cmd_entry cmd_bind_entry = {
 	.name = "bind",
 
-	.args = { "mu", 2, -1 },
+	.args = { "mu", 1, -1 },
 	.usage = "[-m] key command(s)",
 	.flags = CMD_NONE,
 	.exec = cmd_bind_exec,
@@ -149,13 +149,9 @@ static struct binding *
 bindings_find(const char *bind)
 {
 	struct binding	*key = NULL, *keynxt;
-	unsigned int	 modmask;
-	const char	*modifier;
-
-	modifier = binding_getmask(bind, &modmask);
 
 	TAILQ_FOREACH_SAFE(key, &bindingq, entry, keynxt) {
-		if (key->modmask == modmask)
+		if (strcmp(bind, key->bind_str) == 0)
 			return (key);
 	}
 
@@ -190,6 +186,7 @@ bindings_bind(const char *bind, const char *cmd, enum binding_type type)
 
 	b = xcalloc(1, sizeof(*b));
 	b->type = type;
+	b->bind_str = xstrdup(bind);
 	key = binding_getmask(bind, &b->modmask);
 
 	log_debug("%s: type: %s, key %s, bind: %s, cmd: %s",
@@ -199,6 +196,7 @@ bindings_bind(const char *bind, const char *cmd, enum binding_type type)
 		b->press.keysym = XStringToKeysym(key);
 		if (b->press.keysym == NoSymbol) {
 			log_debug("unknown symbol: %s", key);
+			free(b->bind_str);
 			free(b);
 			return (false);
 		}
@@ -207,6 +205,7 @@ bindings_bind(const char *bind, const char *cmd, enum binding_type type)
 		b->press.button = strtonum(key, Button1, Button5, &errstr);
 		if (errstr != NULL) {
 			log_debug("button number is %s: %s", errstr, key);
+			free(b->bind_str);
 			free(b);
 			return (false);
 		}
@@ -214,11 +213,6 @@ bindings_bind(const char *bind, const char *cmd, enum binding_type type)
 
 	/* We now have the correct binding, remove duplicates. */
 	bindings_unbind(b, type);
-
-	if (strcmp("unmap", cmd) == 0) {
-		free(b);
-		return (true);
-	}
 
 	for (nf = name_to_func; nf->tag != NULL; nf++) {
 		if (strcmp(nf->tag, cmd) != 0)
@@ -251,16 +245,17 @@ bindings_unbind(struct binding *b, enum binding_type type)
 		if (b->modmask != ub->modmask)
 			continue;
 
-		if ((!is_mouse && (b->press.keysym == ub->press.keysym))
-		    ||
-		   (is_mouse && (b->press.button == ub->press.button))) {
-			TAILQ_REMOVE(&bindingq, b, entry);
-			log_debug("\t%s: removed key %d", __func__,
-			    is_mouse ? b->press.button : b->press.keysym);
-			if (!is_mouse && b->flags & CWM_CMD)
-				free(b->argument.c);
-			free(b);
-		}
+		if (strcmp(b->bind_str, ub->bind_str) != 0)
+			continue;
+
+		TAILQ_REMOVE(&bindingq, ub, entry);
+		log_debug("%s: removed key %d (%s)", __func__,
+		    is_mouse ? ub->press.button : ub->press.keysym,
+		    ub->bind_str);
+		if (!is_mouse && b->flags & CWM_CMD)
+			free(ub->argument.c);
+		free(ub->bind_str);
+		free(ub);
 	}
 }
 static enum cmd_retval
@@ -281,6 +276,7 @@ cmd_bind_exec(struct cmd *self, struct cmd_q *cmdq)
 	}
 
 	bindings_bind(args->argv[0], args->argv[1], type);
+	conf_grab_kbd(RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 
 	return (CMD_RETURN_NORMAL);
 }

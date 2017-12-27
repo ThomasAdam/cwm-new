@@ -347,6 +347,7 @@ struct binding {
 	union press		 press;
 	int			 flags;
 	enum binding_type	 type;
+	char			*bind_str;
 };
 TAILQ_HEAD(binding_q, binding);
 

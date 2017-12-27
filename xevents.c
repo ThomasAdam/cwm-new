@@ -291,7 +291,7 @@ xev_handle_keypress(XEvent *ee)
 {
 	XKeyEvent		*e = &ee->xkey;
 	struct client_ctx	*cc = NULL;
-	struct binding		*b;
+	struct binding		*b = NULL;
 	KeySym			 keysym, skeysym;
 	unsigned int		 modshift;
 	int			 ptr_x, ptr_y;
@@ -332,6 +332,10 @@ xev_handle_keypress(XEvent *ee)
 			log_debug("%s: no client found, using pointer pos",
 				__func__);
 		}
+
+		if (cc == NULL || cc->win == 0)
+			return;
+
 		log_debug("%s: client (0x%x): screen '%s'", __func__,
 			(int)cc->win, cc->sc->name);
 	} else {
