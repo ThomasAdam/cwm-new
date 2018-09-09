@@ -403,7 +403,7 @@ conf_bind_kbd(const char *bind, const char *cmd)
 {
 	struct binding	*kb;
 	const char	*key;
-	unsigned int	 i;
+	size_t	 	 i;
 
 	kb = xcalloc(1, sizeof(*kb));
 	key = conf_bind_getmask(bind, &kb->modmask);
@@ -426,6 +426,8 @@ conf_bind_kbd(const char *bind, const char *cmd)
 	}
 
 	for (i = 0; i < nitems(name_to_func); i++) {
+		if (name_to_func[i].tag == NULL)
+			continue;
 		if (strcmp(name_to_func[i].tag, cmd) != 0)
 			continue;
 
@@ -489,6 +491,8 @@ conf_bind_mouse(const char *bind, const char *cmd)
 	}
 
 	for (i = 0; i < nitems(name_to_func); i++) {
+		if (name_to_func[i].tag == NULL)
+			continue;
 		if (strcmp(name_to_func[i].tag, cmd) != 0)
 			continue;
 

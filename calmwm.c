@@ -178,6 +178,7 @@ x_teardown(void)
 	unsigned int		 i;
 
 	conf_clear();
+	log_close();
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		cscr = sc->config_screen;
@@ -198,9 +199,11 @@ x_teardown(void)
 
 			for (i = 0; i < CF_NITEMS; i++)
 				XFreeCursor(X_Dpy, cscr->cursor[i]);
+			free(cgrp);
 		}
 		XUnmapWindow(X_Dpy, sc->menuwin);
 		XDestroyWindow(X_Dpy, sc->menuwin);
+		free(cscr);
 	}
 	XUngrabKey(X_Dpy, AnyKey, AnyModifier,
 		RootWindow(X_Dpy, DefaultScreen(X_Dpy)));

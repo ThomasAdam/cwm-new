@@ -36,6 +36,7 @@ static int	 no_of_screens;
 static void	 screen_create_randr_region(struct screen_ctx *, const char *,
     struct geom *, int);
 static void	 screen_init_contents(void);
+static void	 screen_move_within(struct screen_ctx *);
 
 struct screen_ctx *
 screen_find_by_name(const char *name)
@@ -238,7 +239,35 @@ screen_init_contents(void)
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		if (sc->config_screen->panel_cmd != NULL)
 			u_spawn(sc->config_screen->panel_cmd);
+
+		screen_move_within(sc);
 	}
+}
+
+void
+screen_move_within(struct screen_ctx *sc)
+{
+	struct client_ctx	*cc;
+	struct config_screen	*cscr = sc->config_screen;
+	int			 top, left, right, bottom;
+
+	TAILQ_FOREACH(cc, &sc->clientq, entry) {
+		if (cc->sc != sc)
+			continue;
+		top = cc->geom.y;
+		left = cc->geom.x;
+		right = cc->geom.x + cc->geom.w + (cc->bwidth * 2) - 1;
+		bottom = cc->geom.y + cc->geom.h + (cc->bwidth * 2) - 1;
+		log_debug("%s: {top: %d, left: %d, right: %d, bottom: %d",
+			__func__, top, left, right, bottom);
+		if ((top > sc->work.h || left > sc->work.w) ||
+		    (bottom < 0 || right < 0)) {
+			log_debug("%s: moving window...", __func__);
+			cc->geom.x += (cscr->gap.left - (cc->bwidth * 4));
+			cc->geom.y += (cscr->gap.top  - (cc->bwidth * 4));
+			client_move(cc);
+		}
+	}	
 }
 
 struct screen_ctx *

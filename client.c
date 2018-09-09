@@ -132,7 +132,7 @@ client_scan_for_windows(void)
 				rule_apply(cc, "on-map");
 			}
 		}
-		client_data_extend(cc);
+		//client_data_extend(cc);
 
 		XFree(wins);
 	}
@@ -258,9 +258,6 @@ client_init(Window win, int skip_map_check)
 		client_hide(cc);
 	else
 		client_unhide(cc);
-
-	if (!mapped)
-		log_debug("client not mapped!");
 
 	XSync(X_Dpy, False);
 	XUngrabServer(X_Dpy);
@@ -716,8 +713,8 @@ client_expand(struct client_ctx *cc)
 		client_log_debug(__func__, cc);
 	}
 
-	client_expand_horiz(cc, &new_geom);
 	client_expand_vert(cc, &new_geom);
+	client_expand_horiz(cc, &new_geom);
 
 	memcpy(&cc->geom, &new_geom, sizeof(new_geom));
 

@@ -238,6 +238,7 @@ config_apply(void)
 
 	sc = TAILQ_FIRST(&Screenq);
 	conf_grab_kbd(sc->rootwin);
+	sc = NULL;
 
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		screen_update_geometry(sc);
@@ -279,22 +280,31 @@ config_intern_bindings(cfg_t *cfg)
 
 	/* Parse mouse/key bindings. */
 	for (i = 0; i < cfg_size(cfg, "bindings"); i++) {
-		bind_sec = cfg_getnsec(cfg, "bindings", i);
+		if ((bind_sec = cfg_getnsec(cfg, "bindings", i)) == NULL)
+			continue;
 
 		for (j = 0; j < cfg_size(bind_sec, "key"); j++) {
-			key_mouse_sec = cfg_getnsec(bind_sec, "key", j);
+			if ((key_mouse_sec = cfg_getnsec(bind_sec, "key", j)) == NULL)
+				continue;
 			key = cfg_title(key_mouse_sec);
 			cmd = cfg_getstr(key_mouse_sec, "command");
-			if (key == NULL || cmd == NULL)
+			if (key == NULL || cmd == NULL) {
+				log_debug("%s: %s was invalid", __func__, key);
 				continue;
+			}
 
 			conf_bind_kbd(key, cmd);
 		}
 
 		for (j = 0; j < cfg_size(bind_sec, "mouse"); j++) {
-			key_mouse_sec = cfg_getnsec(bind_sec, "mouse", j);
+			if ((key_mouse_sec = cfg_getnsec(bind_sec, "mouse", j)) == NULL)
+				continue;
 			key = cfg_title(key_mouse_sec);
 			cmd = cfg_getstr(key_mouse_sec, "command");
+			if (key == NULL || cmd == NULL) {
+				log_debug("%s: %s was invalid", __func__, key);
+				continue;
+			}
 			conf_bind_mouse(key, cmd);
 		}
 
@@ -524,6 +534,8 @@ config_intern_group(struct config_group *cg, cfg_t *cfg)
 	colour_sec = cfg_getsec(cfg, "color");
 	for (i = 0; i < nitems(colour_lookup); i++) {
 		colour = cfg_getstr(colour_sec, colour_lookup[i].name);
+		if (colour == NULL)
+			continue;
 		free(cg->color[colour_lookup[i].type]);
 		cg->color[colour_lookup[i].type] = xstrdup(colour);
 	}
@@ -568,13 +580,11 @@ config_parse(void)
 		log_debug("No user-supplied config file present.");
 		goto apply;
 	}
-
 	if ((cfg = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't init config options");
 	if (cfg_parse(cfg, conf_path) == CFG_PARSE_ERROR) {
 		log_debug("Couldn't parse '%s': %s", conf_path, strerror(errno));
 	}
-
 	if (cfg_size(cfg, "screen") > 0)
 		config_default(cfg, false);
 
