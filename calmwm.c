@@ -88,6 +88,7 @@ main(int argc, char **argv)
 			break;
 		case 'p':
 			pipe_name = optarg;
+			break;
 		case 'v':
 			open_logfile = true;
 			break;
