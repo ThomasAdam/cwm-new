@@ -35,7 +35,6 @@ static int	 no_of_screens;
 
 static void	 screen_create_randr_region(struct screen_ctx *, const char *,
     struct geom *, int);
-static void	 screen_init_contents(void);
 
 struct screen_ctx *
 screen_find_by_name(const char *name)
@@ -169,7 +168,8 @@ screen_create_randr_region(struct screen_ctx *sc, const char *name,
 		TAILQ_INSERT_TAIL(&Screenq, sc, entry);
 	}
 
-	XRRSelectInput(X_Dpy, sc->rootwin, RRScreenChangeNotifyMask);
+	XRRSelectInput(X_Dpy, RootWindow(X_Dpy, DefaultScreen(X_Dpy)),
+			RROutputChangeNotifyMask | RRScreenChangeNotifyMask);
 }
 
 void
@@ -224,13 +224,14 @@ screen_init_contents(void)
 		sc->hideall = 0;
 		sc->menuwin = 0;
 		sc->xftdraw = NULL;
-		sc->config_screen = xmalloc(sizeof(sc->config_screen));
+		sc->config_screen = xmalloc(sizeof(*sc->config_screen));
 
 		log_debug("%s: Adding groups...", __func__);
 		for (i = 0; i < CALMWM_NGROUPS; i++)
 			group_init(sc, i);
 	}
 	screen_apply_ewmh();
+
 	config_parse();
 	client_scan_for_windows();
 

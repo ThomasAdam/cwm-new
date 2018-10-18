@@ -25,8 +25,12 @@
 
 #include "calmwm.h"
 
+#define CFG_DEF_SCR 0x1
+#define CFG_DEF_REST 0x2
+#define CFG_DEF_USER 0x4
+
 static void	 config_apply(void);
-static void	 config_default(cfg_t *, bool);
+static void	 config_default(cfg_t *, int);
 static void	 config_internalise(cfg_t *);
 static void	 config_internalise_groups(struct screen_ctx *, cfg_t *);
 static void	 config_intern_clients(cfg_t *);
@@ -204,17 +208,6 @@ cfg_opt_t	 all_cfg_opts[] = {
 #define DEFAULT_CONFIG_SCR(s) \
 	({ char str[8192]; \
 	snprintf(str, sizeof(str), \
-	"menu {" \
-		"item term {" \
-			"command = \"xterm\"" \
-		"}" \
-		"item lock {" \
-			"command = \"lock\"" \
-		"}" \
-	"}" \
-	"bindings {" \
-		"%s" \
-	"}" \
 	"screen %s {" \
 		"groups {" \
 			"group 0 {}" \
@@ -228,7 +221,23 @@ cfg_opt_t	 all_cfg_opts[] = {
 			"group 8 {}" \
 			"group 9 {}" \
 		"}" \
-	"}", (DEFAULT_BINDINGS), (s)); str; })
+	"}", (s)); str; })
+
+#define DEFAULT_CONFIG_REST(s) \
+	({ char str[8192]; \
+	 snprintf(str, sizeof(str), \
+	"menu {" \
+		"item term {" \
+		"	command = \"xterm\"" \
+		"}" \
+		"item lock {" \
+			"command = \"lock\"" \
+		"}" \
+	"}" \
+	"bindings {" \
+		"%s" \
+	"}", (s)); str; })
+
 
 static void
 config_apply(void)
@@ -302,32 +311,44 @@ config_intern_bindings(cfg_t *cfg)
 }
 
 static void
-config_default(cfg_t *cfg, bool include_default_config)
+config_default(cfg_t *cfg, int flag)
 {
 	struct screen_ctx	*sc;
 
-	if (!include_default_config) {
+	if (flag & CFG_DEF_USER) {
 		/* This is a user-config which is always applied last, so we
 		 * can then also process other things after it, once the
 		 * config has been read.
 		 */
+		log_debug("%s: handling user config", __func__);
 		config_intern_clients(cfg);
 		config_intern_bindings(cfg);
 		config_internalise(cfg);
 		config_intern_menu(cfg);
-
-		return;
 	}
 
-	TAILQ_FOREACH(sc, &Screenq, entry) {
-		cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
+	if (flag & CFG_DEF_REST) {
+		cfg_parse_buf(cfg, DEFAULT_CONFIG_REST(DEFAULT_BINDINGS));
 		if (cfg == NULL)
-			log_fatal("Unable to load DEFAULT_CONFIG");
+			log_fatal("unable to load DEFAULT_CONFIG_REST");
 
+		log_debug("%s: handling rest of config", __func__);
 		config_intern_clients(cfg);
 		config_intern_bindings(cfg);
-		config_internalise(cfg);
 		config_intern_menu(cfg);
+	}
+
+	if (flag & CFG_DEF_SCR) {
+		TAILQ_FOREACH(sc, &Screenq, entry) {
+			cfg_parse_buf(cfg, DEFAULT_CONFIG_SCR(sc->name));
+			if (cfg == NULL)
+				log_fatal("Unable to load DEFAULT_CONFIG");
+
+			log_debug("%s: handling screen config (%s)",
+					__func__, sc->name);
+			config_internalise(cfg);
+		}
+
 	}
 }
 
@@ -524,6 +545,8 @@ config_intern_group(struct config_group *cg, cfg_t *cfg)
 	colour_sec = cfg_getsec(cfg, "color");
 	for (i = 0; i < nitems(colour_lookup); i++) {
 		colour = cfg_getstr(colour_sec, colour_lookup[i].name);
+		if (colour == NULL)
+			continue;
 		free(cg->color[colour_lookup[i].type]);
 		cg->color[colour_lookup[i].type] = xstrdup(colour);
 	}
@@ -547,7 +570,9 @@ config_intern_screen(struct config_screen *cs, cfg_t *cfg)
 void
 config_parse(void)
 {
-	cfg_t	*cfg_default, *cfg;
+	cfg_t	*cfg_default, *cfg_default_rest, *cfg;
+
+	XGrabServer(X_Dpy);
 
 	TAILQ_INIT(&keybindingq);
 	TAILQ_INIT(&mousebindingq);
@@ -562,7 +587,11 @@ config_parse(void)
 	if ((cfg_default = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
 		log_fatal("Couldn't init  config options");
 
-	config_default(cfg_default, true);
+	if ((cfg_default_rest = cfg_init(all_cfg_opts, CFGF_NONE)) == NULL)
+		log_fatal("Couldn't init  config options");
+
+	config_default(cfg_default, CFG_DEF_SCR);
+	config_default(cfg_default_rest, CFG_DEF_REST);
 
 	if (conf_path == NULL) {
 		log_debug("No user-supplied config file present.");
@@ -576,12 +605,13 @@ config_parse(void)
 	}
 
 	if (cfg_size(cfg, "screen") > 0)
-		config_default(cfg, false);
+		config_default(cfg, CFG_DEF_USER);
 
 
 apply:
 	config_apply();
 
+	XUngrabServer(X_Dpy);
 #if 0
 	/* FIXME: This is causing segfaults. */
 	cfg_free(cfg_default);

@@ -419,6 +419,8 @@ xev_handle_randr(XEvent *ee)
 	i = XRRRootToScreen(X_Dpy, rev->root);
 	TAILQ_FOREACH(sc, &Screenq, entry) {
 		if (sc->which == i) {
+			log_debug("%s: RandR found screen: %s (%d)",
+			    __func__, sc->name, i);
 			XRRUpdateConfiguration(ee);
 			screen_update_geometry(sc);
 		}
@@ -459,8 +461,8 @@ xev_process(void)
 	XEvent		 e;
 
 	XNextEvent(X_Dpy, &e);
-	if (e.type - Randr_ev == RRScreenChangeNotify)
+	if ((e.type - Randr_ev) == RRScreenChangeNotify) {
 		xev_handle_randr(&e);
-	else if (e.type < LASTEvent && xev_handlers[e.type] != NULL)
+	} else if (e.type < LASTEvent && xev_handlers[e.type] != NULL)
 		(*xev_handlers[e.type])(&e);
 }

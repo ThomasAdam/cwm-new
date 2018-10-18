@@ -114,14 +114,17 @@
 #define CWM_WIN			0x0001
 #define CWM_CMD			0x0002
 
-#define CWM_QUIT		0x0000
-#define CWM_RUNNING		0x0001
-#define CWM_RESTART		0x0002
+#define CWM_STARTING		0x0000
+#define CWM_QUIT		0x0001
+#define CWM_RUNNING		0x0002
+#define CWM_RESTART		0x0004
 
 #define CWM_SNAP_UP		0x0001
 #define CWM_SNAP_DOWN		0x0002
 #define CWM_SNAP_LEFT		0x0004
 #define CWM_SNAP_RIGHT		0x0008
+
+sig_atomic_t	 cwm_status;
 
 long long	 strtonum(const char *, long long, long long, const char **);
 size_t		 strlcpy(char *, const char *, size_t);
@@ -561,6 +564,7 @@ void			 screen_update_geometry(struct screen_ctx *);
 void			 screen_updatestackingorder(struct screen_ctx *);
 struct screen_ctx	*screen_find_by_name(const char *);
 void			 screen_apply_ewmh(void);
+void			 screen_init_contents(void);
 
 
 void			 kbfunc_client_cycle(struct client_ctx *, union arg *);

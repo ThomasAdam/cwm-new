@@ -426,6 +426,8 @@ conf_bind_kbd(const char *bind, const char *cmd)
 	}
 
 	for (i = 0; i < nitems(name_to_func); i++) {
+		if (name_to_func[i].tag == NULL)
+			break;
 		if (strcmp(name_to_func[i].tag, cmd) != 0)
 			continue;
 

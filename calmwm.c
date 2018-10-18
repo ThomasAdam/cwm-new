@@ -35,8 +35,6 @@
 
 #include "calmwm.h"
 
-sig_atomic_t	 cwm_status;
-
 #define LOGFILE_NAME "cwm-new.log"
 
 Display				*X_Dpy;
@@ -67,6 +65,8 @@ main(int argc, char **argv)
 	struct passwd	*pw;
 	bool		 open_logfile = false;
 	char		*pipe_name = NULL;
+
+	cwm_status = CWM_STARTING;
 
 	if (!setlocale(LC_CTYPE, "") || !XSupportsLocale())
 		warnx("no locale support");

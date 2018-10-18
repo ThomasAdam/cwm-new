@@ -253,7 +253,6 @@ client_init(Window win, int skip_map_check)
 
 	XMoveWindow(X_Dpy, cc->win, cc->geom.x, cc->geom.y);
 
-
 	if (client_get_wm_state(cc) == IconicState)
 		client_hide(cc);
 	else
@@ -769,6 +768,7 @@ client_toggle_maximize(struct client_ctx *cc)
         cc->flags |= CLIENT_MAXIMIZED;
 
 resize:
+	client_applysizehints(cc);
         client_resize(cc, 0);
         xu_ewmh_set_net_wm_state(cc);
 }
@@ -842,6 +842,8 @@ client_resize(struct client_ctx *cc, int reset)
 		cc->flags &= ~CLIENT_MAXIMIZED;
 		xu_ewmh_set_net_wm_state(cc);
 	}
+
+	client_applysizehints(cc);
 
 	XMoveResizeWindow(X_Dpy, cc->win, cc->geom.x,
 	    cc->geom.y, cc->geom.w, cc->geom.h);
