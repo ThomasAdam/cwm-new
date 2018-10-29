@@ -35,8 +35,6 @@
 
 #define HASH_MARKER	"|1|"
 
-extern sig_atomic_t	 cwm_status;
-
 void
 kbfunc_client_lower(struct client_ctx *cc, union arg *arg)
 {
