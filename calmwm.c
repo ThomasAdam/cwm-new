@@ -207,6 +207,7 @@ x_teardown(void)
 		RootWindow(X_Dpy, DefaultScreen(X_Dpy)));
 	XUngrabPointer(X_Dpy, CurrentTime);
 	XUngrabKeyboard(X_Dpy, CurrentTime);
+	XSelectInput(X_Dpy, DefaultRootWindow(X_Dpy), NoEventMask);
 	XSync(X_Dpy, False);
 	XSetInputFocus(X_Dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
